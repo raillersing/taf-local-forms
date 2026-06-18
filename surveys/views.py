@@ -11,9 +11,9 @@ from .models import Student, Submission, TrainingModule, TrainingSession
 
 
 MODULE_2_SUMMARY = (
-    "Internet est un grand reseau qui relie des ordinateurs, des telephones, "
-    "des serveurs et des sites web dans le monde. Il peut aider a apprendre, "
-    "faire des recherches, communiquer et preparer son avenir. Mais il faut "
+    "Internet est un grand réseau qui relie des ordinateurs, des téléphones, "
+    "des serveurs et des sites web dans le monde. Il peut aider à apprendre, "
+    "faire des recherches, communiquer et préparer son avenir. Mais il faut "
     "savoir chercher correctement et rester prudent."
 )
 
@@ -53,7 +53,7 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
             if duplicate_exists:
                 form.add_error(
                     "school_id_number",
-                    "Une reponse existe deja pour ce numero. Demande au formateur si tu dois modifier ta reponse.",
+                    "Une réponse existe déjà pour ce numéro. Demande au formateur si tu dois modifier ta réponse.",
                 )
             else:
                 student = Student.objects.create(
@@ -78,7 +78,7 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
                     student.delete()
                     form.add_error(
                         "school_id_number",
-                        "Une reponse existe deja pour ce numero. Demande au formateur si tu dois modifier ta reponse.",
+                        "Une réponse existe déjà pour ce numéro. Demande au formateur si tu dois modifier ta réponse.",
                     )
                 else:
                     request.session["last_submission_id"] = submission.pk
@@ -126,13 +126,13 @@ def dashboard_module_2(request: HttpRequest) -> HttpResponse:
 
     todo_fields = [
         ("todo_opened_browser", "Navigateur ouvert"),
-        ("todo_typed_simple_search", "Recherche simple ecrite"),
-        ("todo_used_keywords", "Mots-cles utiles"),
-        ("todo_opened_result", "Resultat ouvert"),
-        ("todo_compared_results", "Deux resultats compares"),
-        ("todo_found_school_info", "Information scolaire trouvee"),
+        ("todo_typed_simple_search", "Recherche simple écrite"),
+        ("todo_used_keywords", "Mots-clés utiles"),
+        ("todo_opened_result", "Résultat ouvert"),
+        ("todo_compared_results", "Deux résultats comparés"),
+        ("todo_found_school_info", "Information utile trouvée"),
         ("todo_asked_for_help", "A demande de l'aide"),
-        ("todo_noted_learning", "A note un apprentissage"),
+        ("todo_noted_learning", "A noté un apprentissage"),
     ]
     total_submissions = submissions.count()
     todo_completion = []

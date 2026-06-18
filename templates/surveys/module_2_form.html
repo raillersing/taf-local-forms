@@ -2,7 +2,7 @@
 
 {% block title %}Module 2 - Comprendre Internet{% endblock %}
 {% block hero_title %}Module 2 - Comprendre Internet{% endblock %}
-{% block hero_text %}Reponds simplement. Tes reponses aident le formateur a mieux accompagner la seance.{% endblock %}
+{% block hero_text %}Réponds simplement. Tes réponses aident le formateur à mieux accompagner la séance.{% endblock %}
 
 {% block content %}
 <main class="content-grid">
@@ -19,7 +19,7 @@
         {% endif %}
 
         <section class="form-section">
-            <h2>Ton identite</h2>
+            <h2>Tes informations</h2>
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.school_id_number %}
                 {% include "surveys/partials/field.html" with field=form.full_name %}
@@ -29,14 +29,14 @@
         </section>
 
         <section class="form-section">
-            <h2>Avant la seance</h2>
+            <h2>Avant la séance</h2>
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_internet_explained %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_learning_usage %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_open_browser %}
         </section>
 
         <section class="form-section">
-            <h2>Pendant la seance</h2>
+            <h2>Pendant la séance</h2>
             <div class="checkbox-list">
                 {% include "surveys/partials/field.html" with field=form.todo_opened_browser %}
                 {% include "surveys/partials/field.html" with field=form.todo_typed_simple_search %}
@@ -68,7 +68,7 @@
         </section>
 
         <section class="form-section">
-            <h2>Fin de seance</h2>
+            <h2>Fin de séance</h2>
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.feedback_understood_today %}
                 {% include "surveys/partials/field.html" with field=form.feedback_still_difficult %}
@@ -76,7 +76,7 @@
             {% include "surveys/partials/choice_fieldset.html" with field=form.feedback_confidence %}
         </section>
 
-        <button type="submit" class="primary-button">Envoyer ma reponse</button>
+        <button type="submit" class="primary-button">Envoyer</button>
     </form>
 </main>
 {% endblock %}

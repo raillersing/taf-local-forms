@@ -2,17 +2,17 @@
 
 {% block title %}Dashboard Module 2{% endblock %}
 {% block hero_title %}Dashboard Module 2{% endblock %}
-{% block hero_text %}Vue formateur pour suivre les reponses, le score moyen et l'avancement des activites.{% endblock %}
+{% block hero_text %}Vue formateur pour suivre les réponses, le score moyen et l'avancement des activités.{% endblock %}
 
 {% block content %}
 <main class="content-grid">
     <section class="card stats-grid">
         <article class="stat-card">
-            <p class="stat-label">Reponses</p>
+            <p class="stat-label">Réponses</p>
             <p class="stat-value">{{ total_submissions }}</p>
         </article>
         <article class="stat-card">
-            <p class="stat-label">Eleves</p>
+            <p class="stat-label">Élèves</p>
             <p class="stat-value">{{ total_students }}</p>
         </article>
         <article class="stat-card">
@@ -43,7 +43,7 @@
 
     <section class="card">
         <div class="section-row">
-            <h2>Progression des activites</h2>
+            <h2>Progression des activités</h2>
             <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Exporter le CSV</a>
         </div>
         <div class="progress-list">
@@ -62,7 +62,7 @@
     </section>
 
     <section class="card">
-        <h2>Liste des reponses</h2>
+        <h2>Liste des réponses</h2>
         <div class="table-wrap">
             <table>
                 <thead>
@@ -89,7 +89,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="7">Aucune reponse pour le moment.</td>
+                            <td colspan="7">Aucune réponse pour le moment.</td>
                         </tr>
                     {% endfor %}
                 </tbody>

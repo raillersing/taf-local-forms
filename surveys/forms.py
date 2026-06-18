@@ -5,17 +5,17 @@ from .models import Student, Submission
 
 class Module2SubmissionForm(forms.Form):
     school_id_number = forms.CharField(
-        label="Numero d'identification a l'ecole",
+        label="Numéro à l’école",
         min_length=2,
         max_length=2,
         help_text="Exemple : 01, 09, 39",
         error_messages={
-            "required": "Entre ton numero d'identification.",
+            "required": "Entre ton numéro.",
             "min_length": "Entre exactement 2 chiffres, par exemple 01.",
             "max_length": "Entre exactement 2 chiffres, par exemple 01.",
         },
     )
-    full_name = forms.CharField(label="Nom et prenom", max_length=255)
+    full_name = forms.CharField(label="Nom et prénom", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
 
@@ -25,23 +25,23 @@ class Module2SubmissionForm(forms.Form):
         widget=forms.RadioSelect,
     )
     auto_eval_learning_usage = forms.ChoiceField(
-        label="J'ai deja utilise Internet pour apprendre une lecon.",
+        label="J'ai déjà utilisé Internet pour apprendre un cours.",
         choices=Submission.SELF_EVAL_USAGE_CHOICES,
         widget=forms.RadioSelect,
     )
     auto_eval_open_browser = forms.ChoiceField(
-        label="Je sais ouvrir un navigateur Internet.",
+        label="Je sais ouvrir un navigateur.",
         choices=Submission.SELF_EVAL_BROWSER_CHOICES,
         widget=forms.RadioSelect,
     )
 
     todo_opened_browser = forms.BooleanField(label="J'ai ouvert le navigateur.", required=False)
-    todo_typed_simple_search = forms.BooleanField(label="J'ai ecrit une recherche simple.", required=False)
-    todo_used_keywords = forms.BooleanField(label="J'ai utilise des mots-cles utiles.", required=False)
-    todo_opened_result = forms.BooleanField(label="J'ai ouvert un resultat de recherche.", required=False)
-    todo_compared_results = forms.BooleanField(label="J'ai compare au moins deux resultats.", required=False)
+    todo_typed_simple_search = forms.BooleanField(label="J'ai écrit une recherche simple.", required=False)
+    todo_used_keywords = forms.BooleanField(label="J'ai utilisé des mots-clés utiles.", required=False)
+    todo_opened_result = forms.BooleanField(label="J'ai ouvert un résultat de recherche.", required=False)
+    todo_compared_results = forms.BooleanField(label="J'ai comparé au moins deux résultats.", required=False)
     todo_found_school_info = forms.BooleanField(
-        label="J'ai trouve une information utile pour une matiere scolaire.",
+        label="J'ai trouvé une information utile pour un cours.",
         required=False,
     )
     todo_asked_for_help = forms.BooleanField(
@@ -49,7 +49,7 @@ class Module2SubmissionForm(forms.Form):
         required=False,
     )
     todo_noted_learning = forms.BooleanField(
-        label="J'ai note une chose importante apprise pendant la seance.",
+        label="J'ai noté une chose importante apprise pendant la séance.",
         required=False,
     )
 
@@ -59,23 +59,23 @@ class Module2SubmissionForm(forms.Form):
         widget=forms.RadioSelect,
     )
     quiz_q2 = forms.ChoiceField(
-        label="2. Pour chercher une lecon, il vaut mieux utiliser des mots-cles simples.",
+        label="2. Pour chercher un cours, il vaut mieux utiliser des mots-clés simples.",
         choices=Submission.TRUE_FALSE_UNKNOWN_CHOICES,
         widget=forms.RadioSelect,
     )
     quiz_q3 = forms.ChoiceField(
-        label="3. Quand je trouve une information sur Internet, je dois parfois verifier si elle est fiable.",
+        label="3. Quand je trouve une information sur Internet, je dois parfois vérifier si elle est fiable.",
         choices=Submission.TRUE_FALSE_UNKNOWN_CHOICES,
         widget=forms.RadioSelect,
     )
     quiz_q4_selected = forms.MultipleChoiceField(
-        label="4. Que peut-on faire avec Internet pour les etudes ?",
+        label="4. Que peux-tu faire avec Internet pour étudier ?",
         choices=[
             (Submission.QUIZ_Q4_OPTION_EXPLANATION, "Chercher une explication"),
-            (Submission.QUIZ_Q4_OPTION_VIDEO, "Regarder une video educative"),
-            (Submission.QUIZ_Q4_OPTION_DOCUMENT, "Trouver un document de revision"),
+            (Submission.QUIZ_Q4_OPTION_VIDEO, "Regarder une vidéo éducative"),
+            (Submission.QUIZ_Q4_OPTION_DOCUMENT, "Trouver un document de révision"),
             (Submission.QUIZ_Q4_OPTION_WORD, "Apprendre un nouveau mot"),
-            (Submission.QUIZ_Q4_OPTION_PASSWORD, "Donner son mot de passe a un ami"),
+            (Submission.QUIZ_Q4_OPTION_PASSWORD, "Donner son mot de passe à un ami"),
         ],
         widget=forms.CheckboxSelectMultiple,
     )
@@ -83,7 +83,7 @@ class Module2SubmissionForm(forms.Form):
         label="5. Quel exemple est une bonne recherche ?",
         choices=[
             ("math", "math"),
-            ("cours_equation_seconde_exemple", "cours equation seconde exemple"),
+            ("cours_equation_seconde_exemple", "cours équation seconde exemple"),
             ("fb_video", "fb video"),
             ("internet", "internet"),
         ],
@@ -91,16 +91,16 @@ class Module2SubmissionForm(forms.Form):
     )
 
     practical_search_text = forms.CharField(
-        label="Ecris une recherche que tu as faite pendant la seance.",
+        label="Écris une recherche que tu as faite pendant la séance.",
         max_length=255,
     )
     practical_site_text = forms.CharField(
-        label="Ecris le nom ou l'adresse du site que tu as trouve.",
+        label="Écris le nom ou l'adresse du site que tu as trouvé.",
         max_length=255,
         required=False,
     )
     practical_subject = forms.ChoiceField(
-        label="Cette information peut m'aider dans quelle matiere ?",
+        label="Cette information peut m'aider dans quelle matière ?",
         choices=Submission.PRACTICAL_SUBJECT_CHOICES,
     )
     feedback_understood_today = forms.CharField(

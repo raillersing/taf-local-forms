@@ -16,13 +16,13 @@
                 {% if logo_exists %}
                     <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
                 {% else %}
-                    <div class="brand-fallback">Internet Society - Chapitre Madagascar</div>
+                    <div class="brand-fallback">Internet Society – Chapitre Madagascar</div>
                 {% endif %}
             </div>
             <div class="brand-copy">
                 <p class="eyebrow">TAfHSSiM</p>
                 <h1>{% block hero_title %}Module 2 - Comprendre Internet{% endblock %}</h1>
-                <p class="hero-text">{% block hero_text %}Application locale pour les eleves du Lycee Andohalo Antananarivo.{% endblock %}</p>
+                <p class="hero-text">{% block hero_text %}Application locale pour les élèves du Lycée Andohalo Antananarivo.{% endblock %}</p>
             </div>
         </header>
         {% block content %}{% endblock %}

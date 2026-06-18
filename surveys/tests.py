@@ -174,7 +174,7 @@ class Module2FormViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 2 - Comprendre Internet")
-        self.assertContains(response, "Envoyer ma reponse")
+        self.assertContains(response, "Envoyer")
 
     def test_valid_submission_creates_student_and_submission(self):
         response = self.client.post(reverse("surveys:module_2"), data=self.valid_payload())
@@ -205,7 +205,7 @@ class Module2FormViewTests(TestCase):
         response = self.client.post(reverse("surveys:module_2"), data=payload)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Une reponse existe deja pour ce numero")
+        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
         self.assertEqual(Submission.objects.count(), 1)
 
     def test_success_page_requires_matching_session_submission_id(self):

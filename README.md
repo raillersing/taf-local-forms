@@ -2,24 +2,33 @@
 
 Application locale pour le projet TAfHSSiM.
 
-Cette application fonctionne seulement dans la salle de formation, sur le reseau local du formateur. Ne la publiez pas sur Internet sans durcissement de securite adapte.
+Cette application sert pendant la séance, sur le réseau local du formateur. Ne la publiez pas sur Internet sans configuration de sécurité adaptée.
 
-## But de l'application
+## À quoi sert l'application
 
-Le formateur lance l'application sur son laptop.
+Le formateur lance l'application sur son ordinateur.
 
-Les eleves connectes au meme Wi-Fi ou au meme hotspot ouvrent le questionnaire Module 2 avec l'adresse IP locale du laptop, par exemple :
+Les élèves connectés au même Wi-Fi ou au même partage de connexion ouvrent le questionnaire Module 2 avec l'adresse IP locale de l'ordinateur, par exemple :
 
 `http://192.168.1.23:8000/module-2/`
 
 Module 2 : `Comprendre Internet`
 
+## Démarrage rapide
+
+1. Ouvrez Docker Desktop.
+2. Configurez le fichier `.env`.
+3. Lancez l'application.
+4. Créez le compte admin.
+5. Chargez les données Module 2.
+6. Donnez l'adresse aux élèves.
+
 ## Avant de commencer
 
 - Installez et lancez Docker Desktop.
-- Connectez les eleves au meme Wi-Fi ou au meme partage de connexion que le laptop.
-- Remplacez `<LAPTOP_LAN_IP>` par l'adresse IPv4 reelle du laptop.
-- N'utilisez pas `localhost` sur les telephones des eleves. `localhost` fonctionne seulement sur le laptop lui-meme.
+- Connectez les élèves au même Wi-Fi ou au même partage de connexion que l'ordinateur du formateur.
+- Remplacez `<LAPTOP_LAN_IP>` par l'adresse IPv4 réelle de l'ordinateur.
+- Ne donnez jamais `localhost` aux élèves. `localhost` fonctionne seulement sur l'ordinateur du formateur.
 
 ## Configuration locale
 
@@ -50,32 +59,34 @@ Dans le dossier du projet :
 docker compose up --build
 ```
 
-L'application sera accessible sur le laptop ici :
+L'application sera accessible sur l'ordinateur ici :
 
 - `http://127.0.0.1:8000/module-2/`
 - `http://localhost:8000/module-2/`
 
-## Premiere preparation
+## Première préparation
 
-Creer le superuser :
+Créer le superuser :
 
 ```powershell
 docker compose exec web python manage.py createsuperuser
 ```
 
-Creer les donnees Module 2 :
+Charger les données Module 2 :
 
 ```powershell
 docker compose exec web python manage.py seed_module2
 ```
 
-## Adresse a donner aux eleves
+## Adresse à donner aux élèves
 
-Donnez aux eleves l'URL avec l'IP du laptop, par exemple :
+Donnez aux élèves l'URL avec l'IP de l'ordinateur, par exemple :
 
 `http://192.168.1.23:8000/module-2/`
 
-## Acces formateur
+Rappel : ne donnez pas `localhost`.
+
+## Accès formateur
 
 - Admin Django : `http://192.168.1.23:8000/admin/`
 - Dashboard Module 2 : `http://192.168.1.23:8000/dashboard/module-2/`
@@ -91,22 +102,24 @@ Ou ouvrez directement :
 
 `/dashboard/export/module-2.csv`
 
-## Sauvegarde des donnees
+## Sauvegarde des données
+
+Copiez la base SQLite pour faire une sauvegarde.
 
 Base SQLite :
 
 - en Docker : `/app/data/db.sqlite3`
-- dans l'application locale hors Docker : `data/db.sqlite3`
+- hors Docker : `data/db.sqlite3`
 
-Avec `docker compose`, la base est stockee dans le volume `taf_local_forms_data`.
+Avec `docker compose`, la base est stockée dans le volume `taf_local_forms_data`.
 
 Pour une sauvegarde simple :
 
-1. arretez l'application si possible ;
-2. faites une copie du fichier SQLite ou du volume Docker ;
-3. gardez une copie sur un support externe si necessaire.
+1. arrêtez l'application si possible ;
+2. copiez le fichier SQLite ou le volume Docker ;
+3. gardez une copie sur un support externe si nécessaire.
 
-## Trouver l'IP locale du laptop sur Windows
+## Trouver l'adresse IP de l'ordinateur sur Windows
 
 Dans PowerShell :
 
@@ -114,23 +127,31 @@ Dans PowerShell :
 ipconfig
 ```
 
-Cherchez l'`IPv4 Address` de la carte Wi-Fi ou du hotspot actif.
+Cherchez l'`IPv4 Address` de la carte Wi-Fi ou du partage de connexion actif.
 
 N'utilisez pas :
 
-- une interface deconnectee ;
+- une interface déconnectée ;
 - une adresse WSL ;
-- une adresse virtuelle Docker si elle n'est pas celle du Wi-Fi partage avec les eleves.
+- une adresse virtuelle Docker si elle n'est pas celle du réseau partagé avec les élèves.
 
 ## Pare-feu Windows
 
-Si les eleves n'arrivent pas a ouvrir la page :
+Si les élèves n'arrivent pas à ouvrir la page :
 
-1. verifiez que Docker Desktop est lance ;
-2. verifiez l'adresse IP du laptop ;
+1. vérifiez que Docker Desktop est lancé ;
+2. vérifiez l'adresse IP de l'ordinateur ;
 3. autorisez le port `8000` dans le pare-feu Windows si besoin ;
-4. verifiez que les appareils sont bien sur le meme reseau ;
-5. verifiez qu'il n'y a pas d'isolation client / AP isolation sur le Wi-Fi.
+4. vérifiez que les appareils sont bien sur le même réseau ;
+5. vérifiez qu'il n'y a pas d'isolation client / AP isolation sur le Wi-Fi.
+
+## Test rapide avant la séance
+
+1. ouvrez `http://127.0.0.1:8000/module-2/` sur l'ordinateur ;
+2. vérifiez que la page Module 2 s'affiche ;
+3. vérifiez que l'IP locale de l'ordinateur est correcte ;
+4. testez l'URL élève sur un téléphone connecté au même réseau ;
+5. connectez-vous à l'admin ou au dashboard.
 
 ## Lancer sans Docker
 
@@ -142,56 +163,55 @@ Si vous utilisez l'environnement Python local du projet :
 .\.venv\Scripts\python manage.py runserver 0.0.0.0:8000
 ```
 
+Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
+
 ## Tests
 
 ```powershell
-.\.venv\Scripts\python manage.py test
+.\.venv\Scripts\python manage.py test surveys.tests
 ```
 
 ## URLs utiles
 
-- Student form : `/module-2/`
-- Confirmation page : `/module-2/success/<id>/`
+- Formulaire élève : `/module-2/`
+- Page de confirmation : `/module-2/success/<id>/`
 - Dashboard : `/dashboard/module-2/`
 - CSV : `/dashboard/export/module-2.csv`
 - Admin : `/admin/`
 
-## Depannage
+## Dépannage
 
-### Les eleves ne voient pas la page
+### Les élèves ne voient pas la page
 
-- verifiez qu'ils utilisent l'IP du laptop et non `localhost` ;
-- verifiez que le laptop et les telephones sont sur le meme Wi-Fi ou hotspot ;
-- verifiez le pare-feu Windows ;
+- vérifiez qu'ils utilisent l'IP de l'ordinateur et non `localhost` ;
+- vérifiez que l'ordinateur et les téléphones sont sur le même Wi-Fi ou partage de connexion ;
+- vérifiez le pare-feu Windows ;
 - relancez `docker compose up --build`.
 
 ### Mauvaise IP
 
 - relancez `ipconfig` ;
 - utilisez l'adresse IPv4 de la carte active ;
-- mettez a jour `.env` si l'IP a change.
+- mettez à jour `.env` si l'IP a changé.
 
 ### Le navigateur affiche une erreur CSRF ou host
 
-- verifiez `ALLOWED_HOSTS` ;
-- verifiez `CSRF_TRUSTED_ORIGINS` ;
-- ajoutez l'IP exacte du laptop, par exemple `192.168.1.23`.
+- vérifiez `ALLOWED_HOSTS` ;
+- vérifiez `CSRF_TRUSTED_ORIGINS` ;
+- ajoutez l'IP exacte de l'ordinateur, par exemple `192.168.1.23`.
 
-### Les eleves sont connectes mais rien ne charge
+### Les élèves sont connectés mais rien ne charge
 
-- testez depuis le laptop avec `http://127.0.0.1:8000/module-2/` ;
-- si cela marche seulement sur le laptop, cherchez un blocage reseau ou firewall ;
-- verifiez l'absence d'AP isolation.
+- testez depuis l'ordinateur avec `http://127.0.0.1:8000/module-2/` ;
+- si cela marche seulement sur l'ordinateur, cherchez un blocage réseau ou pare-feu ;
+- vérifiez l'absence d'AP isolation.
 
-## Validation effectuee pendant le developpement
+## Logo
 
-Commandes executees dans cette session :
+Le logo attendu est :
 
-```powershell
-.\.venv\Scripts\python manage.py check
-.\.venv\Scripts\python manage.py test surveys.tests
-```
+`static/brand/isoc_madagascar_logo.png`
 
-Note importante :
+S'il n'est pas présent, l'application affiche automatiquement le texte :
 
-Cette session Codex tourne depuis Windows contre le chemin UNC WSL du projet. Les fichiers sont bien restes dans `\\wsl.localhost\Ubuntu\home\raillersing\projects\taf-local-forms`, mais les validations Python executees ici ont utilise `.\.venv\Scripts\python` cote Windows. Le projet recommande tout de meme l'usage WSL/Linux si votre environnement local est configure ainsi.
+`Internet Society – Chapitre Madagascar`
