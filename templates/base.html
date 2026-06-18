@@ -1,0 +1,31 @@
+{% load static %}
+{% load brand_tags %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}TAfHSSiM{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="site-header">
+            <div class="brand-mark">
+                {% brand_logo_exists as logo_exists %}
+                {% if logo_exists %}
+                    <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
+                {% else %}
+                    <div class="brand-fallback">Internet Society - Chapitre Madagascar</div>
+                {% endif %}
+            </div>
+            <div class="brand-copy">
+                <p class="eyebrow">TAfHSSiM</p>
+                <h1>{% block hero_title %}Module 2 - Comprendre Internet{% endblock %}</h1>
+                <p class="hero-text">{% block hero_text %}Application locale pour les eleves du Lycee Andohalo Antananarivo.{% endblock %}</p>
+            </div>
+        </header>
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<fieldset class="choice-fieldset {% if field.errors %}field-error{% endif %}">
+    <legend>{{ field.label }}</legend>
+    {{ field }}
+    {% for error in field.errors %}
+        <p class="error-text">{{ error }}</p>
+    {% endfor %}
+</fieldset>
