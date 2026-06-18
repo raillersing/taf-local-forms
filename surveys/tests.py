@@ -218,6 +218,15 @@ class Module2FormViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("surveys:module_2"))
 
+    def test_module_2_form_returns_503_when_no_active_session_exists(self):
+        self.session.is_active = False
+        self.session.save()
+
+        response = self.client.get(reverse("surveys:module_2"))
+
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+
 
 class DashboardAccessTests(TestCase):
     def setUp(self):
@@ -305,6 +314,56 @@ class DashboardCsvTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Score moyen")
         self.assertContains(response, "Rakoto Aina")
+
+    def test_dashboard_filter_by_class_level_limits_results(self):
+        other_student = Student.objects.create(
+            school_id_number="02",
+            full_name="Rasoanaivo Mira",
+            class_level=Student.CLASS_LEVEL_PREMIERE,
+            group_name="Salle B",
+        )
+        Submission.objects.create(
+            student=other_student,
+            session=self.session,
+            school_id_number_snapshot="02",
+            auto_eval_internet_explained="bien",
+            auto_eval_learning_usage="souvent",
+            auto_eval_open_browser="oui",
+            todo_opened_browser=True,
+            todo_typed_simple_search=True,
+            todo_used_keywords=True,
+            todo_opened_result=True,
+            todo_compared_results=True,
+            todo_found_school_info=True,
+            todo_asked_for_help=False,
+            todo_noted_learning=True,
+            quiz_q1="faux",
+            quiz_q2="vrai",
+            quiz_q3="vrai",
+            quiz_q4_selected=[
+                Submission.QUIZ_Q4_OPTION_EXPLANATION,
+                Submission.QUIZ_Q4_OPTION_VIDEO,
+                Submission.QUIZ_Q4_OPTION_DOCUMENT,
+                Submission.QUIZ_Q4_OPTION_WORD,
+            ],
+            quiz_q5="cours_equation_seconde_exemple",
+            practical_search_text="cours histoire premiere",
+            practical_site_text="www.exemple2.mg",
+            practical_subject="histoire_geographie",
+            feedback_understood_today="Internet aide à réviser.",
+            feedback_still_difficult="",
+            feedback_confidence="oui",
+        )
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(
+            reverse("surveys:dashboard_module_2"),
+            {"class_level": Student.CLASS_LEVEL_SECONDE},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rakoto Aina")
+        self.assertNotContains(response, "Rasoanaivo Mira")
 
     def test_csv_export_contains_submission_data(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")

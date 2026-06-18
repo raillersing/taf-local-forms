@@ -23,6 +23,10 @@ Module 2 : `Comprendre Internet`
 5. Chargez les données Module 2.
 6. Donnez l'adresse aux élèves.
 
+Guide pas à pas pour la séance :
+
+- [Guide Formateur Terrain](docs/GUIDE_FORMATEUR_TERRAIN.md)
+
 ## Avant de commencer
 
 - Installez et lancez Docker Desktop.
@@ -205,6 +209,13 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 - testez depuis l'ordinateur avec `http://127.0.0.1:8000/module-2/` ;
 - si cela marche seulement sur l'ordinateur, cherchez un blocage réseau ou pare-feu ;
 - vérifiez l'absence d'AP isolation.
+
+### Le formulaire affiche “Le formulaire n'est pas disponible maintenant.”
+
+- lancez d'abord `docker compose exec web python manage.py seed_module2` si c'est la première préparation ;
+- si le message reste affiché, connectez-vous à l'admin ;
+- vérifiez qu'une session Module 2 existe et qu'elle est active ;
+- si une ancienne session existe déjà mais n'est plus active, réactivez-la dans l'admin.
 
 ## Logo
 
