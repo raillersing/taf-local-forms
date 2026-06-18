@@ -55,6 +55,11 @@ ALLOWED_HOSTS=localhost,127.0.0.1,[::1],192.168.1.23
 CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000,http://192.168.1.23:8000
 ```
 
+Important :
+
+- remplacez `SECRET_KEY=change-me-for-real-use` par une valeur propre à votre ordinateur avant une vraie séance ;
+- gardez `DEBUG=false` pour l'usage terrain.
+
 ## Lancer avec Docker
 
 Dans le dossier du projet :
@@ -157,6 +162,18 @@ Si les élèves n'arrivent pas à ouvrir la page :
 4. testez l'URL élève sur un téléphone connecté au même réseau ;
 5. connectez-vous à l'admin ou au dashboard.
 
+## Checklist avant la séance avec Docker
+
+- Docker Desktop est lancé ;
+- `.env` est prêt ;
+- `SECRET_KEY` n'est plus la valeur d'exemple ;
+- l'IP locale de l'ordinateur est connue ;
+- le formulaire s'ouvre sur l'ordinateur ;
+- un téléphone sur le même réseau ouvre bien `/module-2/` ;
+- le dashboard formateur est accessible.
+
+Si vous utilisez le mode sans Docker, adaptez cette checklist à votre commande de lancement locale.
+
 ## Lancer sans Docker
 
 Si vous utilisez l'environnement Python local du projet :
@@ -226,3 +243,11 @@ Le logo attendu est :
 S'il n'est pas présent, l'application affiche automatiquement le texte :
 
 `Internet Society – Chapitre Madagascar`
+
+## Checklist après la séance avec Docker
+
+- exportez le CSV si nécessaire ;
+- faites une sauvegarde des données ;
+- arrêtez l'application avec `docker compose down`.
+
+Si vous utilisez le mode sans Docker, arrêtez le serveur Python local à la place.

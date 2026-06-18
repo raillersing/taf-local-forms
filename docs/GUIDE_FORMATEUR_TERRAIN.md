@@ -6,10 +6,11 @@ L'application fonctionne sur le réseau local. Ne donnez jamais `localhost` aux 
 
 ## Avant la séance
 
-- Démarrez Docker Desktop.
-- Vérifiez que l'ordinateur du formateur et les téléphones des élèves sont sur le même réseau.
-- Préparez le fichier `.env` à partir de `.env.example`.
-- Vérifiez que `<LAPTOP_LAN_IP>` a bien été remplacé par l'adresse IPv4 réelle de l'ordinateur.
+- [ ] Démarrez Docker Desktop.
+- [ ] Vérifiez que l'ordinateur du formateur et les téléphones des élèves sont sur le même réseau.
+- [ ] Préparez le fichier `.env` à partir de `.env.example`.
+- [ ] Remplacez `SECRET_KEY=change-me-for-real-use` par une valeur propre à votre ordinateur.
+- [ ] Vérifiez que `<LAPTOP_LAN_IP>` a bien été remplacé par l'adresse IPv4 réelle de l'ordinateur.
 
 ## Démarrer l'application
 
@@ -159,8 +160,8 @@ Pour une procédure détaillée de restauration Docker, une validation suppléme
 
 Avant d'arrêter :
 
-- exportez le CSV si besoin ;
-- faites une sauvegarde si la séance est terminée.
+- [ ] exportez le CSV si besoin ;
+- [ ] faites une sauvegarde si la séance est terminée.
 
 Pour arrêter l'application :
 
