@@ -22,7 +22,8 @@ Every task follows the same cycle:
 6. **Review** — stop for human review on ambiguity, drift, security, migration, Docker failure.
 7. **Commit** — single clear commit per slice.
 8. **Push** — only after human approval.
-9. **Tag** — only after field test.
+9. **Cleanup** — run `scripts/dev/taf-clean-after-merge` after a PR is merged.
+10. **Tag** — only after field test.
 
 ## Scope boundaries
 
@@ -131,11 +132,11 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 | F005 | UX corrections (logo, alignment, network dashboard) | done |
 | F006 | Agent workflow and skills framework | done |
 | F007 | Release candidate review + Graphify integration | done |
-| F008 | Push / PR / merge workflow | pending |
-| F009 | Tag v0.1.1 | pending |
-| F010 | Logo integration (official file) | pending |
-| F011 | Dashboard UX polish after field feedback | pending |
-| F012 | Module 3 preparation | pending |
+| F008 | Push / PR / merge workflow | done |
+| F009 | Module 3 search questionnaire | pending -->
+| F010 | Safe cleanup workflow | in_progress |
+| F011 | Logo integration (official file) | pending |
+| F012 | Dashboard UX polish after field feedback | pending |
 
 ## Prompt contracts
 
@@ -172,6 +173,33 @@ Full contracts in `docs/ai-agents/prompt-contracts.md`.
 - [ ] `/dashboard/network/` accessible after login
 - [ ] Phone test documented in release notes
 - [ ] Release notes written
+
+## Safe cleanup after an agent cycle
+
+After a PR is merged, residual artifacts accumulate:
+
+- **Docker containers** remain running. Run `docker compose down --remove-orphans` to stop them.
+- **Local branches** remain after squash merge. Run `git branch -d <branch>` to delete merged branches, or use `scripts/dev/taf-clean-after-merge` to delete all merged branches at once.
+- **Worktrees** can become orphaned. Run `git worktree prune` to clean up stale worktree references.
+- **Docker volumes contain persistent SQLite data** and must never be deleted automatically. `scripts/dev/taf-docker-safe-clean` stops containers without touching volumes.
+
+### Safe scripts (in `scripts/dev/`)
+
+| Script | Purpose | Safe? |
+|--------|---------|-------|
+| `taf-clean-status` | Read-only status report | Yes (never modifies anything) |
+| `taf-clean-after-merge` | Cleanup after PR merge into main | Yes (only deletes merged branches, stops containers, prunes worktrees) |
+| `taf-docker-safe-clean` | Stop Docker containers safely | Yes (never uses `-v`, never prunes volumes) |
+| `taf-release-finalize` | Post-merge finalization + tag reminder | Yes (runs validations + safe cleanup) |
+
+### Forbidden commands
+
+These commands are **never** used automatically. They require explicit human decision:
+
+- `docker compose down -v` — deletes all volumes including SQLite data
+- `docker system prune --volumes` — destroys all unused volumes across all projects
+- `git branch -D` (force delete) — use only after explicit confirmation
+- Manual deletion of worktree directories without `git worktree remove`
 
 ## Hard stops
 

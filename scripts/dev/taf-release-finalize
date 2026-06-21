@@ -1,0 +1,100 @@
+#!/usr/bin/env sh
+# taf-release-finalize – Procedure to finalize a release after merge.
+#
+# Usage: taf-release-finalize
+#
+# This script runs the post-merge steps that are safe to automate,
+# and prints reminders for steps that must remain manual.
+#
+# What it does:
+#   1. Verify we are on main with a clean working tree
+#   2. git pull --ff-only origin main
+#   3. Run quality gates (check, test, makemigrations)
+#   4. Run safe cleanup (taf-clean-after-merge)
+#   5. Print release tag reminder
+#
+# What you must do manually:
+#   - Create and push the release tag (e.g. v0.2.0)
+#   - Write release notes
+#   - Field test on laptop with phone
+
+set -e
+
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$PROJECT_DIR"
+
+echo "========================================"
+echo "TAf Local Forms – Release Finalization"
+echo "========================================"
+
+# ---- Guard: must be on main ----
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "ERROR: Must be on main. Current branch: $CURRENT_BRANCH"
+    exit 1
+fi
+
+# ---- Guard: working tree clean ----
+if [ -n "$(git status --short)" ]; then
+    echo "ERROR: Working tree has uncommitted changes."
+    git status --short
+    exit 1
+fi
+
+echo ""
+echo "--- Step 1: git pull --ff-only origin main ---"
+git pull --ff-only origin main
+echo "OK"
+echo ""
+
+echo "--- Step 2: Quality gates ---"
+echo ""
+
+echo "  django check..."
+python manage.py check
+echo "  OK"
+echo ""
+
+echo "  django tests..."
+python manage.py test surveys.tests
+echo "  OK"
+echo ""
+
+echo "  pending migrations check..."
+python manage.py makemigrations --check --dry-run
+echo "  OK"
+echo ""
+
+echo "  docker compose config..."
+docker compose config >/dev/null
+echo "  OK"
+echo ""
+
+echo "--- Step 3: Safe cleanup ---"
+"$PROJECT_DIR/scripts/dev/taf-clean-after-merge"
+echo ""
+
+echo "--- Step 4: Release tag reminder ---"
+echo ""
+echo "  ============================================="
+echo "  MANUAL STEP REQUIRED"
+echo "  ============================================="
+echo ""
+echo "  Create and push a release tag:"
+echo ""
+echo "    git tag -a v<major>.<minor>.<patch> -m \"Release v<version>\""
+echo "    git push origin v<major>.<minor>.<patch>"
+echo ""
+echo "  Example for the next release:"
+echo "    git tag -a v0.1.2 -m \"Release v0.1.2\""
+echo "    git push origin v0.1.2"
+echo ""
+echo "  Before tagging, verify:"
+echo "    - All fields tests pass on laptop"
+echo "    - Phone test passes on same Wi-Fi"
+echo "    - All checklists in docs/ are covered"
+echo ""
+
+echo "========================================"
+echo "Release finalization steps complete."
+echo "========================================"

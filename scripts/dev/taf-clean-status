@@ -1,0 +1,83 @@
+#!/usr/bin/env sh
+# taf-clean-status – Read-only status overview for TAf Local Forms.
+# Shows Git state, Docker state, worktrees, branches.
+# Does NOT modify anything.
+
+set -e
+
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$PROJECT_DIR"
+
+echo "========================================"
+echo "TAf Local Forms – Clean Status"
+echo "========================================"
+echo ""
+
+# ---- Git state ----
+echo "--- Current branch ---"
+git branch --show-current
+echo ""
+
+echo "--- Git status ---"
+git status --short
+echo ""
+
+echo "--- Recent commits (last 8) ---"
+git log --oneline --max-count=8
+echo ""
+
+echo "--- Worktrees ---"
+git worktree list
+echo ""
+
+echo "--- Branches merged into main ---"
+CURRENT="$(git branch --show-current)"
+git branch --merged main | sed 's/^..//' | grep -v -e "^main$" -e "^$CURRENT$" || echo "  (none)"
+echo ""
+
+echo "--- Remote branches ---"
+git branch -r
+echo ""
+
+echo "--- Stale remote tracking branches (gone) ---"
+git branch -r --list | while read -r ref; do
+    remote_ref="${ref#origin/}"
+    if [ "$remote_ref" != "HEAD" ] && ! git show-ref --verify "refs/heads/$remote_ref" >/dev/null 2>&1; then
+        if git ls-remote --exit-code origin "$remote_ref" >/dev/null 2>&1; then
+            :
+        else
+            echo "  origin/$remote_ref (prunable)"
+        fi
+    fi
+done
+echo ""
+
+# ---- Docker state ----
+echo "--- Docker containers (taf-local-forms*) ---"
+docker ps -a --filter "name=taf-local-forms" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
+echo ""
+
+echo "--- Docker compose status ---"
+if [ -f docker-compose.yml ] || [ -f compose.yml ]; then
+    docker compose ps 2>/dev/null || echo "  (not running)"
+fi
+echo ""
+
+echo "--- Docker networks (taf-local-forms*) ---"
+docker network ls --filter "name=taf-local-forms" --format "table {{.ID}}\t{{.Name}}"
+echo ""
+
+echo "--- Docker images (taf-local-forms*) ---"
+docker image ls --filter "reference=taf-local-forms*" --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}"
+echo ""
+
+echo "--- Docker volumes (taf-local-forms*) ---"
+docker volume ls --filter "name=taf-local-forms" --format "table {{.Name}}"
+echo ""
+echo "  WARNING: Volumes contain persistent SQLite data."
+echo "  NEVER delete them unless you are sure the data is backed up."
+echo ""
+
+echo "========================================"
+echo "End of status (read-only, no changes made)"
+echo "========================================"

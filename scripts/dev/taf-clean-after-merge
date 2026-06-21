@@ -1,0 +1,112 @@
+#!/usr/bin/env sh
+# taf-clean-after-merge – Safe cleanup after a PR merge into main.
+#
+# Usage: taf-clean-after-merge
+#
+# Prerequisites:
+#   - Must be on the `main` branch
+#   - Working tree must be clean
+#   - No pending changes
+#
+# What it does:
+#   1. git pull --ff-only origin main
+#   2. git fetch --prune
+#   3. Delete local branches that are already merged into main (safe)
+#   4. git worktree prune
+#   5. docker compose down --remove-orphans (safe, no -v)
+#   6. Show remaining volumes (do NOT delete)
+
+set -e
+
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$PROJECT_DIR"
+
+echo "========================================"
+echo "TAf Local Forms – Safe Cleanup After Merge"
+echo "========================================"
+
+# ---- Guard: must be on main ----
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "ERROR: Must be on main. Current branch: $CURRENT_BRANCH"
+    exit 1
+fi
+
+# ---- Guard: working tree clean ----
+if [ -n "$(git status --short)" ]; then
+    echo "ERROR: Working tree has uncommitted changes. Commit or stash first."
+    git status --short
+    exit 1
+fi
+
+echo ""
+echo "--- Step 1: git pull --ff-only origin main ---"
+git pull --ff-only origin main
+echo "OK"
+echo ""
+
+echo "--- Step 2: git fetch --prune ---"
+git fetch --prune
+echo "OK"
+echo ""
+
+echo "--- Step 3: Remove local branches merged into main ---"
+MERGED=$(git branch --merged main --list | grep -v "main" || true)
+if [ -z "$MERGED" ]; then
+    echo "  (no merged branches to remove)"
+else
+    echo "$MERGED" | while read -r branch; do
+        # Trim whitespace
+        branch=$(echo "$branch" | xargs)
+        if [ -n "$branch" ]; then
+            echo "  Deleting local branch: $branch"
+            git branch -d "$branch"
+        fi
+    done
+fi
+echo ""
+
+echo "--- Step 4: git worktree prune ---"
+git worktree prune
+echo "OK"
+echo ""
+
+echo "--- Step 5: docker compose down --remove-orphans ---"
+if [ -f docker-compose.yml ] || [ -f compose.yml ]; then
+    docker compose down --remove-orphans
+    echo "OK"
+else
+    echo "  (no docker compose file found, skipping)"
+fi
+echo ""
+
+echo "--- Step 6: Check remaining Docker state ---"
+echo ""
+echo "Containers (taf-local-forms*):"
+docker ps -a --filter "name=taf-local-forms" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}" 2>/dev/null || echo "  (none)"
+echo ""
+echo "Volumes (taf-local-forms*) — NOT MODIFIED:"
+docker volume ls --filter "name=taf-local-forms" --format "table {{.Name}}" 2>/dev/null || echo "  (none)"
+echo ""
+echo "  SAFETY: Volumes containing SQLite data were NOT deleted."
+echo "  To delete them manually (only if you have a backup):"
+echo "    docker compose down -v"
+echo ""
+
+echo "--- Step 7: Show stale remote tracking branches ---"
+echo ""
+git branch -r --list "origin/*" | while read -r ref; do
+    remote_ref="${ref#origin/}"
+    remote_ref_trimmed=$(echo "$remote_ref" | xargs)
+    if [ "$remote_ref_trimmed" != "HEAD" ] && [ -n "$remote_ref_trimmed" ]; then
+        if ! git ls-remote --exit-code origin "$remote_ref_trimmed" >/dev/null 2>&1; then
+            echo "  Remote branch gone from origin: $remote_ref_trimmed"
+            echo "    To delete local tracking branch: git branch -d -r origin/$remote_ref_trimmed"
+        fi
+    fi
+done
+echo ""
+
+echo "========================================"
+echo "Cleanup complete."
+echo "========================================"

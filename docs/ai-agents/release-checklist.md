@@ -36,3 +36,4 @@ Run this checklist before every release. If any step fails, stop and fix before 
 - [ ] Git tag created
 - [ ] Tag pushed to remote
 - [ ] Release published on GitHub (if applicable)
+- [ ] Run `scripts/dev/taf-clean-after-merge` to clean up merged branches and stop containers
