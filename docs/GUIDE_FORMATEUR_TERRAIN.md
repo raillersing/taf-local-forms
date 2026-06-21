@@ -118,6 +118,21 @@ Le dashboard permet de :
 
 Connexion obligatoire.
 
+## Diagnostiquer l'accès réseau
+
+Depuis le dashboard, un lien "Accès réseau" ouvre une page de diagnostic :
+
+`http://<IP_PC>:8000/dashboard/network/`
+
+Cette page affiche :
+
+- l'adresse recommandée à donner aux élèves ;
+- les adresses du dashboard, export CSV et admin ;
+- les IP candidates détectées automatiquement ;
+- des avertissements si l'accès depuis téléphone est problématique.
+
+Optionnel : définir `TAF_LAN_HOST=<IP_DU_LAPTOP>` dans `.env` pour figer l'adresse recommandée.
+
 ## Exporter le CSV
 
 Depuis le dashboard :

@@ -144,6 +144,28 @@ N'utilisez pas :
 - une adresse WSL ;
 - une adresse virtuelle Docker si elle n'est pas celle du réseau partagé avec les élèves.
 
+## Accès réseau — Diagnostic formateur
+
+Le dashboard formateur inclut une page d'aide au diagnostic réseau :
+
+`/dashboard/network/`
+
+Cette page affiche :
+
+- l'adresse recommandée pour les élèves ;
+- les adresses du dashboard, export CSV et admin ;
+- les IP candidates détectées automatiquement ;
+- des avertissements si l'adresse actuelle est locale uniquement.
+
+Elle respecte la variable d'environnement `TAF_LAN_HOST` :
+
+```env
+TAF_LAN_HOST=192.168.1.23
+```
+
+Si cette variable est définie, l'adresse recommandée utilise cette IP.
+Si elle est absente, la page utilise l'IP détectée dans la requête ou la première IP candidate trouvée.
+
 ## Pare-feu Windows
 
 Si les élèves n'arrivent pas à ouvrir la page :
@@ -197,6 +219,7 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 - Formulaire élève : `/module-2/`
 - Page de confirmation : `/module-2/success/<id>/`
 - Dashboard : `/dashboard/module-2/`
+- Accès réseau (diagnostic) : `/dashboard/network/`
 - CSV : `/dashboard/export/module-2.csv`
 - Admin : `/admin/`
 
