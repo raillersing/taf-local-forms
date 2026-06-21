@@ -232,3 +232,11 @@ def export_module_2_csv(request: HttpRequest) -> HttpResponse:
             ]
         )
     return response
+
+
+@login_required
+def network_access_dashboard(request: HttpRequest) -> HttpResponse:
+    from .network import get_network_access_context
+
+    ctx = get_network_access_context(request)
+    return render(request, "surveys/dashboard_network.html", ctx)

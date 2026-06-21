@@ -1,9 +1,11 @@
+import os
 from datetime import date
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import IntegrityError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import Student, Submission, TrainingModule, TrainingSession
@@ -392,6 +394,54 @@ class DashboardCsvTests(TestCase):
         self.assertIn("'+danger", content)
         self.assertIn("'@risk", content)
         self.assertIn("'-test", content)
+
+
+class NetworkAccessDashboardTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="formateur",
+            password="motdepasse-solide-123",
+        )
+
+    def test_network_page_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_network"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_network_page_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_network"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "/module-2/")
+        self.assertContains(response, "/dashboard/module-2/")
+        self.assertContains(response, "/dashboard/export/module-2.csv")
+        self.assertContains(response, "/admin/")
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_warning_when_host_is_localhost(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(
+            reverse("surveys:dashboard_network"),
+            HTTP_HOST="127.0.0.1:8010",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "127.0.0.1")
+        self.assertContains(response, "ne fonctionne que sur cet ordinateur")
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_recommended_host_uses_env_var_when_set(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        with patch.dict(os.environ, {"TAF_LAN_HOST": "192.168.0.102"}, clear=False):
+            response = self.client.get(reverse("surveys:dashboard_network"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "192.168.0.102")
 
 
 class TrainingSessionConstraintTests(TestCase):

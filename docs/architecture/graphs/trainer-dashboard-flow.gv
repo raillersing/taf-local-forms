@@ -1,0 +1,28 @@
+digraph trainer_dashboard_flow {
+    rankdir=LR;
+    label="Dashboard formateur";
+    fontsize=14;
+    labelloc=t;
+
+    node [shape=box, style=rounded, fontname="Sans"];
+
+    trainer [label="Formateur"];
+    login [label="Login\n/admin/login/"];
+    dashboard [label="GET\n/dashboard/module-2/"];
+    filters [label="Filtres\n(classe / groupe)"];
+    stats [label="Statistiques\n(scores, progression)"];
+    table [label="Liste des\nréponses"];
+    csv [label="CSV export\n/dashboard/export/module-2.csv"];
+    network [label="Accès réseau\n/dashboard/network/"];
+    admin [label="Admin\n/admin/"];
+
+    trainer -> login;
+    login -> dashboard;
+
+    dashboard -> filters;
+    dashboard -> stats;
+    dashboard -> table;
+    dashboard -> csv [label="Lien"];
+    dashboard -> network [label="Lien"];
+    dashboard -> admin [label="Lien"];
+}
