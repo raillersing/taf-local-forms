@@ -26,6 +26,8 @@
             {% if item.has_active_session %}
                 {% if item.module.code == "MODULE_2" %}
                     <a class="primary-button" href="{% url 'surveys:module_2' %}">Répondre au questionnaire</a>
+                {% elif item.module.code == "MODULE_3" %}
+                    <a class="primary-button" href="{% url 'surveys:module_3' %}">Répondre au questionnaire</a>
                 {% else %}
                     <p class="muted">Le questionnaire n'est pas encore disponible.</p>
                 {% endif %}

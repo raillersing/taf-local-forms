@@ -8,7 +8,7 @@ from django.db import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Student, Submission, TrainingModule, TrainingSession
+from .models import Module3Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -486,6 +486,442 @@ class NetworkAccessDashboardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "192.168.0.102")
+
+
+class SeedModule3CommandTests(TestCase):
+    def test_seed_module3_creates_expected_module_and_active_session(self):
+        call_command("seed_module3")
+
+        module = TrainingModule.objects.get(code="MODULE_3")
+        session = TrainingSession.objects.get(session_code="M3-ANDO-001")
+
+        self.assertEqual(module.title, "Module 3 - Recherche efficace")
+        self.assertEqual(session.module, module)
+        self.assertEqual(session.location, "Lycee Andohalo Antananarivo")
+        self.assertEqual(session.trainer_name, "Formateur TAfHSSiM")
+        self.assertTrue(session.is_active)
+
+    def test_seed_module3_is_idempotent(self):
+        call_command("seed_module3")
+        call_command("seed_module3")
+
+        self.assertEqual(TrainingModule.objects.filter(code="MODULE_3").count(), 1)
+        self.assertEqual(TrainingSession.objects.filter(session_code="M3-ANDO-001").count(), 1)
+
+    def test_seed_module3_does_not_overwrite_existing_session_details(self):
+        call_command("seed_module3")
+        session = TrainingSession.objects.get(session_code="M3-ANDO-001")
+        session.location = "Autre lieu"
+        session.trainer_name = "Autre formateur"
+        session.is_active = False
+        session.save()
+
+        call_command("seed_module3")
+        session.refresh_from_db()
+
+        self.assertEqual(session.location, "Autre lieu")
+        self.assertEqual(session.trainer_name, "Autre formateur")
+        self.assertFalse(session.is_active)
+
+
+class Module3SubmissionConstraintTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_3",
+            title="Module 3 - Recherche efficace",
+            description="Trouver rapidement des informations utiles.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M3-ANDO-001",
+            is_active=True,
+        )
+        self.student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rakoto Aina",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+            group_name="Salle A",
+        )
+        self.other_student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rabe Hery",
+            class_level=Student.CLASS_LEVEL_PREMIERE,
+            group_name="Salle B",
+        )
+
+    def make_submission(self, student):
+        return Module3Submission.objects.create(
+            student=student,
+            session=self.session,
+            school_id_number_snapshot=student.school_id_number,
+            auto_eval_keywords="bien",
+            auto_eval_improve="un_peu",
+            auto_eval_compare="tres_bien",
+            todo_chose_subject=True,
+            todo_written_question=True,
+            todo_keywords_from_question=True,
+            todo_did_search=True,
+            todo_read_titles=True,
+            todo_opened_result=True,
+            todo_compared_two_results=True,
+            todo_improved_keywords=True,
+            todo_found_useful_resource=True,
+            todo_noted_learning=True,
+            quiz_q1="faux",
+            quiz_q2="vrai",
+            quiz_q3="vrai",
+            quiz_q4="faux",
+            quiz_q5="cours_equation_seconde_exemple",
+            quiz_q6="photosynthese_cours_lycee_pdf",
+            quiz_q7_selected=list(Module3Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            practical_starting_question="Comment resoudre une equation ?",
+            practical_keywords_used="equation seconde exemple",
+            practical_site_found="www.exemple.mg",
+            practical_subject="mathematiques",
+            practical_what_learned="Les equations se resolvent avec des regles simples.",
+            feedback_understood_today="J'ai compris comment chercher sur Internet.",
+            feedback_still_difficult="",
+            feedback_confidence_search="oui",
+        )
+
+    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
+        self.make_submission(self.student)
+
+        with self.assertRaises(IntegrityError):
+            self.make_submission(self.other_student)
+
+    def test_score_is_computed_on_save(self):
+        submission = self.make_submission(self.student)
+
+        self.assertEqual(submission.computed_score, 7)
+
+
+class Module3FormViewTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_3",
+            title="Module 3 - Recherche efficace",
+            description="Trouver rapidement des informations utiles.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M3-ANDO-001",
+            is_active=True,
+        )
+        self.module2 = TrainingModule.objects.create(
+            code="MODULE_2",
+            title="Module 2 - Comprendre Internet",
+            description="Comprendre Internet.",
+        )
+        self.session2 = TrainingSession.objects.create(
+            module=self.module2,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M2-ANDO-001",
+            is_active=True,
+        )
+
+    def valid_payload(self):
+        return {
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_keywords": "bien",
+            "auto_eval_improve": "un_peu",
+            "auto_eval_compare": "tres_bien",
+            "todo_chose_subject": "on",
+            "todo_written_question": "on",
+            "todo_keywords_from_question": "on",
+            "todo_did_search": "on",
+            "todo_read_titles": "on",
+            "todo_opened_result": "on",
+            "todo_compared_two_results": "on",
+            "todo_improved_keywords": "on",
+            "todo_found_useful_resource": "on",
+            "todo_noted_learning": "on",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4": "faux",
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "quiz_q6": "photosynthese_cours_lycee_pdf",
+            "quiz_q7_selected": list(Module3Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_starting_question": "Comment resoudre une equation ?",
+            "practical_keywords_used": "equation seconde exemple",
+            "practical_site_found": "www.exemple.mg",
+            "practical_subject": "mathematiques",
+            "practical_what_learned": "Les equations se resolvent avec des regles simples.",
+            "feedback_understood_today": "J'ai compris comment chercher sur Internet.",
+            "feedback_still_difficult": "",
+            "feedback_confidence_search": "oui",
+        }
+
+    def test_module_3_form_get(self):
+        response = self.client.get(reverse("surveys:module_3"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 3 - Recherche efficace")
+        self.assertContains(response, "Envoyer")
+
+    def test_valid_submission_creates_student_and_submission(self):
+        response = self.client.post(reverse("surveys:module_3"), data=self.valid_payload())
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.count(), 1)
+        self.assertEqual(Module3Submission.objects.count(), 1)
+        submission = Module3Submission.objects.get()
+        self.assertEqual(submission.school_id_number_snapshot, "01")
+        self.assertEqual(submission.computed_score, 7)
+
+    def test_invalid_school_id_is_rejected(self):
+        payload = self.valid_payload()
+        payload["school_id_number"] = "1"
+
+        response = self.client.post(reverse("surveys:module_3"), data=payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Entre exactement 2 chiffres")
+        self.assertEqual(Student.objects.count(), 0)
+        self.assertEqual(Module3Submission.objects.count(), 0)
+
+    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
+        self.client.post(reverse("surveys:module_3"), data=self.valid_payload())
+        payload = self.valid_payload()
+        payload["full_name"] = "Autre eleve"
+
+        response = self.client.post(reverse("surveys:module_3"), data=payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
+        self.assertEqual(Module3Submission.objects.count(), 1)
+
+    def test_same_school_id_can_submit_module_2_and_module_3_separately(self):
+        m2_payload = {
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_internet_explained": "un_peu",
+            "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui",
+            "todo_opened_browser": "on",
+            "todo_typed_simple_search": "on",
+            "todo_used_keywords": "on",
+            "todo_opened_result": "on",
+            "todo_compared_results": "on",
+            "todo_found_school_info": "on",
+            "todo_noted_learning": "on",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4_selected": [
+                Submission.QUIZ_Q4_OPTION_EXPLANATION,
+                Submission.QUIZ_Q4_OPTION_VIDEO,
+                Submission.QUIZ_Q4_OPTION_DOCUMENT,
+                Submission.QUIZ_Q4_OPTION_WORD,
+            ],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "cours equation seconde exemple",
+            "practical_site_text": "www.exemple.mg",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "J'ai compris.",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+        response_m2 = self.client.post(reverse("surveys:module_2"), data=m2_payload)
+        self.assertEqual(response_m2.status_code, 302)
+
+        response_m3 = self.client.post(reverse("surveys:module_3"), data=self.valid_payload())
+        self.assertEqual(response_m3.status_code, 302)
+
+        self.assertEqual(Student.objects.count(), 2)
+        self.assertEqual(Submission.objects.count(), 1)
+        self.assertEqual(Module3Submission.objects.count(), 1)
+
+    def test_success_page_requires_matching_session_submission_id(self):
+        self.client.post(reverse("surveys:module_3"), data=self.valid_payload())
+        submission = Module3Submission.objects.get()
+        other_client = self.client_class()
+
+        response = other_client.get(reverse("surveys:module_3_success", args=[submission.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("surveys:module_3"))
+
+    def test_module_3_form_returns_503_when_no_active_session_exists(self):
+        self.session.is_active = False
+        self.session.save()
+
+        response = self.client.get(reverse("surveys:module_3"))
+
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+
+
+class DashboardModule3Tests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="formateur",
+            password="motdepasse-solide-123",
+        )
+        self.module = TrainingModule.objects.create(
+            code="MODULE_3",
+            title="Module 3 - Recherche efficace",
+            description="Trouver rapidement des informations utiles.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M3-ANDO-001",
+            is_active=True,
+        )
+        self.student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rakoto Aina",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+            group_name="Salle A",
+        )
+        Module3Submission.objects.create(
+            student=self.student,
+            session=self.session,
+            school_id_number_snapshot="01",
+            auto_eval_keywords="bien",
+            auto_eval_improve="un_peu",
+            auto_eval_compare="tres_bien",
+            todo_chose_subject=True,
+            todo_written_question=True,
+            todo_keywords_from_question=True,
+            todo_did_search=True,
+            todo_read_titles=True,
+            todo_opened_result=True,
+            todo_compared_two_results=False,
+            todo_improved_keywords=True,
+            todo_found_useful_resource=True,
+            todo_noted_learning=True,
+            quiz_q1="faux",
+            quiz_q2="vrai",
+            quiz_q3="vrai",
+            quiz_q4="faux",
+            quiz_q5="cours_equation_seconde_exemple",
+            quiz_q6="photosynthese_cours_lycee_pdf",
+            quiz_q7_selected=list(Module3Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            practical_starting_question="Comment resoudre une equation ?",
+            practical_keywords_used="equation seconde exemple",
+            practical_site_found="www.exemple.mg",
+            practical_subject="mathematiques",
+            practical_what_learned="Les equations se resolvent avec des regles simples.",
+            feedback_understood_today="J'ai compris comment chercher.",
+            feedback_still_difficult="",
+            feedback_confidence_search="oui",
+        )
+
+    def test_dashboard_module_3_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_module_3"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_csv_export_module_3_requires_login(self):
+        response = self.client.get(reverse("surveys:export_module_3_csv"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_module_3_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_module_3"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Score moyen")
+        self.assertContains(response, "Rakoto Aina")
+
+    def test_csv_export_module_3_contains_submission_data(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:export_module_3_csv"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("Rakoto Aina", response.content.decode())
+        self.assertIn("school_id_number", response.content.decode())
+
+    def test_csv_export_module_3_sanitizes_formula_like_cells(self):
+        self.student.full_name = "=cmd"
+        self.student.save()
+        submission = Module3Submission.objects.get()
+        submission.practical_starting_question = "+danger"
+        submission.feedback_understood_today = "@risk"
+        submission.feedback_still_difficult = "-test"
+        submission.save()
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:export_module_3_csv"))
+        content = response.content.decode()
+
+        self.assertIn("'=cmd", content)
+        self.assertIn("'+danger", content)
+        self.assertIn("'@risk", content)
+        self.assertIn("'-test", content)
+
+
+class Module3HomeAndCockpitTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_3",
+            title="Module 3 - Recherche efficace",
+            description="Trouver rapidement des informations utiles.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M3-ANDO-001",
+            is_active=True,
+        )
+
+    def test_home_page_shows_module_3_when_active(self):
+        response = self.client.get(reverse("surveys:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 3 - Recherche efficace")
+        self.assertContains(response, "Disponible")
+        self.assertContains(response, "Répondre au questionnaire")
+
+    def test_home_page_shows_module_3_unavailable_when_no_active_session(self):
+        self.session.is_active = False
+        self.session.save()
+
+        response = self.client.get(reverse("surveys:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 3 - Recherche efficace")
+        self.assertContains(response, "Indisponible")
+        self.assertContains(response, "Aucune session active")
+
+    def test_cockpit_shows_module_3_when_logged_in(self):
+        user = get_user_model().objects.create_user(
+            username="formateur", password="motdepasse-solide-123",
+        )
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 3 - Recherche efficace")
+        self.assertContains(response, "Dashboard Module 3")
+        self.assertContains(response, "Export CSV Module 3")
 
 
 class TrainingSessionConstraintTests(TestCase):
