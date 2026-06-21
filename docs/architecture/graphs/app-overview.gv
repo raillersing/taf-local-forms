@@ -1,0 +1,37 @@
+digraph app_overview {
+    rankdir=TB;
+    label="TAf Local Forms — Application Overview";
+    fontsize=14;
+    labelloc=t;
+
+    node [shape=box, style=rounded, fontname="Sans"];
+
+    subgraph cluster_user {
+        label="Salle de classe";
+        trainer [label="Formateur\n(laptop Windows)"];
+        student [label="Élèves\n(téléphone / tablette)"];
+    }
+
+    subgraph cluster_docker {
+        label="Docker Desktop";
+        style=dashed;
+        gunicorn [label="Gunicorn\n(port 8000)"];
+        django [label="Django\nTAf Local Forms"];
+        sqlite [label="SQLite\n/app/data/db.sqlite3"];
+        static [label="Static files\nWhiteNoise"];
+    }
+
+    subgraph cluster_host {
+        label="Hôte Windows (port 8010)";
+        host_port [label="localhost:8010\n→ container:8000"];
+    }
+
+    student -> host_port [label="http://<IP>:8010"];
+    trainer -> host_port [label="http://<IP>:8010"];
+    host_port -> gunicorn [label="Docker NAT"];
+    gunicorn -> django;
+    django -> sqlite;
+    django -> static;
+
+    { rank=same; trainer; student; }
+}

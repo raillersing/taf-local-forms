@@ -1,0 +1,33 @@
+digraph network_dashboard_flow {
+    rankdir=LR;
+    label="Page Accès réseau — diagnostic";
+    fontsize=14;
+    labelloc=t;
+
+    node [shape=box, style=rounded, fontname="Sans"];
+
+    trainer [label="Formateur"];
+    login [label="Login\n(déjà connecté)"];
+    network_page [label="GET\n/dashboard/network/"];
+    get_host [label="request.get_host()"];
+    env_vars [label="TAF_LAN_HOST\nTAF_HOST_PORT"];
+    ip_detect [label="socket.getaddrinfo\n(détection IP)"];
+    ctx [label="get_network_access_context()"];
+    render [label="Template\nrecommended URLs\nwarnings"];
+    student_url [label="URL formulaire\nélève"];
+    dashboard_url [label="URL dashboard"];
+    csv_url [label="URL CSV"];
+    admin_url [label="URL admin"];
+
+    trainer -> login;
+    login -> network_page;
+    network_page -> get_host;
+    network_page -> env_vars;
+    network_page -> ip_detect;
+    { get_host; env_vars; ip_detect; } -> ctx;
+    ctx -> render;
+    render -> student_url;
+    render -> dashboard_url;
+    render -> csv_url;
+    render -> admin_url;
+}

@@ -36,3 +36,6 @@ Thumbs.db
 
 # WSL local virtualenv
 .venv-wsl/
+
+# Graphviz / Graphify generated output
+docs/architecture/graphs/out/

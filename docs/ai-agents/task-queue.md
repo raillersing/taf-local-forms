@@ -19,8 +19,9 @@
 | F004 | Field polish (guide formateur, README updates, seed command improvements) | done |
 | F005 | UX corrections (logo placement, form alignment, label fix) | done |
 | F006 | Agent workflow and skills framework (this document, AGENTS.md, skills) | done |
-| F007 | Release candidate review (quality gate sweep, pre-release validation) | pending |
-| F008 | Push / PR / merge workflow (push branch, open PR, merge, cleanup) | pending |
+| F007 | Release candidate review + Graphify integration | done |
+| F008 | Push / PR / merge workflow (push branch, open PR, merge, cleanup) | done |
+| F009 | Tag v0.1.1 | waiting-human |
 | F009 | Tag v0.1.1 | pending |
 | F010 | Logo official asset integration (if file is provided) | pending |
 | F011 | Dashboard UX polish after field feedback | pending |

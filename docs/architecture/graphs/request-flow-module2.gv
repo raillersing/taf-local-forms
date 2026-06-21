@@ -1,0 +1,33 @@
+digraph request_flow_module2 {
+    rankdir=LR;
+    label="Module 2 — Formulaire élève (flux)";
+    fontsize=14;
+    labelloc=t;
+
+    node [shape=box, style=rounded, fontname="Sans"];
+
+    student [label="Élève"];
+    form [label="GET /module-2/"];
+    session_check [label="Session active ?\nTrainingSession.is_active"];
+    form_display [label="Afficher\nformulaire"];
+    post [label="POST /module-2/"];
+    validate [label="Valider\ndonnées"];
+    duplicate_check [label="Doublon\nschool_id + session ?"];
+    create_student [label="Créer Student"];
+    create_submission [label="Créer Submission"];
+    success [label="GET\n/module-2/success/<id>/"];
+    unavailable [label="Page\n503 unavailable"];
+
+    student -> form;
+    form -> session_check;
+    session_check -> form_display [label="Oui"];
+    session_check -> unavailable [label="Non"];
+    form_display -> post;
+    post -> validate;
+    validate -> duplicate_check [label="Valide"];
+    validate -> form_display [label="Invalide"];
+    duplicate_check -> create_student [label="Pas doublon"];
+    duplicate_check -> form_display [label="Doublon"];
+    create_student -> create_submission;
+    create_submission -> success;
+}

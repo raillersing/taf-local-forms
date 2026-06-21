@@ -106,6 +106,7 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 |-------|------|
 | **Orchestrator** | Plan, delegate, validate, stop on hard conditions. Always starts. |
 | **Django Implementation Agent** | Write/refactor Django backend, templates, tests. |
+| **Graphify / Architecture Agent** | Create/maintain DOT architecture diagrams. Read-only unless approved. |
 | **Field Operations Doc Agent** | Update README, guide formateur, network/field deployment docs. |
 | **UI/UX Review Agent** | Review layout, responsiveness, French text clarity. Read-only. |
 | **Security/Privacy Review Agent** | Audit auth, secret handling, CSV safety. Read-only. |
@@ -117,6 +118,7 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 - `taf-field-ops` — classroom field operations, network access, WSL/Docker caveats.
 - `taf-ui-ux-review` — UI quality, responsiveness, French readability for lycée.
 - `taf-security-privacy-review` — auth, secret safety, CSV injection, data minimisation.
+- `taf-graphify` — read-only architecture visualisation with Graphviz DOT diagrams.
 
 ## Task queue
 
@@ -128,7 +130,7 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 | F004 | Field polish, guide formateur | done |
 | F005 | UX corrections (logo, alignment, network dashboard) | done |
 | F006 | Agent workflow and skills framework | done |
-| F007 | Release candidate review | pending |
+| F007 | Release candidate review + Graphify integration | done |
 | F008 | Push / PR / merge workflow | pending |
 | F009 | Tag v0.1.1 | pending |
 | F010 | Logo integration (official file) | pending |
