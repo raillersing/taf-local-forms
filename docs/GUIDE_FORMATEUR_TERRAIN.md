@@ -122,11 +122,12 @@ Connexion obligatoire.
 
 ## Dashboard par module
 
-Adresse :
+Adresses :
 
-`http://<IP_PC>:8000/dashboard/module-2/`
+- Module 2 : `http://<IP_PC>:8000/dashboard/module-2/`
+- Module 3 : `http://<IP_PC>:8000/dashboard/module-3/`
 
-Le dashboard permet de :
+Les dashboards permettent de :
 
 - voir les réponses ;
 - filtrer par classe ou groupe ;
