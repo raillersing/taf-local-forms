@@ -48,6 +48,25 @@
     </section>
 
     <section class="card">
+        <h2>Configuration recommandée</h2>
+        <p style="margin-top:0.75rem">
+            Pour que l'adresse recommandée utilise automatiquement l'IP de ton laptop,
+            ajoute cette ligne dans le fichier <code>.env</code> :
+        </p>
+        <pre style="
+            padding:0.75rem 1rem;
+            border-radius:14px;
+            background:#f0f4fa;
+            overflow-x:auto;
+            font-size:0.9rem;
+        ">TAF_LAN_HOST=<IP_DU_LAPTOP></pre>
+        <p class="muted">
+            Remplace <code>&lt;IP_DU_LAPTOP&gt;</code> par l'adresse IPv4 de ton ordinateur
+            (ex : <code>192.168.1.23</code>). Tu peux la trouver avec <code>ipconfig</code> dans PowerShell.
+        </p>
+    </section>
+
+    <section class="card">
         <h2>Détection</h2>
         <dl style="
             display:grid;
@@ -60,6 +79,9 @@
             {% if configured_host %}
             <dt class="muted" style="font-weight:600;margin-top:0.5rem">TAF_LAN_HOST configuré</dt>
             <dd style="margin:0">{{ configured_host }}</dd>
+            {% else %}
+            <dt class="muted" style="font-weight:600;margin-top:0.5rem">TAF_LAN_HOST</dt>
+            <dd style="margin:0"><span class="muted">Non défini. Voir ci-dessus.</span></dd>
             {% endif %}
 
             {% if configured_port %}
@@ -128,6 +150,9 @@
         </p>
     </section>
 
-    <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}" style="display:inline-block;margin-top:0.5rem">&larr; Retour au dashboard</a>
+    <div style="display:flex;gap:1rem;margin-top:0.5rem;flex-wrap:wrap">
+        <a class="text-link" href="{% url 'surveys:dashboard_home' %}">&larr; Cockpit formateur</a>
+        <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">&larr; Dashboard Module 2</a>
+    </div>
 </main>
 {% endblock %}

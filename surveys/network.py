@@ -89,6 +89,7 @@ def get_network_access_context(request):
         "recommended_host": recommended_host,
         "port": port,
         "student_form_url": url_for("/module-2/"),
+        "cockpit_url": url_for("/dashboard/"),
         "dashboard_url": url_for("/dashboard/module-2/"),
         "csv_export_url": url_for("/dashboard/export/module-2.csv"),
         "admin_url": url_for("/admin/"),

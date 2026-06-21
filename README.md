@@ -190,9 +190,9 @@ Si les élèves n'arrivent pas à ouvrir la page :
 - `.env` est prêt ;
 - `SECRET_KEY` n'est plus la valeur d'exemple ;
 - l'IP locale de l'ordinateur est connue ;
-- le formulaire s'ouvre sur l'ordinateur ;
+- l'accueil élèves `/` s'ouvre sur l'ordinateur ;
 - un téléphone sur le même réseau ouvre bien `/module-2/` ;
-- le dashboard formateur est accessible.
+- le cockpit formateur `/dashboard/` est accessible.
 
 Si vous utilisez le mode sans Docker, adaptez cette checklist à votre commande de lancement locale.
 
@@ -216,12 +216,17 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 
 ## URLs utiles
 
-- Formulaire élève : `/module-2/`
+- Accueil élèves (liste des modules) : `/`
+- Formulaire Module 2 : `/module-2/`
 - Page de confirmation : `/module-2/success/<id>/`
-- Dashboard : `/dashboard/module-2/`
+- Cockpit formateur (centralisé) : `/dashboard/`
+- Dashboard Module 2 : `/dashboard/module-2/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - CSV : `/dashboard/export/module-2.csv`
 - Admin : `/admin/`
+
+Le cockpit formateur `/dashboard/` regroupe tous les outils formateur :
+liens vers chaque dashboard, export CSV, diagnostic réseau, et admin Django.
 
 ## Dépannage
 

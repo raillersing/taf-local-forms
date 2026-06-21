@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}TAfHSSiM — Modules de formation{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    <section class="card intro-card">
+        <h2>Bienvenue</h2>
+        <p>Cette application te permet de répondre aux questionnaires de formation TAfHSSiM.</p>
+        <p>Connecte-toi au Wi-Fi de la classe et choisis ton module ci-dessous.</p>
+    </section>
+
+    {% for item in module_data %}
+    <section class="card">
+        <div class="section-row">
+            <h2>{{ item.module.title }}</h2>
+            {% if item.has_active_session %}
+                <span class="pill" style="margin:0">Disponible</span>
+            {% else %}
+                <span class="pill" style="margin:0;background:#e6eef8;color:var(--muted)">Indisponible</span>
+            {% endif %}
+        </div>
+        <p style="margin-top:0.75rem">{{ item.module.description|default:"Pas de description." }}</p>
+        <div style="margin-top:1.25rem">
+            {% if item.has_active_session %}
+                {% if item.module.code == "MODULE_2" %}
+                    <a class="primary-button" href="{% url 'surveys:module_2' %}">Répondre au questionnaire</a>
+                {% else %}
+                    <p class="muted">Le questionnaire n'est pas encore disponible.</p>
+                {% endif %}
+            {% else %}
+                <p class="muted">Aucune session active pour ce module. Reviens plus tard.</p>
+            {% endif %}
+        </div>
+    </section>
+    {% empty %}
+    <section class="card">
+        <p>Aucun module de formation disponible pour le moment.</p>
+    </section>
+    {% endfor %}
+
+    <p style="margin-top:1.5rem;text-align:center">
+        <a class="text-link" href="{% url 'admin:login' %}?next={% url 'surveys:dashboard_home' %}">Espace formateur</a>
+    </p>
+</main>
+{% endblock %}

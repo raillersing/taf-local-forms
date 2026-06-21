@@ -28,7 +28,15 @@ def sanitize_csv_cell(value):
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    return redirect("surveys:module_2")
+    modules = TrainingModule.objects.all().order_by("code")
+    module_data = []
+    for mod in modules:
+        active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        module_data.append({
+            "module": mod,
+            "has_active_session": active_session is not None,
+        })
+    return render(request, "surveys/home.html", {"module_data": module_data})
 
 
 def module_2_form(request: HttpRequest) -> HttpResponse:
@@ -107,7 +115,28 @@ def module_2_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 
 @login_required
 def dashboard_home(request: HttpRequest) -> HttpResponse:
-    return redirect("surveys:dashboard_module_2")
+    from .network import get_network_access_context
+
+    net_ctx = get_network_access_context(request)
+    total_submissions = Submission.objects.count()
+    total_students = Student.objects.count()
+    avg_score = Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    modules = TrainingModule.objects.all().order_by("code")
+    module_list = []
+    for mod in modules:
+        active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        module_list.append({
+            "module": mod,
+            "has_active_session": active_session is not None,
+        })
+    context = {
+        "total_submissions": total_submissions,
+        "total_students": total_students,
+        "average_score": avg_score,
+        "module_list": module_list,
+        "network": net_ctx,
+    }
+    return render(request, "surveys/dashboard_home.html", context)
 
 
 @login_required

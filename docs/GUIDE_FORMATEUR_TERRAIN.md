@@ -22,7 +22,7 @@ docker compose up --build
 
 Vérification rapide :
 
-- ouvrez `http://127.0.0.1:8000/module-2/` sur l'ordinateur ;
+- ouvrez `http://127.0.0.1:8000/` (accueil élèves) sur l'ordinateur ;
 - laissez la fenêtre ouverte pendant la séance.
 
 ## Créer le compte formateur
@@ -64,7 +64,9 @@ N'utilisez pas :
 
 Exemple d'adresse à donner aux élèves :
 
-`http://192.168.1.23:8000/module-2/`
+`http://192.168.1.23:8000/` (accueil élèves)
+
+Si l'accueil s'affiche, l'élève clique sur le module du jour pour accéder au questionnaire.
 
 ## Si les téléphones ne chargent pas la page
 
@@ -98,12 +100,27 @@ Important :
 
 ## Test rapide avec un téléphone
 
-1. Ouvrez `http://127.0.0.1:8000/module-2/` sur l'ordinateur.
+1. Ouvrez `http://127.0.0.1:8000/` sur l'ordinateur — l'accueil élèves doit s'afficher.
 2. Ouvrez l'URL IP sur un téléphone du même réseau.
-3. Vérifiez que le formulaire Module 2 s'affiche.
+3. Vérifiez que l'accueil et le formulaire Module 2 s'affichent.
 4. Envoyez une réponse test si nécessaire.
 
-## Utiliser le dashboard formateur
+## Utiliser le cockpit formateur
+
+Adresse :
+
+`http://<IP_PC>:8000/dashboard/`
+
+Le cockpit centralise tous les outils formateur :
+
+- liens vers chaque dashboard de module ;
+- export CSV ;
+- diagnostic réseau ;
+- admin Django.
+
+Connexion obligatoire.
+
+## Dashboard par module
 
 Adresse :
 

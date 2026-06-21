@@ -229,6 +229,32 @@ class Module2FormViewTests(TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
 
+    def test_home_page_returns_200(self):
+        response = self.client.get(reverse("surveys:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Bienvenue")
+        self.assertContains(response, "TAfHSSiM")
+
+    def test_home_page_shows_module_2_when_active(self):
+        response = self.client.get(reverse("surveys:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 2 - Comprendre Internet")
+        self.assertContains(response, "Disponible")
+        self.assertContains(response, "Répondre au questionnaire")
+
+    def test_home_page_shows_module_2_unavailable_when_no_active_session(self):
+        self.session.is_active = False
+        self.session.save()
+
+        response = self.client.get(reverse("surveys:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 2 - Comprendre Internet")
+        self.assertContains(response, "Indisponible")
+        self.assertContains(response, "Aucune session active")
+
 
 class DashboardAccessTests(TestCase):
     def setUp(self):
@@ -248,6 +274,24 @@ class DashboardAccessTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/admin/login/", response.url)
+
+    def test_cockpit_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_cockpit_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cockpit formateur")
+        self.assertContains(response, "Dashboard Module 2")
+        self.assertContains(response, "Accès réseau")
+        self.assertContains(response, "Admin Django")
+        self.assertContains(response, "Export CSV")
 
 
 class DashboardCsvTests(TestCase):

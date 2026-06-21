@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Cockpit formateur{% endblock %}
+{% block hero_title %}Cockpit formateur{% endblock %}
+{% block hero_text %}Vue d'ensemble des modules, des résultats et de la configuration réseau.{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    <section class="card stats-grid">
+        <article class="stat-card">
+            <p class="stat-label">Total réponses</p>
+            <p class="stat-value">{{ total_submissions }}</p>
+        </article>
+        <article class="stat-card">
+            <p class="stat-label">Total élèves</p>
+            <p class="stat-value">{{ total_students }}</p>
+        </article>
+        <article class="stat-card">
+            <p class="stat-label">Score moyen</p>
+            <p class="stat-value">{{ average_score|floatformat:1 }}/5</p>
+        </article>
+    </section>
+
+    <section class="card">
+        <h2>Modules de formation</h2>
+        <div style="display:grid;gap:1rem;margin-top:0.75rem">
+            {% for item in module_list %}
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid var(--line)">
+                    <div>
+                        <strong>{{ item.module.title }}</strong>
+                        <br>
+                        <span class="muted">{{ item.module.code }}</span>
+                    </div>
+                    <div style="display:flex;gap:0.75rem;align-items:center">
+                        {% if item.has_active_session %}
+                            <span class="pill" style="margin:0">Session active</span>
+                            {% if item.module.code == "MODULE_2" %}
+                                <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">Dashboard</a>
+                            {% endif %}
+                        {% else %}
+                            <span class="muted">Aucune session active</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p class="muted">Aucun module enregistré.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Configuration réseau</h2>
+        <dl style="display:grid;gap:0.5rem;margin-top:0.75rem">
+            <dt class="muted" style="font-weight:600">URL élève recommandée</dt>
+            <dd style="margin:0">
+                <strong>{{ network.student_form_url }}</strong>
+            </dd>
+
+            <dt class="muted" style="font-weight:600;margin-top:0.5rem"><code>TAF_LAN_HOST</code></dt>
+            <dd style="margin:0">
+                {% if network.configured_host %}
+                    {{ network.configured_host }}
+                {% else %}
+                    <span class="alert" style="display:inline-block;padding:0.4rem 0.8rem;font-size:0.9rem">
+                        Non défini. Ajoute <code>TAF_LAN_HOST=&lt;IP_DU_LAPTOP&gt;</code> dans <code>.env</code>.
+                    </span>
+                {% endif %}
+            </dd>
+        </dl>
+        <div style="display:flex;gap:1rem;margin-top:1rem">
+            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet</a>
+            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Exporter le CSV</a>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Liens rapides</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.75rem">
+            <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">Dashboard Module 2</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Accès réseau</a>
+            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV</a>
+            <a class="text-link" href="{% url 'admin:index' %}">Admin Django</a>
+        </div>
+    </section>
+</main>
+{% endblock %}
