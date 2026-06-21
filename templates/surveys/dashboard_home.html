@@ -36,6 +36,8 @@
                             <span class="pill" style="margin:0">Session active</span>
                             {% if item.module.code == "MODULE_2" %}
                                 <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">Dashboard</a>
+                            {% elif item.module.code == "MODULE_3" %}
+                                <a class="text-link" href="{% url 'surveys:dashboard_module_3' %}">Dashboard</a>
                             {% endif %}
                         {% else %}
                             <span class="muted">Aucune session active</span>
@@ -67,9 +69,10 @@
                 {% endif %}
             </dd>
         </dl>
-        <div style="display:flex;gap:1rem;margin-top:1rem">
+        <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap">
             <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet</a>
-            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Exporter le CSV</a>
+            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV Module 2</a>
+            <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}">Export CSV Module 3</a>
         </div>
     </section>
 
@@ -77,8 +80,10 @@
         <h2>Liens rapides</h2>
         <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.75rem">
             <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">Dashboard Module 2</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_module_3' %}">Dashboard Module 3</a>
             <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Accès réseau</a>
-            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV</a>
+            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV Module 2</a>
+            <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}">Export CSV Module 3</a>
             <a class="text-link" href="{% url 'admin:index' %}">Admin Django</a>
         </div>
     </section>

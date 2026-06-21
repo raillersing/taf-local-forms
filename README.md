@@ -178,8 +178,8 @@ Si les élèves n'arrivent pas à ouvrir la page :
 
 ## Test rapide avant la séance
 
-1. ouvrez `http://127.0.0.1:8000/module-2/` sur l'ordinateur ;
-2. vérifiez que la page Module 2 s'affiche ;
+1. ouvrez `http://127.0.0.1:8000/` sur l'ordinateur ;
+2. vérifiez que les modules actifs s'affichent ;
 3. vérifiez que l'IP locale de l'ordinateur est correcte ;
 4. testez l'URL élève sur un téléphone connecté au même réseau ;
 5. connectez-vous à l'admin ou au dashboard.
@@ -191,7 +191,7 @@ Si les élèves n'arrivent pas à ouvrir la page :
 - `SECRET_KEY` n'est plus la valeur d'exemple ;
 - l'IP locale de l'ordinateur est connue ;
 - l'accueil élèves `/` s'ouvre sur l'ordinateur ;
-- un téléphone sur le même réseau ouvre bien `/module-2/` ;
+- un téléphone sur le même réseau ouvre bien `/module-2/` et `/module-3/` ;
 - le cockpit formateur `/dashboard/` est accessible.
 
 Si vous utilisez le mode sans Docker, adaptez cette checklist à votre commande de lancement locale.
@@ -218,11 +218,15 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 
 - Accueil élèves (liste des modules) : `/`
 - Formulaire Module 2 : `/module-2/`
+- Formulaire Module 3 : `/module-3/`
 - Page de confirmation : `/module-2/success/<id>/`
+- Page de confirmation Module 3 : `/module-3/success/<id>/`
 - Cockpit formateur (centralisé) : `/dashboard/`
 - Dashboard Module 2 : `/dashboard/module-2/`
+- Dashboard Module 3 : `/dashboard/module-3/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
-- CSV : `/dashboard/export/module-2.csv`
+- CSV Module 2 : `/dashboard/export/module-2.csv`
+- CSV Module 3 : `/dashboard/export/module-3.csv`
 - Admin : `/admin/`
 
 Le cockpit formateur `/dashboard/` regroupe tous les outils formateur :
