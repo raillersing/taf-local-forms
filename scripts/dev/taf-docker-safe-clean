@@ -1,0 +1,51 @@
+#!/usr/bin/env sh
+# taf-docker-safe-clean – Safe Docker cleanup limited to this project.
+#
+# Usage: taf-docker-safe-clean
+#
+# What it does:
+#   - Stops containers: docker compose down --remove-orphans
+#   - Does NOT delete volumes (data is preserved)
+#   - Does NOT run global prune commands
+#   - Shows manual cache cleanup command (does NOT execute it)
+
+set -e
+
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$PROJECT_DIR"
+
+echo "========================================"
+echo "TAf Local Forms – Safe Docker Cleanup"
+echo "========================================"
+echo ""
+
+echo "--- Step 1: docker compose down --remove-orphans ---"
+if [ -f docker-compose.yml ] || [ -f compose.yml ]; then
+    docker compose down --remove-orphans
+    echo "OK"
+else
+    echo "  (no docker compose file found, skipping)"
+fi
+echo ""
+
+echo "--- Step 2: Show remaining project volumes (NOT deleted) ---"
+docker volume ls --filter "name=taf-local-forms" --format "table {{.Name}}" 2>/dev/null || echo "  (none)"
+echo ""
+echo "  SAFETY: Volumes containing SQLite data were preserved."
+echo "  To delete them (only if backed up): docker compose down -v"
+echo ""
+
+echo "--- Step 3: Show remaining project containers ---"
+docker ps -a --filter "name=taf-local-forms" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}" 2>/dev/null || echo "  (none)"
+echo ""
+
+echo "--- Manual global cleanup (not executed) ---"
+echo "  If you want to free disk space from unused Docker resources:"
+echo "    docker system prune          # removes unused containers, networks, images"
+echo "    docker system prune --volumes  # WARNING: also removes ALL unused volumes"
+echo "  These commands affect ALL projects, not just this one."
+echo ""
+
+echo "========================================"
+echo "Cleanup complete. Volumes safe."
+echo "========================================"

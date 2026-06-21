@@ -64,7 +64,21 @@ One commit per slice. Use a clear conventional-commit prefix:
 
 Only after human approval.
 
-### 9. Tag
+### 9. Cleanup
+
+After a PR is merged, run the safe cleanup script to remove residual artifacts:
+
+```sh
+scripts/dev/taf-clean-after-merge
+```
+
+This script:
+- prunes stale remote tracking references;
+- deletes local branches that are already merged into `main`;
+- prunes orphaned worktree references;
+- stops Docker containers without deleting volumes.
+
+### 10. Tag
 
 Only after field test verification.
 
