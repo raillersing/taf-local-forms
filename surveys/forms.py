@@ -15,7 +15,7 @@ class Module2SubmissionForm(forms.Form):
             "max_length": "Entre exactement 2 chiffres, par exemple 01.",
         },
     )
-    full_name = forms.CharField(label="Nom et prénom", max_length=255)
+    full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
 
