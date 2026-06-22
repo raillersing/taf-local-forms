@@ -26,8 +26,16 @@ Les élèves arrivent sur cette page après avoir cliqué sur « Je suis étudia
 Chaque module actif est présenté avec :
 
 - son **titre** et un **statut** (Réponses ouvertes / Consultation seulement / Indisponible)
+- un bouton **« Voir le module »** qui mène vers une page détail dédiée
+
+### Pages détail étudiant par module (`/modules/module-X/`)
+
+Chaque page détail affiche :
+
 - un **bloc pédagogique** contenant le contenu réel des présentations PowerPoint (Modules 2, 3, 4) — résumé, objectifs, notions clés, méthode, activités, erreurs fréquentes, à retenir
-- un bouton **« Répondre au questionnaire »** (ou « Consulter le questionnaire »)
+- un bouton CTA **« Commencer le questionnaire »** si les réponses sont ouvertes
+- un bouton **« Consulter le questionnaire »** si les réponses sont fermées
+- un lien **« Retour aux modules »** pour revenir à la liste
 
 ### Adresses principales
 | Module 3 – Recherche efficace | `http://127.0.0.1:8010/module-3/` |

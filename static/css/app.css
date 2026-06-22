@@ -508,8 +508,14 @@ th {
     padding: 0;
     margin: 0;
     display: flex;
-    gap: 0.25rem;
+    align-items: center;
+    gap: 0.35rem;
     flex-wrap: wrap;
+}
+
+.main-nav .nav-list li {
+    display: flex;
+    align-items: center;
 }
 
 .main-nav .nav-list li a {
@@ -520,8 +526,10 @@ th {
     padding: 0.5rem 0.75rem;
     border-radius: 8px;
     transition: background 0.2s, color 0.2s;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     white-space: nowrap;
+    line-height: 1.3;
 }
 
 .main-nav .nav-list li a:hover {
@@ -673,11 +681,11 @@ th {
 /* Responsive */
 @media (max-width: 760px) {
     .main-nav .nav-list {
-        gap: 0.15rem;
+        gap: 0.2rem;
     }
     .main-nav .nav-list li a {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.5rem;
+        font-size: 0.82rem;
+        padding: 0.35rem 0.45rem;
     }
     .sub-nav {
         gap: 0.35rem;
@@ -1075,4 +1083,62 @@ th {
     background: #f0f4fa;
     font-size: 0.9rem;
     color: var(--navy);
+}
+
+/* CTA buttons — large, visible, student-focused */
+.cta-student {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #2e7d32, #43a047);
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 800;
+    text-decoration: none;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(46,125,50,0.3);
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.cta-student:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(46,125,50,0.35);
+}
+
+.cta-student:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 3px;
+}
+
+.cta-consult {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--navy), #295d94);
+    color: var(--white);
+    font-size: 1.25rem;
+    font-weight: 800;
+    text-decoration: none;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(15,39,71,0.25);
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.cta-consult:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(15,39,71,0.3);
+}
+
+.cta-consult:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+    .cta-student,
+    .cta-consult {
+        width: 100%;
+        font-size: 1.1rem;
+        padding: 0.85rem 1.5rem;
+    }
 }

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}TAfHSSiM — {{ module.title }}{% endblock %}
+{% block hero_title %}{{ module.title }}{% endblock %}
+{% block hero_text %}Découvre le module et réponds aux questions.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    <section class="card">
+        <div class="section-row">
+            <h2>{{ module.title }}</h2>
+            <div>
+                {% if has_active_session %}
+                    {% if accepting_responses %}
+                        <span class="pill" style="margin:0">Réponses ouvertes</span>
+                    {% else %}
+                        <span class="pill consultation-pill" style="margin:0;background:#fff3cd;color:#856404">Consultation seulement</span>
+                    {% endif %}
+                {% else %}
+                    <span class="pill" style="margin:0;background:#e6eef8;color:var(--muted)">Indisponible</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if module.code == "MODULE_2" %}
+            {% include "surveys/partials/module_2_pedagogy.html" %}
+        {% elif module.code == "MODULE_3" %}
+            {% include "surveys/partials/module_3_pedagogy.html" %}
+        {% elif module.code == "MODULE_4" %}
+            {% include "surveys/partials/module_4_pedagogy.html" %}
+        {% endif %}
+
+        <div class="cta-section" style="margin-top:1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem">
+            {% if has_active_session %}
+                {% if accepting_responses %}
+                    {% if module.code == "MODULE_2" %}
+                        <a class="cta-student" href="{% url 'surveys:module_2' %}">Commencer le questionnaire</a>
+                    {% elif module.code == "MODULE_3" %}
+                        <a class="cta-student" href="{% url 'surveys:module_3' %}">Commencer le questionnaire</a>
+                    {% elif module.code == "MODULE_4" %}
+                        <a class="cta-student" href="{% url 'surveys:module_4' %}">Commencer le questionnaire</a>
+                    {% endif %}
+                {% else %}
+                    {% if module.code == "MODULE_2" %}
+                        <a class="cta-consult" href="{% url 'surveys:module_2' %}">Consulter le questionnaire</a>
+                    {% elif module.code == "MODULE_3" %}
+                        <a class="cta-consult" href="{% url 'surveys:module_3' %}">Consulter le questionnaire</a>
+                    {% elif module.code == "MODULE_4" %}
+                        <a class="cta-consult" href="{% url 'surveys:module_4' %}">Consulter le questionnaire</a>
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                <p class="muted">Aucune session active pour ce module. Reviens plus tard.</p>
+            {% endif %}
+
+            <a class="text-link" href="{% url 'surveys:student_modules' %}">&larr; Retour aux modules</a>
+        </div>
+    </section>
+</main>
+{% endblock %}

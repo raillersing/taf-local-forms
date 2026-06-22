@@ -4,6 +4,10 @@
 {% block hero_title %}Module 4 - Sources fiables{% endblock %}
 {% block hero_text %}Apprends à reconnaître une information fiable sur Internet.{% endblock %}
 
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
 {% block content %}
 <main class="content-grid">
     {% if not accepting_responses %}

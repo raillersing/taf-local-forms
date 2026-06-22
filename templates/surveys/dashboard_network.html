@@ -5,10 +5,8 @@
 {% block hero_title %}Accès réseau{% endblock %}
 {% block hero_text %}Adresses à donner aux élèves — toutes les pages de l'application.{% endblock %}
 
-{% block nav_extra_links %}
-<li><a href="{% url 'surveys:dashboard_network' %}">Accès réseau</a></li>
-<li><a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a></li>
-<li><a href="{% url 'admin:index' %}">Admin avancé</a></li>
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
 {% endblock %}
 
 {% block content %}
