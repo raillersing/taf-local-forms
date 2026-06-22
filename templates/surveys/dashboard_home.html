@@ -22,6 +22,31 @@
     </section>
 
     <section class="card">
+        <h2>Élèves en cours de saisie</h2>
+        <div id="presence-container" style="display:grid;gap:0.7rem;margin-top:0.75rem">
+            <div class="presence-counter">
+                <span class="presence-dot"></span>
+                <span>Module 2 : </span>
+                <span class="presence-count" id="presence-module-2">…</span>
+            </div>
+            <div class="presence-counter">
+                <span class="presence-dot"></span>
+                <span>Module 3 : </span>
+                <span class="presence-count" id="presence-module-3">…</span>
+            </div>
+            <div class="presence-counter">
+                <span class="presence-dot"></span>
+                <span>Module 4 : </span>
+                <span class="presence-count" id="presence-module-4">…</span>
+            </div>
+            <div class="presence-counter" style="font-weight:800">
+                <span>Total : </span>
+                <span class="presence-count" id="presence-total">…</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
         <h2>Modules de formation</h2>
         <div style="display:grid;gap:1rem;margin-top:0.75rem">
             {% for item in module_list %}
@@ -73,6 +98,13 @@
         </dl>
         <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap">
             <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer depuis l'interface &rarr;</a>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Exports</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.75rem">
             <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV Module 2</a>
             <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}">Export CSV Module 3</a>
             <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}">Export CSV Module 4</a>
@@ -86,6 +118,7 @@
             <a class="text-link" href="{% url 'surveys:dashboard_module_3' %}">Dashboard Module 3</a>
             <a class="text-link" href="{% url 'surveys:dashboard_module_4' %}">Dashboard Module 4</a>
             <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Accès réseau</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configuration</a>
             <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV Module 2</a>
             <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}">Export CSV Module 3</a>
             <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}">Export CSV Module 4</a>
@@ -93,4 +126,30 @@
         </div>
     </section>
 </main>
+
+<script>
+(function() {
+    var poll = function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '{% url "surveys:dashboard_presence_json" %}');
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    document.getElementById('presence-module-2').textContent = (data.by_module.MODULE_2 || 0) + ' en cours';
+                    document.getElementById('presence-module-3').textContent = (data.by_module.MODULE_3 || 0) + ' en cours';
+                    document.getElementById('presence-module-4').textContent = (data.by_module.MODULE_4 || 0) + ' en cours';
+                    document.getElementById('presence-total').textContent = data.total + ' total';
+                } catch(e) {}
+            }
+        };
+        xhr.onerror = function() {
+            document.getElementById('presence-total').textContent = 'compteur indisponible';
+        };
+        xhr.send();
+    };
+    poll();
+    setInterval(poll, 8000);
+})();
+</script>
 {% endblock %}

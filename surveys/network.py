@@ -4,7 +4,6 @@ from urllib.parse import urlparse
 
 
 def _get_ip_candidates():
-    """Collect non-loopback, non-docker IPv4 addresses from local interfaces."""
     candidates = set()
     try:
         hostname = socket.gethostname()
@@ -88,10 +87,19 @@ def get_network_access_context(request):
         "detected_ip_candidates": detected_ip_candidates,
         "recommended_host": recommended_host,
         "port": port,
-        "student_form_url": url_for("/module-2/"),
+        "student_form_url": url_for("/"),
+        "module_2_url": url_for("/module-2/"),
+        "module_3_url": url_for("/module-3/"),
+        "module_4_url": url_for("/module-4/"),
         "cockpit_url": url_for("/dashboard/"),
-        "dashboard_url": url_for("/dashboard/module-2/"),
-        "csv_export_url": url_for("/dashboard/export/module-2.csv"),
+        "dashboard_network_url": url_for("/dashboard/network/"),
+        "dashboard_settings_url": url_for("/dashboard/settings/"),
+        "dashboard_module_2_url": url_for("/dashboard/module-2/"),
+        "dashboard_module_3_url": url_for("/dashboard/module-3/"),
+        "dashboard_module_4_url": url_for("/dashboard/module-4/"),
+        "csv_module_2_url": url_for("/dashboard/export/module-2.csv"),
+        "csv_module_3_url": url_for("/dashboard/export/module-3.csv"),
+        "csv_module_4_url": url_for("/dashboard/export/module-4.csv"),
         "admin_url": url_for("/admin/"),
         "warnings": warnings,
     }

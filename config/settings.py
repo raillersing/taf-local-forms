@@ -7,6 +7,13 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+# Load web-based settings overrides (written by /dashboard/settings/)
+try:
+    from surveys.settings_config import load_settings_env
+    load_settings_env()
+except Exception:
+    pass
+
 
 def env_bool(name: str, default: bool = False) -> bool:
     value = os.getenv(name)

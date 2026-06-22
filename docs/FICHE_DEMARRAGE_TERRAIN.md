@@ -21,6 +21,7 @@ Le formateur peut consulter les réponses en direct dans un **panel formateur** 
 | Module 4 – Sources fiables | `http://127.0.0.1:8010/module-4/` |
 | Panel formateur | `http://127.0.0.1:8010/dashboard/` |
 | Accès réseau | `http://127.0.0.1:8010/dashboard/network/` |
+| Configuration réseau (interface) | `http://127.0.0.1:8010/dashboard/settings/` |
 | Admin Django | `http://127.0.0.1:8010/admin/` |
 
 > **Important :** `127.0.0.1` fonctionne uniquement sur l'ordinateur du formateur.
@@ -238,6 +239,41 @@ Affiche en plus un résumé des décisions (fiable / douteuse / pas encore).
 
 > **Conseil** : après la séance, exportez les CSV et sauvegardez-les dans un dossier sécurisé.
 > Les données de la base SQLite sont dans un volume Docker.
+
+---
+
+## Configuration réseau depuis l'interface
+
+Depuis le cockpit formateur, vous pouvez modifier certains paramètres réseau
+sans éditer le fichier `.env` à la main.
+
+**Page** : `/dashboard/settings/`
+
+Champs modifiables :
+- `TAF_HOST_PORT` — port d'écoute (1024-65535)
+- `TAF_LAN_HOST` — IP fixe du laptop (ou laisser vide)
+- `ALLOWED_HOSTS` — hôtes autorisés
+- `CSRF_TRUSTED_ORIGINS` — origines CSRF autorisées
+- `TIME_ZONE` — fuseau horaire
+
+> **Important** : les secrets (SECRET_KEY, mots de passe) ne sont jamais affichés
+> ni modifiables. Un redémarrage de l'application est nécessaire pour appliquer
+> les changements réseau.
+
+---
+
+## Compteur temps réel des élèves en cours de saisie
+
+Le cockpit formateur affiche en temps quasi réel le nombre d'élèves en train
+de remplir chaque module (Module 2, 3, 4).
+
+Fonctionnement :
+- un petit script sur la page de chaque module envoie un signal toutes les 15 secondes
+- le dashboard interroge les présences toutes les 8 secondes
+- un élève qui ferme brutalement le navigateur disparaît après environ 60 secondes
+
+> **Limite** : le compteur est indicatif. Si un élève ferme l'onglet sans prévenir,
+> sa présence reste active jusqu'à 60 secondes maximum.
 
 ---
 

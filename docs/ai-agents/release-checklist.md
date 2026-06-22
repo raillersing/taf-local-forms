@@ -24,6 +24,9 @@ Run this checklist before every release. If any step fails, stop and fix before 
 - [ ] `/dashboard/network/` — accessible after login
 - [ ] `/dashboard/module-2/` — renders for authenticated user
 - [ ] `/dashboard/export/module-2.csv` — downloads CSV for authenticated user
+- [ ] `/dashboard/settings/` — renders for staff user, not for anonymous
+- [ ] `/dashboard/presence.json` — returns JSON for authenticated user
+- [ ] Presence heartbeat — `POST /presence/heartbeat/` returns `{"ok": true}`
 
 ## Release preparation
 

@@ -1,6 +1,7 @@
 from django.core.validators import MaxLengthValidator, MinLengthValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 
 school_id_validator = RegexValidator(
@@ -471,3 +472,30 @@ class Module4Submission(models.Model):
         self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
+
+
+class FormPresence(models.Model):
+    STATUS_ACTIVE = "active"
+    STATUS_SUBMITTED = "submitted"
+    STATUS_EXPIRED = "expired"
+
+    module_code = models.CharField(max_length=50, db_index=True)
+    training_session = models.ForeignKey(TrainingSession, on_delete=models.CASCADE)
+    client_id = models.CharField(max_length=100)
+    started_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(default=timezone.now, db_index=True)
+    status = models.CharField(max_length=20, default=STATUS_ACTIVE)
+    current_path = models.CharField(max_length=255, blank=True)
+    school_id_number = models.CharField(max_length=2, blank=True, null=True)
+    class_level = models.CharField(max_length=20, blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["module_code", "training_session", "status"]),
+            models.Index(fields=["last_seen_at"]),
+        ]
+        verbose_name = "Présence formulaire"
+        verbose_name_plural = "Présences formulaires"
+
+    def __str__(self):
+        return f"{self.client_id} @ {self.module_code} ({self.status})"

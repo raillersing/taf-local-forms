@@ -2,13 +2,16 @@ import os
 from datetime import date
 from unittest.mock import patch
 
+import json
+
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
-from .models import Module3Submission, Module4Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import FormPresence, Module3Submission, Module4Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -1393,3 +1396,173 @@ class TrainingSessionConstraintTests(TestCase):
                 session_code="M2-ANDO-002",
                 is_active=True,
             )
+
+
+class FormPresenceTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        self.session = TrainingSession.objects.get(session_code="M2-ANDO-001")
+        self.url = reverse("surveys:presence_heartbeat")
+
+    def test_heartbeat_creates_presence(self):
+        response = self.client.post(
+            self.url,
+            {"module_code": "MODULE_2", "client_id": "test123"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])
+        self.assertEqual(FormPresence.objects.count(), 1)
+
+    def test_heartbeat_updates_presence(self):
+        self.client.post(
+            self.url,
+            {"module_code": "MODULE_2", "client_id": "test123"},
+            content_type="application/json",
+        )
+        self.client.post(
+            self.url,
+            {"module_code": "MODULE_2", "client_id": "test123", "school_id_number": "05"},
+            content_type="application/json",
+        )
+        self.assertEqual(FormPresence.objects.count(), 1)
+        p = FormPresence.objects.first()
+        self.assertEqual(p.school_id_number, "05")
+
+    def test_heartbeat_invalid_module_returns_404(self):
+        response = self.client.post(
+            self.url,
+            {"module_code": "INVALID", "client_id": "test123"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_heartbeat_no_client_id_returns_400(self):
+        response = self.client.post(
+            self.url,
+            {"module_code": "MODULE_2"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_heartbeat_get_returns_405(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 405)
+
+
+class PresenceJsonTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        call_command("seed_module2")
+        self.session = TrainingSession.objects.get(session_code="M2-ANDO-001")
+        self.user = User.objects.create_user(username="test", password="test")
+        self.url = reverse("surveys:dashboard_presence_json")
+
+    def test_requires_login(self):
+        response = self.client.get(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_counts_active_presence(self):
+        self.client.login(username="test", password="test")
+        FormPresence.objects.create(
+            module_code="MODULE_2",
+            training_session=self.session,
+            client_id="c1",
+            last_seen_at=timezone.now(),
+            status=FormPresence.STATUS_ACTIVE,
+        )
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["by_module"]["MODULE_2"], 1)
+
+    def test_expired_presence_not_counted(self):
+        self.client.login(username="test", password="test")
+        from datetime import timedelta
+        FormPresence.objects.create(
+            module_code="MODULE_2",
+            training_session=self.session,
+            client_id="c1",
+            last_seen_at=timezone.now() - timedelta(seconds=120),
+            status=FormPresence.STATUS_ACTIVE,
+        )
+        response = self.client.get(self.url)
+        data = response.json()
+        self.assertEqual(data["total"], 0)
+
+
+class DashboardSettingsTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(username="test", password="test", is_staff=True)
+        self.url = reverse("surveys:dashboard_settings")
+
+    def test_requires_login(self):
+        response = self.client.get(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_requires_staff(self):
+        non_staff = get_user_model().objects.create_user(username="nope", password="test")
+        self.client.login(username="nope", password="test")
+        response = self.client.get(self.url)
+        self.assertIn(response.status_code, (302, 403))
+
+    def test_renders_for_staff(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_settings_page_does_not_expose_secret_key(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "change-me-for-docker-local-use")
+        self.assertContains(response, "Configuré")
+
+    def test_settings_page_does_not_render_raw_env(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertNotContains(response, ".env")
+
+
+class DashboardNetworkTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(username="test", password="test")
+        self.url = reverse("surveys:dashboard_network")
+
+    def test_requires_login(self):
+        response = self.client.get(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_shows_module_2_url(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "module-2")
+
+
+class CleanupPresenceCommandTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        self.session = TrainingSession.objects.get(session_code="M2-ANDO-001")
+
+    def test_cleanup_expired_presences(self):
+        from datetime import timedelta
+        FormPresence.objects.create(
+            module_code="MODULE_2",
+            training_session=self.session,
+            client_id="old",
+            last_seen_at=timezone.now() - timedelta(seconds=180),
+            status=FormPresence.STATUS_ACTIVE,
+        )
+        FormPresence.objects.create(
+            module_code="MODULE_2",
+            training_session=self.session,
+            client_id="fresh",
+            last_seen_at=timezone.now(),
+            status=FormPresence.STATUS_ACTIVE,
+        )
+        call_command("cleanup_presence")
+        self.assertEqual(FormPresence.objects.filter(status=FormPresence.STATUS_ACTIVE).count(), 1)
+        self.assertEqual(FormPresence.objects.filter(status=FormPresence.STATUS_EXPIRED).count(), 1)
