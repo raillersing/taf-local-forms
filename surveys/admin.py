@@ -24,8 +24,8 @@ class TrainingModuleAdmin(admin.ModelAdmin):
 
 @admin.register(TrainingSession)
 class TrainingSessionAdmin(admin.ModelAdmin):
-    list_display = ("session_code", "module", "date", "location", "trainer_name", "is_active")
-    list_filter = ("module", "is_active", "date")
+    list_display = ("session_code", "module", "date", "location", "trainer_name", "is_active", "accepting_responses")
+    list_filter = ("module", "is_active", "accepting_responses", "date")
     search_fields = ("session_code", "location", "trainer_name")
 
 

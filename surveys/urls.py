@@ -19,6 +19,7 @@ from .views import (
     module_4_success,
     network_access_dashboard,
     presence_heartbeat,
+    toggle_module_responses,
 )
 
 
@@ -42,5 +43,6 @@ urlpatterns = [
     path("dashboard/network/", network_access_dashboard, name="dashboard_network"),
     path("dashboard/settings/", dashboard_settings, name="dashboard_settings"),
     path("dashboard/presence.json", dashboard_presence_json, name="dashboard_presence_json"),
+    path("dashboard/modules/<str:module_code>/toggle-responses/", toggle_module_responses, name="toggle_module_responses"),
     path("presence/heartbeat/", presence_heartbeat, name="presence_heartbeat"),
 ]

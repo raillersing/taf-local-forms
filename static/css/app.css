@@ -494,3 +494,126 @@ th {
     font-size: 0.9rem;
     font-style: italic;
 }
+
+/* Navigation main */
+.main-nav {
+    background: var(--navy);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    margin-top: 1rem;
+}
+
+.main-nav .nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.main-nav .nav-list li a {
+    color: var(--sky);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.main-nav .nav-list li a:hover {
+    background: rgba(255,255,255,0.12);
+    color: var(--white);
+}
+
+/* Messages */
+.messages-container {
+    margin-top: 1rem;
+}
+
+.message-card {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.message-success {
+    background: #d9f2e3;
+    color: #155724;
+    border: 1px solid #a3d9b5;
+}
+
+.message-error {
+    background: #fdecec;
+    color: #b42318;
+    border: 1px solid #f5c6c6;
+}
+
+.message-info {
+    background: #d8ebff;
+    color: #0f2747;
+    border: 1px solid #89bdf2;
+}
+
+/* Toggle button */
+.toggle-btn {
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.toggle-on {
+    background: #d9f2e3;
+    color: #155724;
+    border-color: #a3d9b5;
+}
+
+.toggle-off {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffc107;
+}
+
+.toggle-btn:hover {
+    opacity: 0.85;
+}
+
+/* Consultation pill */
+.consultation-pill {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Consult button */
+.consult-button {
+    background: #e6eef8;
+    color: #0f2747;
+    border: 1px solid var(--line);
+}
+
+.consult-button:hover {
+    background: #c8d8ea;
+}
+
+/* Brand fallback link */
+.brand-fallback-link {
+    text-decoration: none;
+}
+
+.brand-fallback-link:hover .brand-fallback {
+    text-decoration: underline;
+}
+
+/* Module card */
+.module-card {
+    transition: box-shadow 0.2s;
+}
+
+.module-card:hover {
+    box-shadow: 0 2px 8px rgba(15,39,71,0.1);
+}

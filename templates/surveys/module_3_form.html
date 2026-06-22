@@ -6,6 +6,14 @@
 
 {% block content %}
 <main class="content-grid">
+    {% if not accepting_responses %}
+    <div class="card" style="background:#fff3cd;border-color:#ffc107;">
+        <p style="margin:0;font-weight:600;color:#856404">
+            Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.
+        </p>
+    </div>
+    {% endif %}
+
     <section class="card intro-card">
         <p class="pill">{{ session.session_code }}</p>
         <h2>Avant de commencer</h2>
@@ -94,9 +102,15 @@
             {% include "surveys/partials/choice_fieldset.html" with field=form.feedback_confidence_search %}
         </section>
 
+        {% if accepting_responses %}
         <button type="submit" class="primary-button">Envoyer</button>
         <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
         {% include "surveys/partials/presence_heartbeat.html" %}
+        {% else %}
+        <p class="muted" style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:8px">
+            Les réponses sont fermées pour ce module. Tu ne peux pas envoyer de réponse pour le moment.
+        </p>
+        {% endif %}
     </form>
 </main>
 {% endblock %}

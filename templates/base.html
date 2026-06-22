@@ -14,9 +14,13 @@
             <div class="brand-mark">
                 {% brand_logo_exists as logo_exists %}
                 {% if logo_exists %}
-                    <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
+                    <a href="{% url 'surveys:dashboard_home' %}">
+                        <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
+                    </a>
                 {% else %}
-                    <div class="brand-fallback">Internet Society – Chapitre Madagascar</div>
+                    <a href="{% url 'surveys:dashboard_home' %}" class="brand-fallback-link">
+                        <div class="brand-fallback">Internet Society – Chapitre Madagascar</div>
+                    </a>
                 {% endif %}
             </div>
             <div class="brand-copy">
@@ -25,6 +29,19 @@
                 <p class="hero-text">{% block hero_text %}Application locale pour les séances de formation TAfHSSiM.{% endblock %}</p>
             </div>
         </header>
+        <nav class="main-nav">
+            <ul class="nav-list">
+                <li><a href="{% url 'surveys:home' %}">{% block nav_modules %}Modules de formation{% endblock %}</a></li>
+                <li><a href="{% url 'surveys:dashboard_home' %}">Espace formateur</a></li>
+            </ul>
+        </nav>
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="message-card message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </div>
 </body>
