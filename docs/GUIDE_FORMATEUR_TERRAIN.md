@@ -4,6 +4,8 @@ Ce guide aide le formateur à lancer l'application pendant une séance et à la 
 
 L'application fonctionne sur le réseau local. Ne donnez jamais `localhost` aux élèves.
 
+**Nouveau** : une [Fiche de démarrage terrain](FICHE_DEMARRAGE_TERRAIN.md) est disponible pour un pas à pas rapide et illustré.
+
 ## Avant la séance
 
 - [ ] Démarrez Docker Desktop.

@@ -7,6 +7,7 @@ Run this checklist before every release. If any step fails, stop and fix before 
 - [ ] Branch is `main` or the approved release branch
 - [ ] Working directory is clean (`git status --short` is empty)
 - [ ] All intended commits are present (`git log --oneline --max-count=10`)
+- [ ] Field user manual (`docs/FICHE_DEMARRAGE_TERRAIN.md`) is up to date
 
 ## Validation gates
 

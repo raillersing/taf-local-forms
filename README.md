@@ -8,11 +8,15 @@ Cette application sert pendant la séance, sur le réseau local du formateur. Ne
 
 Le formateur lance l'application sur son ordinateur.
 
-Les élèves connectés au même Wi-Fi ou au même partage de connexion ouvrent le questionnaire Module 2 avec l'adresse IP locale de l'ordinateur, par exemple :
+Les élèves connectés au même Wi-Fi ou au même partage de connexion ouvrent le questionnaire avec l'adresse IP locale de l'ordinateur, par exemple :
 
-`http://192.168.1.23:8000/module-2/`
+`http://192.168.1.23:8010/`
 
-Module 2 : `Comprendre Internet`
+Modules disponibles :
+
+- **Module 2** : Comprendre Internet  (`/module-2/`)
+- **Module 3** : Recherche efficace  (`/module-3/`)
+- **Module 4** : Sources fiables  (`/module-4/`)
 
 ## Démarrage rapide
 
@@ -23,9 +27,10 @@ Module 2 : `Comprendre Internet`
 5. Chargez les données Module 2.
 6. Donnez l'adresse aux élèves.
 
-Guide pas à pas pour la séance :
+Guides pour la séance :
 
-- [Guide Formateur Terrain](docs/GUIDE_FORMATEUR_TERRAIN.md)
+- [Fiche de démarrage terrain](docs/FICHE_DEMARRAGE_TERRAIN.md) — manuel simple, pas à pas
+- [Guide Formateur Terrain](docs/GUIDE_FORMATEUR_TERRAIN.md) — guide complet
 
 ## Avant de commencer
 

@@ -21,11 +21,12 @@
 | F006 | Agent workflow and skills framework (this document, AGENTS.md, skills) | done |
 | F007 | Release candidate review + Graphify integration | done |
 | F008 | Push / PR / merge workflow (push branch, open PR, merge, cleanup) | done |
-| F009 | Tag v0.1.1 | waiting-human |
+| F009 | Module 3 + 4 questionnaires (combined PR #5) | done |
 | F009 | Tag v0.1.1 | pending |
-| F010 | Logo official asset integration (if file is provided) | pending |
-| F011 | Dashboard UX polish after field feedback | pending |
-| F012 | Module 3 preparation | pending |
+| F010 | Safe cleanup workflow | done |
+| F011 | Module 3 + 4 field deployment | done |
+| F012 | Update field user manual for Modules 2, 3, 4 | done |
+| F013 | (next) | pending |
 
 ## Managing the queue
 
