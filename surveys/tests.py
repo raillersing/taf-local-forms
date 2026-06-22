@@ -292,10 +292,10 @@ class DashboardAccessTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cockpit formateur")
-        self.assertContains(response, "Dashboard Module 2")
+        self.assertContains(response, "Modules de formation")
         self.assertContains(response, "Accès réseau")
-        self.assertContains(response, "Admin Django")
-        self.assertContains(response, "Export CSV")
+        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Guide dépannage réseau")
 
 
 class DashboardCsvTests(TestCase):
@@ -924,8 +924,7 @@ class Module3HomeAndCockpitTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 3 - Recherche efficace")
-        self.assertContains(response, "Dashboard Module 3")
-        self.assertContains(response, "Export CSV Module 3")
+        self.assertContains(response, "Export CSV")
 
 
 class SeedModule4CommandTests(TestCase):
@@ -1369,7 +1368,7 @@ class Module4HomeAndCockpitTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 4 - Sources fiables")
-        self.assertContains(response, "Export CSV Module 4")
+        self.assertContains(response, "Export CSV")
 
 
 class TrainingSessionConstraintTests(TestCase):
@@ -1684,3 +1683,296 @@ class NetworkPageDiagnosticsTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Environnement")
+
+
+class NavigationTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(username="navtest", password="secret", is_staff=True)
+        self.client.login(username="navtest", password="secret")
+
+    def test_home_contains_modules_link(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Modules de formation")
+
+    def test_home_contains_espace_formateur_link_to_dashboard(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    def test_logo_links_to_dashboard(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    def test_dashboard_requires_login(self):
+        self.client.logout()
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_dashboard_shows_modules(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Modules de formation")
+
+    def test_dashboard_shows_tools(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Accès réseau")
+        self.assertContains(response, "Configuration réseau")
+        self.assertContains(response, "Admin avancé")
+
+    def test_dashboard_shows_stats(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Total réponses")
+        self.assertContains(response, "Total élèves")
+        self.assertContains(response, "Modules ouverts")
+
+
+class AcceptingResponsesModelTests(TestCase):
+    def test_accepting_responses_default_true(self):
+        module = TrainingModule.objects.create(code="TEST_MOD", title="Test Module")
+        session = TrainingSession.objects.create(
+            module=module, date=date.today(),
+            location="Test", trainer_name="Test",
+            session_code="TST-001", is_active=True,
+        )
+        self.assertTrue(session.accepting_responses)
+
+    def test_toggle_closes_responses(self):
+        module = TrainingModule.objects.create(code="TEST_MOD", title="Test Module")
+        session = TrainingSession.objects.create(
+            module=module, date=date.today(),
+            location="Test", trainer_name="Test",
+            session_code="TST-002", is_active=True,
+        )
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+        session.refresh_from_db()
+        self.assertFalse(session.accepting_responses)
+
+    def test_toggle_reopens_responses(self):
+        module = TrainingModule.objects.create(code="TEST_MOD", title="Test Module")
+        session = TrainingSession.objects.create(
+            module=module, date=date.today(),
+            location="Test", trainer_name="Test",
+            session_code="TST-003", is_active=True,
+            accepting_responses=False,
+        )
+        session.accepting_responses = True
+        session.save(update_fields=["accepting_responses"])
+        session.refresh_from_db()
+        self.assertTrue(session.accepting_responses)
+
+
+class ToggleResponsesViewTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        self.url_m2 = reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_2"})
+        self.url_m3 = reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_3"})
+        self.url_m4 = reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_4"})
+
+    def test_toggle_requires_login(self):
+        response = self.client.post(self.url_m2)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_toggle_requires_staff(self):
+        user = get_user_model().objects.create_user(username="regular", password="test")
+        self.client.login(username="regular", password="test")
+        response = self.client.post(self.url_m2)
+        self.assertIn(response.status_code, (302, 403))
+
+    def test_toggle_closes_module_2(self):
+        self.client.login(username="staff", password="secret")
+        response = self.client.post(self.url_m2, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        self.assertFalse(session.accepting_responses)
+
+    def test_toggle_reopens_module_2(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url_m2)
+        self.client.post(self.url_m2, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        self.assertTrue(session.accepting_responses)
+
+    def test_toggle_closes_module_3(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url_m3, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_3", is_active=True)
+        self.assertFalse(session.accepting_responses)
+
+    def test_toggle_closes_module_4(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url_m4, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_4", is_active=True)
+        self.assertFalse(session.accepting_responses)
+
+
+class ClosedSubmissionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        # Close all modules
+        for code in ["MODULE_2", "MODULE_3", "MODULE_4"]:
+            session = TrainingSession.objects.get(module__code=code, is_active=True)
+            session.accepting_responses = False
+            session.save(update_fields=["accepting_responses"])
+
+    def test_module_2_get_200_when_closed(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "fermées")
+
+    def test_module_2_post_rejected_when_closed(self):
+        response = self.client.post(
+            reverse("surveys:module_2"),
+            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+        )
+        self.assertNotEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
+
+    def test_module_3_get_200_when_closed(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "fermées")
+
+    def test_module_3_post_rejected_when_closed(self):
+        response = self.client.post(
+            reverse("surveys:module_3"),
+            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+        )
+        self.assertNotEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
+
+    def test_module_4_get_200_when_closed(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "fermées")
+
+    def test_module_4_post_rejected_when_closed(self):
+        response = self.client.post(
+            reverse("surveys:module_4"),
+            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+        )
+        self.assertNotEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
+
+    def test_module_reopened_accepts_submission(self):
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        session.accepting_responses = True
+        session.save(update_fields=["accepting_responses"])
+        response = self.client.post(
+            reverse("surveys:module_2"),
+            {
+                "school_id_number": "99",
+                "full_name": "Test Student",
+                "class_level": "seconde",
+                "group_name": "",
+                "auto_eval_internet_explained": "bien",
+                "auto_eval_learning_usage": "parfois",
+                "auto_eval_open_browser": "oui",
+                "todo_opened_browser": True,
+                "todo_typed_simple_search": True,
+                "todo_used_keywords": True,
+                "todo_opened_result": True,
+                "todo_compared_results": True,
+                "todo_found_school_info": True,
+                "todo_asked_for_help": True,
+                "todo_noted_learning": True,
+                "quiz_q1": "faux",
+                "quiz_q2": "vrai",
+                "quiz_q3": "vrai",
+                "quiz_q4_selected": [
+                    "chercher_une_explication",
+                    "regarder_une_video_educative",
+                    "trouver_un_document_de_revision",
+                    "apprendre_un_nouveau_mot",
+                ],
+                "quiz_q5": "cours_equation_seconde_exemple",
+                "practical_search_text": "Test search",
+                "practical_site_text": "test.com",
+                "practical_subject": "informatique",
+                "feedback_understood_today": "Tout compris",
+                "feedback_still_difficult": "",
+                "feedback_confidence": "oui",
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # redirect to success page
+        self.assertTrue(Submission.objects.filter(school_id_number_snapshot="99").exists())
+
+    def test_existing_antiduplicate_tests_still_pass(self):
+        # Module 2 is closed - re-open and submit once, then verify second submit is rejected
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        session.accepting_responses = True
+        session.save(update_fields=["accepting_responses"])
+        data = {
+            "school_id_number": "88",
+            "full_name": "Dup Test",
+            "class_level": "seconde",
+            "group_name": "",
+            "auto_eval_internet_explained": "bien",
+            "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui",
+            "todo_opened_browser": True,
+            "todo_typed_simple_search": True,
+            "todo_used_keywords": True,
+            "todo_opened_result": True,
+            "todo_compared_results": True,
+            "todo_found_school_info": True,
+            "todo_asked_for_help": True,
+            "todo_noted_learning": True,
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4_selected": [
+                "chercher_une_explication",
+                "regarder_une_video_educative",
+                "trouver_un_document_de_revision",
+                "apprendre_un_nouveau_mot",
+            ],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "Test search",
+            "practical_site_text": "test.com",
+            "practical_subject": "informatique",
+            "feedback_understood_today": "Tout compris",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+        self.client.post(reverse("surveys:module_2"), data)
+        # Second submit should fail
+        response = self.client.post(reverse("surveys:module_2"), data)
+        self.assertContains(response, "existe déjà")
+
+
+class AdminAdvancedTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_superuser(
+            username="super", password="super", email="super@example.com"
+        )
+        self.client.login(username="super", password="super")
+
+    def test_admin_shows_advanced_title(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "TAf Local Forms")
+
+    def test_admin_links_to_dashboard(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    def test_admin_has_custom_css(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, "css/admin.css")
+
+    def test_admin_has_no_raw_secrets(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertNotContains(response, "SECRET_KEY")

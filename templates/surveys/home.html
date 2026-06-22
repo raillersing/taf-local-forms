@@ -15,23 +15,37 @@
     <section class="card">
         <div class="section-row">
             <h2>{{ item.module.title }}</h2>
-            {% if item.has_active_session %}
-                <span class="pill" style="margin:0">Disponible</span>
-            {% else %}
-                <span class="pill" style="margin:0;background:#e6eef8;color:var(--muted)">Indisponible</span>
-            {% endif %}
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                {% if item.has_active_session %}
+                    {% if item.active_session.accepting_responses %}
+                        <span class="pill" style="margin:0">Disponible</span>
+                    {% else %}
+                        <span class="pill consultation-pill" style="margin:0;background:#fff3cd;color:#856404">Consultation seulement</span>
+                    {% endif %}
+                {% else %}
+                    <span class="pill" style="margin:0;background:#e6eef8;color:var(--muted)">Indisponible</span>
+                {% endif %}
+            </div>
         </div>
         <p style="margin-top:0.75rem">{{ item.module.description|default:"Pas de description." }}</p>
         <div style="margin-top:1.25rem">
             {% if item.has_active_session %}
-                {% if item.module.code == "MODULE_2" %}
-                    <a class="primary-button" href="{% url 'surveys:module_2' %}">Répondre au questionnaire</a>
-                {% elif item.module.code == "MODULE_3" %}
-                    <a class="primary-button" href="{% url 'surveys:module_3' %}">Répondre au questionnaire</a>
-                {% elif item.module.code == "MODULE_4" %}
-                    <a class="primary-button" href="{% url 'surveys:module_4' %}">Répondre au questionnaire</a>
+                {% if item.active_session.accepting_responses %}
+                    {% if item.module.code == "MODULE_2" %}
+                        <a class="primary-button" href="{% url 'surveys:module_2' %}">Répondre au questionnaire</a>
+                    {% elif item.module.code == "MODULE_3" %}
+                        <a class="primary-button" href="{% url 'surveys:module_3' %}">Répondre au questionnaire</a>
+                    {% elif item.module.code == "MODULE_4" %}
+                        <a class="primary-button" href="{% url 'surveys:module_4' %}">Répondre au questionnaire</a>
+                    {% endif %}
                 {% else %}
-                    <p class="muted">Le questionnaire n'est pas encore disponible.</p>
+                    {% if item.module.code == "MODULE_2" %}
+                        <a class="primary-button consult-button" href="{% url 'surveys:module_2' %}">Consulter le questionnaire</a>
+                    {% elif item.module.code == "MODULE_3" %}
+                        <a class="primary-button consult-button" href="{% url 'surveys:module_3' %}">Consulter le questionnaire</a>
+                    {% elif item.module.code == "MODULE_4" %}
+                        <a class="primary-button consult-button" href="{% url 'surveys:module_4' %}">Consulter le questionnaire</a>
+                    {% endif %}
                 {% endif %}
             {% else %}
                 <p class="muted">Aucune session active pour ce module. Reviens plus tard.</p>
@@ -43,9 +57,5 @@
         <p>Aucun module de formation disponible pour le moment.</p>
     </section>
     {% endfor %}
-
-    <p style="margin-top:1.5rem;text-align:center">
-        <a class="text-link" href="{% url 'admin:login' %}?next={% url 'surveys:dashboard_home' %}">Espace formateur</a>
-    </p>
 </main>
 {% endblock %}

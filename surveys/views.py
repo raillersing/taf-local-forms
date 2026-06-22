@@ -2,6 +2,7 @@ import csv
 import json
 from datetime import datetime, timedelta
 
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count
@@ -10,6 +11,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm
 from .models import (
@@ -59,6 +61,7 @@ def home(request: HttpRequest) -> HttpResponse:
         module_data.append({
             "module": mod,
             "has_active_session": active_session is not None,
+            "active_session": active_session,
         })
     return render(request, "surveys/home.html", {"module_data": module_data})
 
@@ -74,7 +77,24 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
     if session is None:
         return render(request, "surveys/module_2_unavailable.html", status=503)
 
+    accepting = session.accepting_responses
+
     if request.method == "POST":
+        if not accepting:
+            form = Module2SubmissionForm()
+            return render(
+                request,
+                "surveys/module_2_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_2_summary": MODULE_2_SUMMARY,
+                    "accepting_responses": False,
+                    "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
+                },
+                status=403,
+            )
         form = Module2SubmissionForm(request.POST)
         if form.is_valid():
             school_id_number = form.cleaned_data["school_id_number"]
@@ -127,6 +147,7 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
             "session": session,
             "module": session.module,
             "module_2_summary": MODULE_2_SUMMARY,
+            "accepting_responses": accepting,
         },
     )
 
@@ -155,17 +176,24 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
     avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4) / 3
     modules = TrainingModule.objects.all().order_by("code")
     module_list = []
+    modules_open = 0
     for mod in modules:
         active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        accepting = active_session.accepting_responses if active_session else False
+        if accepting:
+            modules_open += 1
         module_list.append({
             "module": mod,
             "has_active_session": active_session is not None,
+            "accepting_responses": accepting,
+            "active_session_id": active_session.pk if active_session else None,
         })
     context = {
         "total_submissions": total_submissions,
         "total_students": total_students,
         "average_score": avg_score,
         "module_list": module_list,
+        "modules_open": modules_open,
         "network": net_ctx,
     }
     return render(request, "surveys/dashboard_home.html", context)
@@ -313,7 +341,24 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
     if session is None:
         return render(request, "surveys/module_3_unavailable.html", status=503)
 
+    accepting = session.accepting_responses
+
     if request.method == "POST":
+        if not accepting:
+            form = Module3SubmissionForm()
+            return render(
+                request,
+                "surveys/module_3_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_3_summary": MODULE_3_SUMMARY,
+                    "accepting_responses": False,
+                    "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
+                },
+                status=403,
+            )
         form = Module3SubmissionForm(request.POST)
         if form.is_valid():
             school_id_number = form.cleaned_data["school_id_number"]
@@ -368,6 +413,7 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
             "session": session,
             "module": session.module,
             "module_3_summary": MODULE_3_SUMMARY,
+            "accepting_responses": accepting,
         },
     )
 
@@ -539,7 +585,24 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
     if session is None:
         return render(request, "surveys/module_4_unavailable.html", status=503)
 
+    accepting = session.accepting_responses
+
     if request.method == "POST":
+        if not accepting:
+            form = Module4SubmissionForm()
+            return render(
+                request,
+                "surveys/module_4_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_4_summary": MODULE_4_SUMMARY,
+                    "accepting_responses": False,
+                    "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
+                },
+                status=403,
+            )
         form = Module4SubmissionForm(request.POST)
         if form.is_valid():
             school_id_number = form.cleaned_data["school_id_number"]
@@ -594,6 +657,7 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
             "session": session,
             "module": session.module,
             "module_4_summary": MODULE_4_SUMMARY,
+            "accepting_responses": accepting,
         },
     )
 
@@ -858,3 +922,22 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
         "error": error,
     }
     return render(request, "surveys/dashboard_settings.html", context)
+
+
+@staff_member_required
+@login_required
+@require_POST
+def toggle_module_responses(request: HttpRequest, module_code: str) -> HttpResponse:
+    session = (
+        TrainingSession.objects.filter(module__code=module_code, is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if not session:
+        messages.error(request, f"Aucune session active pour {module_code}.")
+        return redirect("surveys:dashboard_home")
+    session.accepting_responses = not session.accepting_responses
+    session.save(update_fields=["accepting_responses"])
+    status = "ouvertes" if session.accepting_responses else "fermées"
+    messages.success(request, f"Réponses {status} pour {session.module.title}.")
+    return redirect("surveys:dashboard_home")

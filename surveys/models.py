@@ -55,6 +55,7 @@ class TrainingSession(models.Model):
     trainer_name = models.CharField(max_length=255)
     session_code = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=False)
+    accepting_responses = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["-date", "session_code"]
