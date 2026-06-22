@@ -148,9 +148,15 @@ Le cockpit formateur `/dashboard/` est organisé en sections accessibles par des
 
 ### Adresse IP locale dans le dashboard
 
-Le dashboard affiche l'IP locale réelle du laptop quand `TAF_LAN_HOST` est configuré dans `.env`.
-Tous les liens réseau utilisent cette IP et s'ouvrent dans un nouvel onglet (`target="_blank"`).
-Si l'IP n'est pas configurée, un message d'alerte invite à la configurer dans `/dashboard/settings/`.
+Le dashboard affiche l'IP locale réelle du laptop selon l'ordre de priorité suivant :
+1. **IP de la requête** : si le dashboard est consulté via une IP LAN (ex: `192.168.0.101:8011`), cette adresse est utilisée immédiatement
+2. **IP configurée** (`TAF_LAN_HOST`) : adresse stable si définie dans les paramètres
+3. **IP détectée** : adresse candidate trouvée automatiquement côté serveur
+4. **Non configurée** : message invitant à configurer l'IP
+
+Si l'IP configurée (`TAF_LAN_HOST`) diffère de l'IP actuelle de la requête, une alerte « L'IP configurée diffère de l'adresse actuelle » apparaît avec un lien vers la configuration.
+
+Tous les liens réseau utilisent l'IP recommandée et s'ouvrent dans un nouvel onglet (`target="_blank"`).
 
 ## Export CSV
 
@@ -199,11 +205,13 @@ Le dashboard formateur inclut une page d'aide au diagnostic réseau :
 
 `/dashboard/network/`
 
-ainsi que des scripts de diagnostic :
+ainsi que des scripts de diagnostic et synchronisation :
 
 - `bash scripts/dev/taf-lan-diagnose` — diagnostic WSL (lecture seule)
 - `.\scripts\windows\taf-lan-show-status.ps1` — statut réseau Windows (lecture seule)
 - `.\scripts\windows\taf-lan-open-port.ps1` — ouvrir le port 8010 dans le pare-feu Windows (Admin requis)
+- `.\scripts\windows\taf-lan-sync.ps1` — synchronisation complète : détecte l'IP Wi-Fi, configure le portproxy `8011→8010`, crée la règle pare-feu pour `8011`, synchronise l'application Django (Admin requis)
+- `.\scripts\windows\taf-lan-install-auto-sync.ps1` — installe une tâche planifiée qui exécute `taf-lan-sync.ps1` au logon (Admin requis)
 
 Cette page affiche :
 
@@ -229,7 +237,7 @@ Si les élèves n'arrivent pas à ouvrir la page :
 
 1. vérifiez que Docker Desktop est lancé ;
 2. vérifiez l'adresse IP de l'ordinateur ;
-3. autorisez le port `8010` dans le pare-feu Windows : exécutez (Admin) `.\scripts\windows\taf-lan-open-port.ps1` ;
+3. exécutez le script de synchronisation (Admin) : `.\scripts\windows\taf-lan-sync.ps1` qui configure automatiquement le portproxy `8011→8010`, le pare-feu et synchronise l'application ;
 4. vérifiez que les appareils sont bien sur le même réseau ;
 5. vérifiez qu'il n'y a pas d'isolation client / AP isolation sur le Wi-Fi.
 

@@ -142,18 +142,35 @@
     <section id="network" class="card">
         <h2>Accès réseau</h2>
         <p class="muted" style="margin-top:0.25rem">Adresses à donner aux élèves pour accéder aux questionnaires depuis leur téléphone.</p>
-        <div class="network-links" style="margin-top:1rem">
-            {% if network.configured_host %}
-                <div class="network-ip-banner">
-                    <strong>IP locale du laptop :</strong> <code>{{ network.configured_host }}</code>
-                </div>
-            {% else %}
-                <div class="alert">
-                    <strong>IP locale non configurée.</strong> Les liens ci-dessous utilisent l'adresse locale actuelle. Si les élèves ne peuvent pas accéder à l'application, configure l'IP dans <a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a>.
-                </div>
-            {% endif %}
 
-            <dl class="setting-list" style="margin-top:1rem">
+        {% if network.recommended_student_base_url %}
+        <div class="network-ip-banner" style="background:#d9f2e3;padding:0.75rem 1rem;border-radius:8px;margin-top:0.75rem">
+            <strong>Adresse élèves :</strong>
+            <code style="font-size:1.1rem">{{ network.recommended_student_base_url }}/</code>
+            <span class="muted" style="display:block;margin-top:0.25rem;font-size:0.85rem">
+                {% if network.lan_host_source == "request" %}
+                Adresse détectée depuis cette connexion.
+                {% elif network.lan_host_source == "settings" %}
+                Adresse configurée.
+                {% elif network.lan_host_source == "candidate" %}
+                Adresse détectée automatiquement.
+                {% endif %}
+            </span>
+        </div>
+        {% if network.lan_host_stale %}
+        <div class="alert" style="margin-top:0.5rem">
+            <strong>L'IP configurée ({{ network.configured_host }}) diffère de l'adresse actuelle ({{ network.current_host }}).</strong>
+            <a href="{% url 'surveys:dashboard_settings' %}">Mets à jour la configuration.</a>
+        </div>
+        {% endif %}
+        {% elif network.lan_host_source == "missing" %}
+        <div class="alert" style="margin-top:0.75rem">
+            <strong>IP locale non configurée.</strong> Les liens ci-dessous utilisent l'adresse locale actuelle. Si les élèves ne peuvent pas accéder à l'application, configure l'IP dans <a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a>.
+        </div>
+        {% endif %}
+
+        <div class="network-links" style="margin-top:1rem">
+            <dl class="setting-list">
                 <dt class="muted setting-label">Adresse à donner aux élèves (accueil)</dt>
                 <dd style="margin:0">
                     <a class="network-link" href="{{ network.student_form_url }}" target="_blank" rel="noopener noreferrer">{{ network.student_form_url }}</a>

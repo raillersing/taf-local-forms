@@ -138,6 +138,7 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 | F011 | Logo integration (official file) | pending |
 | F012 | Dashboard UX polish after field feedback | pending |
 | F022R | Navigation rewire (student/trainer context separation) | done |
+| F023 | Auto-sync LAN IP and network links | done |
 
 ## Prompt contracts
 

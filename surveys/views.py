@@ -959,8 +959,36 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
         "port": net_ctx["port"],
         "saved": saved,
         "error": error,
+        "current_request_is_lan": net_ctx["current_request_is_lan"],
+        "recommended_lan_host": net_ctx["recommended_lan_host"],
+        "recommended_lan_port": net_ctx["recommended_lan_port"],
+        "lan_host_source": net_ctx["lan_host_source"],
+        "lan_host_stale": net_ctx["lan_host_stale"],
     }
     return render(request, "surveys/dashboard_settings.html", context)
+
+
+@staff_member_required
+@login_required
+@require_POST
+def dashboard_use_current_address(request: HttpRequest) -> HttpResponse:
+    from .network import get_network_access_context, _is_private_ip, _parse_host_port
+    from .settings_config import apply_lan_settings
+
+    net_ctx = get_network_access_context(request)
+    if not net_ctx["current_request_is_lan"]:
+        messages.error(request, "L'adresse actuelle n'est pas une IP LAN valide.")
+        return redirect("surveys:dashboard_settings")
+
+    host = net_ctx["current_request_host"]
+    port = net_ctx["current_port"] or net_ctx.get("configured_port") or "8010"
+
+    ok, msg = apply_lan_settings(host, port)
+    if ok:
+        messages.success(request, msg)
+    else:
+        messages.error(request, msg)
+    return redirect("surveys:dashboard_settings")
 
 
 @staff_member_required
