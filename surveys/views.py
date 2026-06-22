@@ -54,6 +54,10 @@ def _mark_presence_submitted(request, module_code, session):
 
 
 def home(request: HttpRequest) -> HttpResponse:
+    return render(request, "surveys/home.html")
+
+
+def student_modules(request: HttpRequest) -> HttpResponse:
     modules = TrainingModule.objects.all().order_by("code")
     module_data = []
     for mod in modules:
@@ -63,7 +67,7 @@ def home(request: HttpRequest) -> HttpResponse:
             "has_active_session": active_session is not None,
             "active_session": active_session,
         })
-    return render(request, "surveys/home.html", {"module_data": module_data})
+    return render(request, "surveys/student_modules.html", {"module_data": module_data})
 
 
 def module_2_form(request: HttpRequest) -> HttpResponse:

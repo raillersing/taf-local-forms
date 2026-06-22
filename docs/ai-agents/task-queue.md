@@ -31,6 +31,7 @@
 | F015 | Update v0.2.0 release notes after F014 | done |
 | F016 | LAN diagnostics + admin Django interface refinement | done |
 | F019 | Dashboard UX (navigation, sub-nav tabs, LAN links, target_blank, IP display) | done |
+| F020 | Landing page with Student/Formateur split, /modules/ student space, pedagogical module presentations | done |
 
 ## Managing the queue
 

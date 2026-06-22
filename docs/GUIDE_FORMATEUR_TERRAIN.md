@@ -6,6 +6,19 @@ L'application fonctionne sur le réseau local. Ne donnez jamais `localhost` aux 
 
 **Nouveau** : une [Fiche de démarrage terrain](FICHE_DEMARRAGE_TERRAIN.md) est disponible pour un pas à pas rapide et illustré.
 
+### Page d'accueil — choix étudiant / formateur
+
+La page d'accueil `/` propose deux entrées :
+- **« Je suis étudiant »** → redirige vers l'espace modules `/modules/`
+- **« Je suis formateur »** → redirige vers le cockpit `/dashboard/`
+
+### Espace modules étudiant (`/modules/`)
+
+Cette page liste les modules actifs avec :
+- le statut (Réponses ouvertes / Consultation seulement / Indisponible)
+- un bloc pédagogique décrivant les objectifs de formation
+- un bouton pour répondre ou consulter le questionnaire
+
 ## Avant la séance
 
 - [ ] Démarrez Docker Desktop.
@@ -125,8 +138,8 @@ Connexion obligatoire.
 ### Navigation
 
 La barre de navigation en haut de chaque page donne accès à :
-- **Modules de formation** → accueil public
-- **Espace formateur** → tableau de bord
+- **Modules de formation** → `/modules/` (espace étudiant)
+- **Dashboard** → `/dashboard/` (cockpit formateur)
 - **Accès réseau** → diagnostic et adresses (pages formateur uniquement)
 - **Configuration réseau** → paramètres IP (pages formateur uniquement)
 - **Admin avancé** → administration Django (pages formateur uniquement)

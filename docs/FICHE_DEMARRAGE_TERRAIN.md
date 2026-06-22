@@ -11,12 +11,25 @@ Le formateur peut consulter les réponses en direct dans un **panel formateur** 
 
 ---
 
-## Adresses principales
+## Interface utilisateur
 
-| Page | Adresse |
-|------|---------|
-| Accueil public | `http://127.0.0.1:8010/` |
-| Module 2 – Comprendre Internet | `http://127.0.0.1:8010/module-2/` |
+### Page d'accueil — choix étudiant / formateur
+
+La page d'accueil `/` affiche deux entrées :
+
+- **« Je suis étudiant »** → redirige vers l'espace modules `/modules/`
+- **« Je suis formateur »** → redirige vers le cockpit `/dashboard/`
+
+### Espace modules étudiant (`/modules/`)
+
+Les élèves arrivent sur cette page après avoir cliqué sur « Je suis étudiant ».
+Chaque module actif est présenté avec :
+
+- son **titre** et un **statut** (Réponses ouvertes / Consultation seulement / Indisponible)
+- un **bloc pédagogique** décrivant les objectifs et le contenu de la formation
+- un bouton **« Répondre au questionnaire »** (ou « Consulter le questionnaire »)
+
+### Adresses principales
 | Module 3 – Recherche efficace | `http://127.0.0.1:8010/module-3/` |
 | Module 4 – Sources fiables | `http://127.0.0.1:8010/module-4/` |
 | Panel formateur | `http://127.0.0.1:8010/dashboard/` |
@@ -192,9 +205,10 @@ Résultat attendu (sans connexion) : **`302 Found`** (redirection vers la page d
 1. Connecté au même Wi-Fi / hotspot que le formateur.
 2. Ouvre son navigateur.
 3. Tape l'adresse donnée par le formateur (ex. `http://192.168.0.102:8010/`).
-4. Clique sur le module du jour.
-5. Remplit le questionnaire et valide.
-6. Voit une page de confirmation.
+4. Sur la page d'accueil, clique sur **« Je suis étudiant »**.
+5. Dans l'espace modules (`/modules/`), lit la présentation du module et clique sur **« Répondre au questionnaire »**.
+6. Remplit le questionnaire et valide.
+7. Voit une page de confirmation.
 
 ### Rappels
 
@@ -400,9 +414,9 @@ Redémarrez les seeds si de nouveaux modules ont été ajoutés (cf. « Initiali
 1. **Démarrer** → `docker compose up --build -d`
 2. **Seeder** → `seed_module2`, `seed_module3`, `seed_module4`
 3. **Compte** → `createsuperuser`
-4. **Vérifier** → `curl` les pages
+4. **Vérifier** → `curl` les pages (dont `/` et `/modules/`)
 5. **Ouvrir** → `/dashboard/network/` pour l'IP
-6. **Donner l'IP** → aux élèves
+6. **Donner l'IP** → aux élèves (ils arrivent sur la page d'accueil avec le choix étudiant / formateur)
 7. **Suivre** → les réponses dans le dashboard
 8. **Exporter** → les CSV après la séance
 9. **Arrêter** → `docker compose down`

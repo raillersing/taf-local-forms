@@ -19,6 +19,7 @@ from .views import (
     module_4_success,
     network_access_dashboard,
     presence_heartbeat,
+    student_modules,
     toggle_module_responses,
 )
 
@@ -27,6 +28,7 @@ app_name = "surveys"
 
 urlpatterns = [
     path("", home, name="home"),
+    path("modules/", student_modules, name="student_modules"),
     path("module-2/", module_2_form, name="module_2"),
     path("module-2/success/<int:submission_id>/", module_2_success, name="module_2_success"),
     path("module-3/", module_3_form, name="module_3"),
