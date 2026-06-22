@@ -16,6 +16,8 @@ La page d'accueil (`/`) propose un choix entre **étudiant** (accès aux modules
 
 Les élèves cliquent sur **« Je suis étudiant »** pour accéder à l'espace modules : `/modules/`.
 
+Chaque module actif affiche un **bloc pédagogique** structuré qui contient désormais le contenu réel des présentations PowerPoint des Modules 2, 3 et 4, organisé en sections (résumé, objectifs, notions clés, méthode, activités, à éviter/erreurs, à retenir).
+
 Modules disponibles :
 
 - **Module 2** : Comprendre Internet  (`/module-2/`)
