@@ -30,6 +30,7 @@
 | F014 | Safe network config panel + live presence | done |
 | F015 | Update v0.2.0 release notes after F014 | done |
 | F016 | LAN diagnostics + admin Django interface refinement | done |
+| F019 | Dashboard UX (navigation, sub-nav tabs, LAN links, target_blank, IP display) | done |
 
 ## Managing the queue
 

@@ -188,6 +188,10 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
             "accepting_responses": accepting,
             "active_session_id": active_session.pk if active_session else None,
         })
+
+    base_url = net_ctx.get("student_form_url", "http://localhost:8000/").rstrip("/")
+    if base_url.endswith("/"):
+        base_url = base_url[:-1]
     context = {
         "total_submissions": total_submissions,
         "total_students": total_students,
@@ -195,6 +199,8 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
         "module_list": module_list,
         "modules_open": modules_open,
         "network": net_ctx,
+        "base_network_url": base_url,
+        "has_lan_host": bool(net_ctx.get("configured_host")),
     }
     return render(request, "surveys/dashboard_home.html", context)
 

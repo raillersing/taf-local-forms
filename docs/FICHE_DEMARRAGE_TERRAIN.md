@@ -277,6 +277,37 @@ Fonctionnement :
 
 ---
 
+## Navigation dans l'interface
+
+### Barre de navigation
+
+La barre en haut de chaque page donne accès à :
+- **Modules de formation** → accueil public des élèves
+- **Espace formateur** → tableau de bord cockpit
+- **Accès réseau** → diagnostic et adresses (visible uniquement pages formateur)
+- **Configuration réseau** → paramètres IP (visible uniquement pages formateur)
+- **Admin avancé** → administration Django (visible uniquement pages formateur)
+
+Le logo Internet Society / TAfHSSiM (en haut à gauche) redirige vers le **cockpit formateur**.
+
+### Sous-navigation du tableau de bord
+
+Le cockpit formateur `/dashboard/` est organisé en sections avec onglets :
+- **Vue d'ensemble** — statistiques globales
+- **Modules** — cartes Module 2/3/4 avec statut et switch d'ouverture/fermeture des réponses
+- **Présence** — compteur en direct des élèves en cours de saisie
+- **Réseau** — adresses IP et liens vers chaque page (s'ouvrent dans un nouvel onglet)
+- **Exports** — téléchargement CSV des résultats
+- **Admin** — outils avancés et documentation
+
+### Adresse IP locale dans le dashboard
+
+Quand `TAF_LAN_HOST` est configuré dans `.env`, le dashboard affiche l'IP locale réelle du laptop dans une bannière verte. Tous les liens réseau utilisent cette IP et s'ouvrent dans un nouvel onglet (`target="_blank"`, `rel="noopener noreferrer"`).
+
+Si l'IP n'est pas configurée, un message d'alerte invite à la définir dans `/dashboard/settings/`.
+
+---
+
 ## Arrêt de l'application
 
 **Commande sûre** (conserve les données) :

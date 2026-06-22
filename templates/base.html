@@ -29,12 +29,15 @@
                 <p class="hero-text">{% block hero_text %}Application locale pour les séances de formation TAfHSSiM.{% endblock %}</p>
             </div>
         </header>
-        <nav class="main-nav">
+        {% block main_nav %}
+        <nav class="main-nav" aria-label="Navigation principale">
             <ul class="nav-list">
-                <li><a href="{% url 'surveys:home' %}">{% block nav_modules %}Modules de formation{% endblock %}</a></li>
-                <li><a href="{% url 'surveys:dashboard_home' %}">Espace formateur</a></li>
+                <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Modules de formation</a></li>
+                <li><a href="{% url 'surveys:dashboard_home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_home' %} class="nav-active"{% endif %}>Espace formateur</a></li>
+                {% block nav_extra_links %}{% endblock %}
             </ul>
         </nav>
+        {% endblock %}
         {% if messages %}
         <div class="messages-container">
             {% for message in messages %}
