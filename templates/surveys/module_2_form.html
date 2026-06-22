@@ -77,6 +77,8 @@
         </section>
 
         <button type="submit" class="primary-button">Envoyer</button>
+        <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
+        {% include "surveys/partials/presence_heartbeat.html" %}
     </form>
 </main>
 {% endblock %}

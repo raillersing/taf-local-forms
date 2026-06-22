@@ -236,10 +236,13 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 - CSV Module 2 : `/dashboard/export/module-2.csv`
 - CSV Module 3 : `/dashboard/export/module-3.csv`
 - CSV Module 4 : `/dashboard/export/module-4.csv`
+- Configuration réseau (interface) : `/dashboard/settings/`
+- Présence temps réel : `/dashboard/presence.json`
+- Heartbeat élève (POST) : `/presence/heartbeat/`
 - Admin : `/admin/`
 
 Le cockpit formateur `/dashboard/` regroupe tous les outils formateur :
-liens vers chaque dashboard, export CSV, diagnostic réseau, et admin Django.
+liens vers chaque dashboard, export CSV, diagnostic réseau, configuration réseau, et compteur temps réel des élèves en cours de saisie.
 
 ## Dépannage
 

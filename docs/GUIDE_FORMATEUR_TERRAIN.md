@@ -154,6 +154,28 @@ Cette page affiche :
 
 Optionnel : définir `TAF_LAN_HOST=<IP_DU_LAPTOP>` dans `.env` pour figer l'adresse recommandée.
 
+## Configurer le réseau depuis l'interface (nouveau)
+
+Une page de configuration sécurisée est disponible :
+
+`http://<IP_PC>:8010/dashboard/settings/`
+
+Cette page permet de modifier :
+- le port d'écoute
+- l'IP fixe du laptop
+- les hôtes autorisés
+- les origines CSRF
+- le fuseau horaire
+
+Les secrets ne sont jamais affichés. Un redémarrage Docker est nécessaire après modification.
+
+## Présence temps réel des élèves (nouveau)
+
+Le cockpit formateur `http://<IP_PC>:8010/dashboard/` affiche un compteur
+en temps quasi réel du nombre d'élèves en train de remplir chaque module.
+
+Mise à jour automatique toutes les 8 secondes.
+
 ## Exporter le CSV
 
 Depuis le dashboard :

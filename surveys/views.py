@@ -1,13 +1,19 @@
 import csv
+import json
+from datetime import datetime, timedelta
 
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg
+from django.db.models import Avg, Count
 from django.db import IntegrityError
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm
 from .models import (
+    FormPresence,
     Module3Submission,
     Module4Submission,
     Student,
@@ -32,6 +38,17 @@ def sanitize_csv_cell(value):
     if text.startswith(("=", "+", "-", "@")):
         return f"'{text}"
     return text
+
+
+def _mark_presence_submitted(request, module_code, session):
+    client_id = request.POST.get("taf_client_id", "").strip()
+    if client_id:
+        FormPresence.objects.filter(
+            client_id=client_id,
+            module_code=module_code,
+            training_session=session,
+            status=FormPresence.STATUS_ACTIVE,
+        ).update(status=FormPresence.STATUS_SUBMITTED)
 
 
 def home(request: HttpRequest) -> HttpResponse:
@@ -97,6 +114,7 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
                     )
                 else:
                     request.session["last_submission_id"] = submission.pk
+                    _mark_presence_submitted(request, "MODULE_2", session)
                     return redirect("surveys:module_2_success", submission_id=submission.pk)
     else:
         form = Module2SubmissionForm()
@@ -337,6 +355,7 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
                     )
                 else:
                     request.session["last_module3_submission_id"] = submission.pk
+                    _mark_presence_submitted(request, "MODULE_3", session)
                     return redirect("surveys:module_3_success", submission_id=submission.pk)
     else:
         form = Module3SubmissionForm()
@@ -562,6 +581,7 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
                     )
                 else:
                     request.session["last_module4_submission_id"] = submission.pk
+                    _mark_presence_submitted(request, "MODULE_4", session)
                     return redirect("surveys:module_4_success", submission_id=submission.pk)
     else:
         form = Module4SubmissionForm()
@@ -745,3 +765,91 @@ def network_access_dashboard(request: HttpRequest) -> HttpResponse:
 
     ctx = get_network_access_context(request)
     return render(request, "surveys/dashboard_network.html", ctx)
+
+
+def presence_heartbeat(request: HttpRequest) -> JsonResponse:
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "invalid JSON"}, status=400)
+    module_code = data.get("module_code", "").strip()
+    client_id = data.get("client_id", "").strip()
+    if not module_code or not client_id:
+        return JsonResponse({"error": "module_code and client_id required"}, status=400)
+    session = (
+        TrainingSession.objects.filter(module__code=module_code, is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if not session:
+        return JsonResponse({"error": "no active session"}, status=404)
+    school_id_number = data.get("school_id_number", "").strip() or None
+    class_level = data.get("class_level", "").strip() or None
+    current_path = data.get("current_path", "").strip() or ""
+    cutoff = timezone.now() - timedelta(seconds=60)
+    FormPresence.objects.filter(
+        client_id=client_id,
+        module_code=module_code,
+        training_session=session,
+        last_seen_at__lt=cutoff,
+        status=FormPresence.STATUS_ACTIVE,
+    ).update(status=FormPresence.STATUS_EXPIRED)
+    now = timezone.now()
+    presence, created = FormPresence.objects.update_or_create(
+        client_id=client_id,
+        module_code=module_code,
+        training_session=session,
+        defaults={
+            "status": FormPresence.STATUS_ACTIVE,
+            "current_path": current_path,
+            "school_id_number": school_id_number,
+            "class_level": class_level,
+            "last_seen_at": now,
+        },
+    )
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def dashboard_presence_json(request: HttpRequest) -> JsonResponse:
+    cutoff = timezone.now() - timedelta(seconds=60)
+    active = FormPresence.objects.filter(
+        status=FormPresence.STATUS_ACTIVE,
+        last_seen_at__gte=cutoff,
+    )
+    total = active.count()
+    by_module = {}
+    for p in active.values("module_code").annotate(count=Count("id")):
+        by_module[p["module_code"]] = p["count"]
+    return JsonResponse({
+        "total": total,
+        "by_module": by_module,
+        "timestamp": timezone.now().isoformat(),
+    })
+
+
+@staff_member_required
+@login_required
+def dashboard_settings(request: HttpRequest) -> HttpResponse:
+    from .settings_config import apply_setting, get_filtered_settings
+
+    saved = None
+    error = None
+    if request.method == "POST":
+        key = request.POST.get("key", "").strip()
+        value = request.POST.get("value", "").strip()
+        if key:
+            ok, msg = apply_setting(key, value)
+            if ok:
+                saved = msg
+            else:
+                error = msg
+    settings = get_filtered_settings()
+    context = {
+        "settings": settings,
+        "saved": saved,
+        "error": error,
+    }
+    return render(request, "surveys/dashboard_settings.html", context)

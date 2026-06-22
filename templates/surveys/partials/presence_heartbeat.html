@@ -1,0 +1,50 @@
+<script>
+(function() {
+    var moduleCode = "{{ module.code }}";
+    var key = 'taf_form_client_id';
+    var clientId = sessionStorage.getItem(key);
+    if (!clientId) {
+        clientId = 'c' + Date.now() + Math.random().toString(36).slice(2, 8);
+        sessionStorage.setItem(key, clientId);
+    }
+    var hiddenField = document.getElementById('taf-client-id');
+    if (hiddenField) {
+        hiddenField.value = clientId;
+    }
+    var schoolIdInput = document.querySelector('[name="school_id_number"]');
+    var classLevelInput = document.querySelector('[name="class_level"]');
+    var heartbeat = function() {
+        var data = {
+            module_code: moduleCode,
+            client_id: clientId,
+            current_path: window.location.pathname
+        };
+        if (schoolIdInput && schoolIdInput.value) {
+            data.school_id_number = schoolIdInput.value;
+        }
+        if (classLevelInput && classLevelInput.value) {
+            data.class_level = classLevelInput.value;
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "surveys:presence_heartbeat" %}');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        xhr.onerror = function() {};
+        xhr.send(JSON.stringify(data));
+    };
+    heartbeat();
+    setInterval(heartbeat, 15000);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            heartbeat();
+        }
+    });
+    window.addEventListener('beforeunload', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "surveys:presence_heartbeat" %}', false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        xhr.send(JSON.stringify({module_code: moduleCode, client_id: clientId}));
+    });
+})();
+</script>

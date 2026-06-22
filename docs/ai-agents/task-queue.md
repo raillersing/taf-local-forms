@@ -26,7 +26,9 @@
 | F010 | Safe cleanup workflow | done |
 | F011 | Module 3 + 4 field deployment | done |
 | F012 | Update field user manual for Modules 2, 3, 4 | done |
-| F013 | (next) | pending |
+| F013 | Final validation + v0.2.0 release notes | done |
+| F014 | Safe network config panel + live presence | in_progress |
+| F015 | (next) | pending |
 
 ## Managing the queue
 

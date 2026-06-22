@@ -5,6 +5,8 @@ from .views import (
     dashboard_module_2,
     dashboard_module_3,
     dashboard_module_4,
+    dashboard_presence_json,
+    dashboard_settings,
     export_module_2_csv,
     export_module_3_csv,
     export_module_4_csv,
@@ -16,6 +18,7 @@ from .views import (
     module_4_form,
     module_4_success,
     network_access_dashboard,
+    presence_heartbeat,
 )
 
 
@@ -37,4 +40,7 @@ urlpatterns = [
     path("dashboard/export/module-3.csv", export_module_3_csv, name="export_module_3_csv"),
     path("dashboard/export/module-4.csv", export_module_4_csv, name="export_module_4_csv"),
     path("dashboard/network/", network_access_dashboard, name="dashboard_network"),
+    path("dashboard/settings/", dashboard_settings, name="dashboard_settings"),
+    path("dashboard/presence.json", dashboard_presence_json, name="dashboard_presence_json"),
+    path("presence/heartbeat/", presence_heartbeat, name="presence_heartbeat"),
 ]
