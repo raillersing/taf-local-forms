@@ -11,24 +11,89 @@
 
 {% block content %}
 <main class="content-grid">
+
+    {% if lan_host_stale %}
+    <section class="card" style="background: #feeec8; border-color: #f5d88a;">
+        <p style="margin:0;font-weight:600">
+            ⚠ L'IP configurée (<code>{{ configured_host }}</code>) diffère de l'adresse LAN actuelle (<code>{{ current_host }}</code>).
+            <a href="{% url 'surveys:dashboard_settings' %}">Mets à jour la configuration.</a>
+        </p>
+        <p style="margin-top:0.5rem" class="muted">
+            Tu peux aussi lancer <code>.\scripts\windows\taf-lan-sync.ps1</code> (PowerShell admin) pour synchroniser automatiquement.
+        </p>
+    </section>
+    {% endif %}
+
     <section class="card">
         <h2>Adresse recommandée (accueil élèves)</h2>
         <p style="margin-top:0.75rem">
             Donne cette adresse aux élèves pour accéder à l'application&nbsp;:
         </p>
-        <p class="network-url-box">{{ student_form_url }}</p>
-        <p class="muted" style="margin-top:0.5rem">Les élèves verront la liste des modules disponibles.</p>
+        {% if recommended_lan_host %}
+        <p class="network-url-box">{{ recommended_student_base_url }}/</p>
+        <p class="muted" style="margin-top:0.5rem">
+            Source : <strong>
+                {% if lan_host_source == "request" %}Adresse détectée depuis cette connexion.
+                {% elif lan_host_source == "settings" %}Adresse configurée.
+                {% elif lan_host_source == "candidate" %}Adresse détectée automatiquement.
+                {% else %}Non configurée.{% endif %}
+            </strong>
+        </p>
+        {% else %}
+        <p class="network-url-box" style="background:#feeec8">IP locale non configurée</p>
+        {% endif %}
     </section>
 
-    {% if not configured_host %}
-    <section class="card" style="background: #feeec8; border-color: #f5d88a;">
-        <p style="margin:0;font-weight:600">
-            IP locale non configurée. Configure <code>TAF_LAN_HOST</code> dans
-            <a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a>
-            pour que les liens reflètent l'IP réelle du laptop.
-        </p>
+    <section class="card" style="{% if not configured_host and not current_request_is_lan %}background: #feeec8; border-color: #f5d88a;{% endif %}">
+        <h2>État réseau</h2>
+        <dl class="setting-list">
+            <dt class="muted setting-label">IP de cette requête</dt>
+            <dd><code>{{ current_host }}{% if current_port %}:{{ current_port }}{% endif %}</code>
+                {% if current_request_is_lan %}<span class="pill" style="background:#d9f2e3;color:#155724;font-size:0.75rem;margin-left:0.3rem">LAN</span>{% endif %}
+            </dd>
+
+            <dt class="muted setting-label">IP configurée (TAF_LAN_HOST)</dt>
+            <dd>{% if configured_host %}<code>{{ configured_host }}</code>{% else %}<span class="muted">Non définie</span>{% endif %}</dd>
+
+            <dt class="muted setting-label">IP recommandée</dt>
+            <dd>{% if recommended_lan_host %}<code>{{ recommended_lan_host }}</code>{% else %}<span class="muted">Non disponible</span>{% endif %}</dd>
+
+            <dt class="muted setting-label">Port LAN élèves</dt>
+            <dd><code>8011</code> <span class="muted" style="font-size:0.85rem">(portproxy → localhost:8010)</span></dd>
+
+            <dt class="muted setting-label">Port local Docker</dt>
+            <dd><code>8010</code></dd>
+
+            <dt class="muted setting-label">Port configuré (TAF_HOST_PORT)</dt>
+            <dd>{% if configured_port %}<code>{{ configured_port }}</code>{% else %}<span class="muted">8010 (défaut)</span>{% endif %}</dd>
+
+            <dt class="muted setting-label">Source de l'adresse</dt>
+            <dd>
+                {% if lan_host_source == "request" %}
+                <span style="color:#155724">Requête LAN</span>
+                {% elif lan_host_source == "settings" %}
+                <span style="color:#155724">Configuration</span>
+                {% elif lan_host_source == "candidate" %}
+                <span style="color:#856404">Détection automatique</span>
+                {% else %}
+                <span style="color:#721c24">Non configurée</span>
+                {% endif %}
+            </dd>
+
+            <dt class="muted setting-label">Statut</dt>
+            <dd>
+                {% if configured_host and not lan_host_stale %}
+                <span style="color:#155724">✅ Configuré et à jour</span>
+                {% elif configured_host and lan_host_stale %}
+                <span style="color:#856404">⚠ À synchroniser</span>
+                {% elif current_request_is_lan %}
+                <span style="color:#856404">🔍 Détecté — à configurer</span>
+                {% else %}
+                <span style="color:#721c24">❌ Non configuré</span>
+                {% endif %}
+            </dd>
+        </dl>
     </section>
-    {% endif %}
 
     <section class="card">
         <h2>Modules élèves</h2>
@@ -95,9 +160,6 @@
             <dt class="muted setting-label">TAF_HOST_PORT configuré</dt>
             <dd>{% if configured_port %}{{ configured_port }}{% else %}<span class="muted">8010 (défaut)</span>{% endif %}</dd>
 
-            <dt class="muted setting-label">Port utilisé</dt>
-            <dd>{{ port }}</dd>
-
             <dt class="muted setting-label">IP candidates détectées</dt>
             <dd>
                 {% if detected_ip_candidates %}
@@ -111,8 +173,14 @@
                 {% endif %}
             </dd>
         </dl>
-        <div style="margin-top:1rem">
+        <div style="display:flex;gap:0.75rem;margin-top:1rem;flex-wrap:wrap">
             <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer depuis l'interface &rarr;</a>
+            {% if current_request_is_lan %}
+            <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}">
+                {% csrf_token %}
+                <button type="submit" style="background:var(--navy);color:white;border:none;padding:0.3rem 1rem;border-radius:6px;cursor:pointer;font-weight:600">Utiliser l'adresse actuelle</button>
+            </form>
+            {% endif %}
         </div>
     </section>
 
@@ -142,6 +210,9 @@
             <dt class="muted setting-label">Script statut (Windows)</dt>
             <dd><code class="code-block">.\scripts\windows\taf-lan-show-status.ps1</code></dd>
 
+            <dt class="muted setting-label">Script synchronisation (Windows Admin)</dt>
+            <dd><code class="code-block">.\scripts\windows\taf-lan-sync.ps1</code></dd>
+
             <dt class="muted setting-label">Ouvrir le port (Windows Admin)</dt>
             <dd><code class="code-block">.\scripts\windows\taf-lan-open-port.ps1</code></dd>
         </dl>
@@ -157,11 +228,11 @@
             <li>Si tu utilises WSL2 avec NAT, un portproxy (netsh) peut être nécessaire.</li>
         </ul>
         <p style="margin-top:0.75rem">
-            <strong>Commande Windows possible (PowerShell admin) :</strong>
+            <strong>Script recommandé (PowerShell admin) :</strong>
         </p>
-        <pre class="code-block">netsh interface portproxy add v4tov4 listenport={{ port }} listenaddress=0.0.0.0 connectport={{ port }} connectaddress=127.0.0.1</pre>
+        <pre class="code-block">.\scripts\windows\taf-lan-sync.ps1</pre>
         <p class="muted" style="margin-top:0.5rem">
-            À n'utiliser que si le pare-feu et le réseau sont corrects mais que l'accès depuis téléphone échoue toujours.
+            Configure automatiquement le portproxy, le pare-feu et synchronise l'application.
         </p>
     </section>
 

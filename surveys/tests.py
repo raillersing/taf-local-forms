@@ -2511,3 +2511,352 @@ class F019AdminContrastTests(TestCase):
     def test_admin_shows_formateur_tools(self):
         response = self.client.get(reverse("admin:index"))
         self.assertContains(response, "Cockpit formateur")
+
+
+class F023NetworkIPDetectionTests(TestCase):
+    """Tests for network.py LAN IP detection logic (no DB or client needed)."""
+
+    def test_is_private_ip_192_168(self):
+        from surveys.network import _is_private_ip
+        self.assertTrue(_is_private_ip("192.168.0.101"))
+
+    def test_is_private_ip_10_dot(self):
+        from surveys.network import _is_private_ip
+        self.assertTrue(_is_private_ip("10.0.0.1"))
+
+    def test_is_private_ip_172_16(self):
+        from surveys.network import _is_private_ip
+        self.assertTrue(_is_private_ip("172.16.0.1"))
+
+    def test_is_private_ip_172_31(self):
+        from surveys.network import _is_private_ip
+        self.assertTrue(_is_private_ip("172.31.0.1"))
+
+    def test_is_private_ip_172_32_false(self):
+        from surveys.network import _is_private_ip
+        self.assertFalse(_is_private_ip("172.32.0.1"))
+
+    def test_is_private_ip_localhost_false(self):
+        from surveys.network import _is_private_ip
+        self.assertFalse(_is_private_ip("127.0.0.1"))
+
+    def test_is_private_ip_public_false(self):
+        from surveys.network import _is_private_ip
+        self.assertFalse(_is_private_ip("8.8.8.8"))
+
+    def test_parse_host_port_simple(self):
+        from surveys.network import _parse_host_port
+        host, port = _parse_host_port("192.168.0.101:8011")
+        self.assertEqual(host, "192.168.0.101")
+        self.assertEqual(port, "8011")
+
+    def test_parse_host_port_no_port(self):
+        from surveys.network import _parse_host_port
+        host, port = _parse_host_port("192.168.0.101")
+        self.assertEqual(host, "192.168.0.101")
+        self.assertEqual(port, "")
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_request_lan_host_sets_source_request(self):
+        from surveys.network import get_network_access_context
+        from django.test import RequestFactory
+        rf = RequestFactory()
+        request = rf.get("/", HTTP_HOST="192.168.0.101:8011")
+        ctx = get_network_access_context(request)
+        self.assertEqual(ctx["lan_host_source"], "request")
+        self.assertEqual(ctx["recommended_lan_host"], "192.168.0.101")
+        self.assertEqual(ctx["recommended_lan_port"], "8011")
+        self.assertEqual(ctx["recommended_student_base_url"], "http://192.168.0.101:8011")
+        self.assertTrue(ctx["current_request_is_lan"])
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_recommended_student_base_url(self):
+        from surveys.network import get_network_access_context
+        from django.test import RequestFactory
+        rf = RequestFactory()
+        request = rf.get("/", HTTP_HOST="192.168.0.101:8011")
+        ctx = get_network_access_context(request)
+        self.assertEqual(ctx["recommended_student_base_url"], "http://192.168.0.101:8011")
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_lan_host_stale_when_mismatch(self):
+        import os
+        os.environ["TAF_LAN_HOST"] = "192.168.0.100"
+        try:
+            from surveys.network import get_network_access_context
+            from django.test import RequestFactory
+            rf = RequestFactory()
+            request = rf.get("/", HTTP_HOST="192.168.0.101:8011")
+            ctx = get_network_access_context(request)
+            self.assertTrue(ctx["lan_host_stale"])
+            self.assertEqual(ctx["configured_host"], "192.168.0.100")
+        finally:
+            os.environ.pop("TAF_LAN_HOST", None)
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_lan_host_not_stale_when_match(self):
+        import os
+        os.environ["TAF_LAN_HOST"] = "192.168.0.101"
+        try:
+            from surveys.network import get_network_access_context
+            from django.test import RequestFactory
+            rf = RequestFactory()
+            request = rf.get("/", HTTP_HOST="192.168.0.101:8011")
+            ctx = get_network_access_context(request)
+            self.assertFalse(ctx["lan_host_stale"])
+        finally:
+            os.environ.pop("TAF_LAN_HOST", None)
+
+    def test_no_lan_host_shows_unconfigured(self):
+        from surveys.network import get_network_access_context
+        from django.test import RequestFactory
+        rf = RequestFactory()
+        request = rf.get("/", HTTP_HOST="localhost:8010")
+        ctx = get_network_access_context(request)
+        self.assertEqual(ctx["lan_host_source"], "missing")
+        self.assertEqual(ctx["recommended_lan_host"], "")
+        self.assertFalse(ctx["has_lan_host"])
+
+    def test_no_ip_du_laptop_in_urls(self):
+        from surveys.network import get_network_access_context
+        from django.test import RequestFactory
+        rf = RequestFactory()
+        request = rf.get("/", HTTP_HOST="localhost:8010")
+        ctx = get_network_access_context(request)
+        for key in ("student_form_url", "module_2_url", "module_3_url", "module_4_url", "cockpit_url"):
+            self.assertNotIn("<IP_DU_LAPTOP>", ctx[key], f"{key} contains <IP_DU_LAPTOP>")
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_warning_contains_stale_message(self):
+        import os
+        os.environ["TAF_LAN_HOST"] = "192.168.0.100"
+        try:
+            from surveys.network import get_network_access_context
+            from django.test import RequestFactory
+            rf = RequestFactory()
+            request = rf.get("/", HTTP_HOST="192.168.0.101:8011")
+            ctx = get_network_access_context(request)
+            stale_warnings = [w for w in ctx["warnings"] if "diffère" in w and "Mets à jour" in w]
+            self.assertTrue(len(stale_warnings) >= 1, msg="No stale warning found")
+        finally:
+            os.environ.pop("TAF_LAN_HOST", None)
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_private_ip_10_dot_is_lan(self):
+        from surveys.network import get_network_access_context
+        from django.test import RequestFactory
+        rf = RequestFactory()
+        request = rf.get("/", HTTP_HOST="10.0.0.5:8011")
+        ctx = get_network_access_context(request)
+        self.assertTrue(ctx["current_request_is_lan"])
+        self.assertEqual(ctx["lan_host_source"], "request")
+
+
+@override_settings(ALLOWED_HOSTS=["*"])
+class F023DashboardNetworkTests(TestCase):
+    """Tests for the /dashboard/network/ page."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_superuser(
+            username="netadmin", password="netadmin", email="net@example.com"
+        )
+        self.client.login(username="netadmin", password="netadmin")
+
+    def test_network_page_recommends_lan_ip_from_request(self):
+        response = self.client.get(reverse("surveys:dashboard_network"), HTTP_HOST="192.168.0.101:8011")
+        self.assertContains(response, "http://192.168.0.101:8011")
+
+    def test_network_page_source_label_request(self):
+        response = self.client.get(reverse("surveys:dashboard_network"), HTTP_HOST="192.168.0.101:8011")
+        self.assertContains(response, "Adresse détectée depuis cette connexion")
+
+    def test_network_page_shows_lan_pill(self):
+        response = self.client.get(reverse("surveys:dashboard_network"), HTTP_HOST="192.168.0.101:8011")
+        self.assertContains(response, "LAN")
+
+    def test_network_page_shows_8011_reference(self):
+        response = self.client.get(reverse("surveys:dashboard_network"), HTTP_HOST="localhost:8010")
+        self.assertContains(response, "8011")
+
+    def test_network_page_shows_recommended_ip_on_lan(self):
+        response = self.client.get(reverse("surveys:dashboard_network"), HTTP_HOST="192.168.0.101:8011")
+        self.assertContains(response, "192.168.0.101")
+
+    def test_network_page_no_ip_du_laptop(self):
+        response = self.client.get(reverse("surveys:dashboard_network"), HTTP_HOST="localhost:8010")
+        self.assertNotContains(response, "<IP_DU_LAPTOP>")
+
+    def test_network_page_stale_alert(self):
+        import os
+        os.environ["TAF_LAN_HOST"] = "192.168.0.100"
+        try:
+            response = self.client.get(reverse("surveys:dashboard_network"), HTTP_HOST="192.168.0.101:8011")
+            self.assertContains(response, "Mets à jour la configuration")
+        finally:
+            os.environ.pop("TAF_LAN_HOST", None)
+
+
+@override_settings(ALLOWED_HOSTS=["*"])
+class F023DashboardSettingsTests(TestCase):
+    """Tests for dashboard settings / use current address."""
+
+    def setUp(self):
+        import tempfile, os
+        self._tmpdir = tempfile.mkdtemp()
+        self._old_db_path = os.environ.get("DATABASE_PATH")
+        os.environ["DATABASE_PATH"] = f"{self._tmpdir}/db.sqlite3"
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_superuser(
+            username="setadmin", password="setadmin", email="set@example.com"
+        )
+        self.client.login(username="setadmin", password="setadmin")
+
+    def tearDown(self):
+        import os
+        if self._old_db_path is not None:
+            os.environ["DATABASE_PATH"] = self._old_db_path
+        else:
+            os.environ.pop("DATABASE_PATH", None)
+        import shutil
+        if self._tmpdir:
+            shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_settings_page_shows_use_current_address_when_lan(self):
+        response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="192.168.0.101:8011")
+        self.assertContains(response, "Utiliser l'adresse actuelle")
+        self.assertContains(response, "192.168.0.101")
+
+    def test_settings_page_hides_button_on_localhost(self):
+        response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010")
+        self.assertNotContains(response, "Utiliser l'adresse actuelle")
+
+    def test_use_current_address_updates_settings(self):
+        response = self.client.post(
+            reverse("surveys:dashboard_use_current_address"),
+            HTTP_HOST="192.168.0.101:8011",
+            follow=True,
+        )
+        self.assertContains(response, "Paramètres LAN synchronisés")
+
+    def test_use_current_address_rejects_localhost(self):
+        response = self.client.post(
+            reverse("surveys:dashboard_use_current_address"),
+            HTTP_HOST="127.0.0.1:8010",
+            follow=True,
+        )
+        self.assertContains(response, "IP LAN valide")
+
+    def test_use_current_address_requires_post(self):
+        response = self.client.get(
+            reverse("surveys:dashboard_use_current_address"),
+            HTTP_HOST="192.168.0.101:8011",
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 405)
+
+
+class F023SyncLanSettingsCommandTests(TestCase):
+    """Tests for management command sync_lan_settings."""
+
+    def setUp(self):
+        self._tmpdir = None
+        import tempfile
+        self._tmpdir = tempfile.mkdtemp()
+        import os
+        self._old_db_path = os.environ.get("DATABASE_PATH")
+        os.environ["DATABASE_PATH"] = f"{self._tmpdir}/db.sqlite3"
+
+    def tearDown(self):
+        import os
+        if self._old_db_path is not None:
+            os.environ["DATABASE_PATH"] = self._old_db_path
+        else:
+            os.environ.pop("DATABASE_PATH", None)
+        import shutil
+        if self._tmpdir:
+            shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_command_syncs_lan_host_and_port(self):
+        from django.core.management import call_command
+        from io import StringIO
+        out = StringIO()
+        call_command("sync_lan_settings", "--lan-host=192.168.0.101", "--lan-port=8011", stdout=out)
+        output = out.getvalue()
+        self.assertIn("LAN settings synced", output)
+        self.assertIn("http://192.168.0.101:8011/", output)
+
+    def test_command_rejects_public_ip(self):
+        from django.core.management import call_command, CommandError
+        from io import StringIO
+        out = StringIO()
+        with self.assertRaises(CommandError):
+            call_command("sync_lan_settings", "--lan-host=8.8.8.8", "--lan-port=8011", stdout=out)
+
+    def test_command_rejects_localhost(self):
+        from django.core.management import call_command, CommandError
+        from io import StringIO
+        out = StringIO()
+        with self.assertRaises(CommandError):
+            call_command("sync_lan_settings", "--lan-host=127.0.0.1", "--lan-port=8011", stdout=out)
+
+    def test_command_rejects_invalid_port(self):
+        from django.core.management import call_command, CommandError
+        from io import StringIO
+        out = StringIO()
+        with self.assertRaises(CommandError):
+            call_command("sync_lan_settings", "--lan-host=192.168.0.101", "--lan-port=80", stdout=out)
+
+    def test_command_rejects_invalid_ip_format(self):
+        from django.core.management import call_command, CommandError
+        from io import StringIO
+        out = StringIO()
+        with self.assertRaises(CommandError):
+            call_command("sync_lan_settings", "--lan-host=not-an-ip", "--lan-port=8011", stdout=out)
+
+
+class F023ScriptExistenceTests(TestCase):
+    """Test Windows scripts exist and have expected content."""
+
+    def test_taf_lan_sync_script_exists(self):
+        import os
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "windows", "taf-lan-sync.ps1")
+        self.assertTrue(os.path.exists(path), f"Missing: {path}")
+
+    def test_taf_lan_sync_uses_8011(self):
+        with open("/home/raillersing/projects/taf-local-forms/scripts/windows/taf-lan-sync.ps1") as f:
+            content = f.read()
+        self.assertIn("8011", content)
+        self.assertIn("127.0.0.1", content)
+        self.assertNotIn("SECRET_KEY", content)
+
+    def test_taf_lan_sync_no_secrets(self):
+        with open("/home/raillersing/projects/taf-local-forms/scripts/windows/taf-lan-sync.ps1") as f:
+            content = f.read()
+        self.assertNotIn("SECRET_KEY", content)
+        self.assertNotIn(".env", content)
+
+    def test_taf_lan_install_auto_sync_exists(self):
+        import os
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "windows", "taf-lan-install-auto-sync.ps1")
+        self.assertTrue(os.path.exists(path), f"Missing: {path}")
+
+    def test_taf_lan_install_mentions_scheduled_task(self):
+        with open("/home/raillersing/projects/taf-local-forms/scripts/windows/taf-lan-install-auto-sync.ps1") as f:
+            content = f.read()
+        self.assertIn("Register-ScheduledTask", content) or self.assertIn("New-ScheduledTask", content)
+
+
+class F023SecretSafetyTests(TestCase):
+    """Tests that SECRET_KEY is never exposed."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_superuser(
+            username="secadmin", password="secadmin", email="sec@example.com"
+        )
+        self.client.login(username="secadmin", password="secadmin")
+
+    def test_secret_key_not_in_dashboard_network(self):
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertNotContains(response, "SECRET_KEY")

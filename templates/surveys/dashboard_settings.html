@@ -11,6 +11,29 @@
 
 {% block content %}
 <main class="content-grid">
+    {% if current_request_is_lan %}
+    <div class="card" style="background: #d9f2e3; border-color: #a3d9b5;">
+        <p style="margin:0;font-weight:600">
+            Adresse LAN détectée : <code>{{ recommended_lan_host }}:{{ recommended_lan_port }}</code>
+        </p>
+        <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}" style="margin-top:0.5rem">
+            {% csrf_token %}
+            <button type="submit" class="setting-save-btn" style="background:var(--navy);color:white;border:none;padding:0.5rem 1.2rem;border-radius:8px;cursor:pointer;font-weight:600">
+                Utiliser l'adresse actuelle
+            </button>
+            <span class="muted" style="margin-left:0.5rem;font-size:0.85rem">
+                Configure automatiquement TAF_LAN_HOST, TAF_HOST_PORT, ALLOWED_HOSTS et CSRF_TRUSTED_ORIGINS.
+            </span>
+        </form>
+    </div>
+    {% elif lan_host_stale %}
+    <div class="card" style="background: #feeec8; border-color: #f5d88a;">
+        <p style="margin:0;font-weight:600">
+            L'IP configurée diffère de l'adresse actuelle. Utilise le bouton ci-dessus si tu accèdes via l'adresse LAN.
+        </p>
+    </div>
+    {% endif %}
+
     <div class="card" style="background: #feeec8; border-color: #f5d88a;">
         <p style="margin:0;font-weight:600">
             Cette page ne montre pas les secrets. Les changements réseau peuvent nécessiter un redémarrage Docker.

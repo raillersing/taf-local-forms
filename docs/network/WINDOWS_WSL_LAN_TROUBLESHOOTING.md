@@ -4,7 +4,9 @@ Ce document explique comment diagnostiquer et résoudre les problèmes d'accès 
 pour **TAf Local Forms** lorsque l'application tourne sous Docker dans WSL2.
 
 > **But :** permettre aux élèves connectés sur le même Wi-Fi / hotspot d'accéder au
-> formulaire depuis leur téléphone via `http://<IP_DU_LAPTOP>:8010/`.
+> formulaire depuis leur téléphone via `http://<IP_DU_LAPTOP>:8011/` (**port LAN `8011`**).
+
+> **Depuis F023** : le script `taf-lan-sync.ps1` configure automatiquement un portproxy `8011→8010`, évitant les conflits avec d'autres services.
 
 ---
 
@@ -32,10 +34,24 @@ Ce script vérifie :
 
 Ce script vérifie (lecture seule) :
 - Adresses IP de Windows
-- Règles de pare-feu sur le port 8010
-- Configuration portproxy
+- Règles de pare-feu sur les ports 8010 et 8011
+- Configuration portproxy (8011→8010)
 - Profil réseau (Privé / Public)
 - Test de connectivité localhost:8010
+
+### Synchronisation complète (PowerShell Admin)
+
+```powershell
+.\scripts\windows\taf-lan-sync.ps1
+```
+
+Ce script détecte automatiquement l'IPv4 du Wi-Fi, configure le portproxy `8011→8010`, crée la règle pare-feu pour `8011`, et synchronise l'application Django.
+
+Installation en tâche planifiée (logon automatique) :
+
+```powershell
+.\scripts\windows\taf-lan-install-auto-sync.ps1
+```
 
 ---
 
@@ -77,6 +93,12 @@ n'arrivent jamais à WSL.
 
 **Solutions (par ordre de priorité) :**
 
+0. **Utiliser le script automatique (PowerShell Admin) :**
+   ```powershell
+   .\scripts\windows\taf-lan-sync.ps1
+   ```
+   Ce script détecte l'IP Wi-Fi, configure le portproxy `8011→8010`, le pare-feu pour `8011`, et synchronise l'application Django.
+
 1. **Docker Desktop gère déjà le port forwarding.** Vérifier avec :
    ```
    curl http://localhost:8010/   # depuis Windows
@@ -85,7 +107,7 @@ n'arrivent jamais à WSL.
 
 2. **Ajouter un portproxy Windows (PowerShell Admin) :**
    ```powershell
-   netsh interface portproxy add v4tov4 listenport=8010 listenaddress=0.0.0.0 connectport=8010 connectaddress=127.0.0.1
+   netsh interface portproxy add v4tov4 listenport=8011 listenaddress=0.0.0.0 connectport=8010 connectaddress=127.0.0.1
    ```
    Puis vérifier :
    ```powershell
@@ -121,12 +143,12 @@ configuration réseau (`/dashboard/settings/`).
 Exemple `.env` :
 ```env
 ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.42
-CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000,http://192.168.1.42:8010
+CSRF_TRUSTED_ORIGINS=http://localhost:8010,http://127.0.0.1:8010,http://192.168.1.42:8011
 ```
 
 Ou via l'interface web :
 ```
-/dashboard/settings/ → Modifier TAF_LAN_HOST
+/dashboard/settings/ → Utiliser l'adresse actuelle (nouveau bouton F023)
 ```
 
 ---
@@ -134,27 +156,26 @@ Ou via l'interface web :
 ## 3. Référence : architecture réseau
 
 ```
-┌────────────────────────────────────────────────────┐
-│  Windows 10/11                                     │
-│  IP LAN: 192.168.1.42 (exemple)                    │
-│                                                     │
-│  ┌─────────────────┐      ┌──────────────────────┐ │
-│  │ Docker Desktop   │──────│ Port forward         │ │
-│  │ 0.0.0.0:8010 ───┼──────┼─► WSL2 eth0:8000     │ │
-│  └─────────────────┘      └──────────────────────┘ │
-│                                                     │
-│  ┌─────────────────────────────────────────────┐   │
-│  │  WSL2                                        │   │
-│  │  IP: 172.x.y.z (interne)                     │   │
-│  │  Gateway: 172.x.0.1                          │   │
-│  │                                              │   │
-│  │  ┌──────────────────┐                        │   │
-│  │  │  Docker container  │                        │   │
-│  │  │  web:8000          │                        │   │
-│  │  └──────────────────┘                        │   │
-│  └─────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────┘
-         │
+┌──────────────────────────────────────────────────────────┐
+│  Windows 10/11                                           │
+│  IP LAN: 192.168.1.42 (exemple)                          │
+│                                                           │
+│  ┌───────────────────┐      ┌─────────────────────────┐  │
+│  │ Portproxy Windows  │      │ Docker Desktop          │  │
+│  │ 0.0.0.0:8011 ─────┼──────┼─► 0.0.0.0:8010 ───────►│  │
+│  └───────────────────┘      └─────────────────────────┘  │
+│                                                           │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │  WSL2                                              │   │
+│  │  IP: 172.x.y.z (interne)                           │   │
+│  │  Gateway: 172.x.0.1                                │   │
+│  │                                                    │   │
+│  │  ┌──────────────────┐                              │   │
+│  │  │  Docker container │────► Gunicorn web:8000      │   │
+│  │  └──────────────────┘                              │   │
+│  └───────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────┘
+         │  http://192.168.1.42:8011/
          ▼  (même Wi-Fi / hotspot)
    ┌──────────────┐
    │  Téléphone    │
@@ -170,8 +191,10 @@ Ou via l'interface web :
 | Script | Emplacement | Rôle |
 |--------|-------------|------|
 | `taf-lan-diagnose` | `scripts/dev/` | Diagnostic WSL (lecture seule) |
-| `taf-lan-show-status.ps1` | `scripts/windows/` | Statut réseau Windows (lecture seule) |
+| `taf-lan-show-status.ps1` | `scripts/windows/` | Statut réseau Windows (lecture seule) — détecte IP, portproxy, pare-feu 8010/8011 |
 | `taf-lan-open-port.ps1` | `scripts/windows/` | Ouvrir le pare-feu Windows (Admin requis) |
+| `taf-lan-sync.ps1` | `scripts/windows/` | Synchronisation complète — détecte IP Wi-Fi, portproxy `8011→8010`, pare-feu `8011`, sync Django (Admin requis) |
+| `taf-lan-install-auto-sync.ps1` | `scripts/windows/` | Installe une tâche planifiée Windows pour synchronisation automatique au logon (Admin requis) |
 
 ---
 
@@ -184,7 +207,7 @@ bash scripts/dev/taf-lan-diagnose
 
 Depuis un téléphone sur le même Wi-Fi :
 ```
-http://<IP_DU_LAPTOP>:8010/
+http://<IP_DU_LAPTOP>:8011/
 ```
 
 La page d'accueil publique doit s'afficher.
