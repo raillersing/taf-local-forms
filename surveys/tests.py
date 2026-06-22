@@ -8,7 +8,7 @@ from django.db import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Module3Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import Module3Submission, Module4Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -922,6 +922,450 @@ class Module3HomeAndCockpitTests(TestCase):
         self.assertContains(response, "Module 3 - Recherche efficace")
         self.assertContains(response, "Dashboard Module 3")
         self.assertContains(response, "Export CSV Module 3")
+
+
+class SeedModule4CommandTests(TestCase):
+    def test_seed_module4_creates_expected_module_and_active_session(self):
+        call_command("seed_module4")
+
+        module = TrainingModule.objects.get(code="MODULE_4")
+        session = TrainingSession.objects.get(session_code="M4-ANDO-001")
+
+        self.assertEqual(module.title, "Module 4 - Sources fiables")
+        self.assertEqual(session.module, module)
+        self.assertEqual(session.location, "Lycee Andohalo Antananarivo")
+        self.assertEqual(session.trainer_name, "Formateur TAfHSSiM")
+        self.assertTrue(session.is_active)
+
+    def test_seed_module4_is_idempotent(self):
+        call_command("seed_module4")
+        call_command("seed_module4")
+
+        self.assertEqual(TrainingModule.objects.filter(code="MODULE_4").count(), 1)
+        self.assertEqual(TrainingSession.objects.filter(session_code="M4-ANDO-001").count(), 1)
+
+    def test_seed_module4_does_not_overwrite_existing_session_details(self):
+        call_command("seed_module4")
+        session = TrainingSession.objects.get(session_code="M4-ANDO-001")
+        session.location = "Autre lieu"
+        session.trainer_name = "Autre formateur"
+        session.is_active = False
+        session.save()
+
+        call_command("seed_module4")
+        session.refresh_from_db()
+
+        self.assertEqual(session.location, "Autre lieu")
+        self.assertEqual(session.trainer_name, "Autre formateur")
+        self.assertFalse(session.is_active)
+
+
+class Module4SubmissionConstraintTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_4",
+            title="Module 4 - Sources fiables",
+            description="Evaluer la credibilite d'un contenu.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M4-ANDO-001",
+            is_active=True,
+        )
+        self.student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rakoto Aina",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+            group_name="Salle A",
+        )
+
+    def make_submission(self, student):
+        return Module4Submission.objects.create(
+            student=student,
+            session=self.session,
+            school_id_number_snapshot=student.school_id_number,
+            auto_eval_explain_source="bien",
+            auto_eval_verify_info="parfois",
+            auto_eval_spot_doubtful="tres_bien",
+            todo_chose_info=True,
+            todo_opened_first_source=True,
+            todo_checked_publisher=True,
+            todo_checked_date=True,
+            todo_checked_evidence=True,
+            todo_compared_second=True,
+            todo_identified_reliable_sign=True,
+            todo_identified_doubtful_sign=True,
+            todo_decided_reliable_or_not=True,
+            todo_explained_choice=True,
+            quiz_q1="faux",
+            quiz_q2="vrai",
+            quiz_q3="vrai",
+            quiz_q4="verifier_autres_sources",
+            quiz_q5_selected=list(Module4Submission.QUIZ_Q5_CORRECT_ANSWERS),
+            quiz_q6_selected=list(Module4Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            quiz_q7="faux",
+            practical_subject="Volcans à Madagascar",
+            practical_first_source="www.exemple.mg",
+            practical_publisher="Un professeur",
+            practical_has_date="oui",
+            practical_has_evidence="oui",
+            practical_compared="oui",
+            practical_second_source="www.exemple2.mg",
+            practical_decision="fiable",
+            practical_explanation="Les deux sources disent la même chose.",
+            feedback_understood_today="J'ai compris comment vérifier une source.",
+            feedback_still_difficult="",
+            feedback_confidence_verify="oui",
+        )
+
+    def test_duplicate_school_id_is_blocked(self):
+        self.make_submission(self.student)
+        other = Student.objects.create(
+            school_id_number="01",
+            full_name="Autre eleve",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+        )
+        with self.assertRaises(IntegrityError):
+            self.make_submission(other)
+
+    def test_score_is_computed_on_save(self):
+        submission = self.make_submission(self.student)
+        self.assertEqual(submission.computed_score, 7)
+
+
+class Module4FormViewTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_4",
+            title="Module 4 - Sources fiables",
+            description="Evaluer la credibilite d'un contenu.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M4-ANDO-001",
+            is_active=True,
+        )
+        self.module2 = TrainingModule.objects.create(
+            code="MODULE_2", title="Module 2", description="Test",
+        )
+        TrainingSession.objects.create(
+            module=self.module2,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo",
+            trainer_name="Formateur",
+            session_code="M2-ANDO-001",
+            is_active=True,
+        )
+        self.module3 = TrainingModule.objects.create(
+            code="MODULE_3", title="Module 3", description="Test",
+        )
+        TrainingSession.objects.create(
+            module=self.module3,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo",
+            trainer_name="Formateur",
+            session_code="M3-ANDO-001",
+            is_active=True,
+        )
+
+    def valid_payload(self):
+        return {
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_explain_source": "bien",
+            "auto_eval_verify_info": "parfois",
+            "auto_eval_spot_doubtful": "tres_bien",
+            "todo_chose_info": "on",
+            "todo_opened_first_source": "on",
+            "todo_checked_publisher": "on",
+            "todo_checked_date": "on",
+            "todo_checked_evidence": "on",
+            "todo_compared_second": "on",
+            "todo_identified_reliable_sign": "on",
+            "todo_identified_doubtful_sign": "on",
+            "todo_decided_reliable_or_not": "on",
+            "todo_explained_choice": "on",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4": "verifier_autres_sources",
+            "quiz_q5_selected": list(Module4Submission.QUIZ_Q5_CORRECT_ANSWERS),
+            "quiz_q6_selected": list(Module4Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            "quiz_q7": "faux",
+            "practical_subject": "Volcans à Madagascar",
+            "practical_first_source": "www.exemple.mg",
+            "practical_publisher": "Un professeur",
+            "practical_has_date": "oui",
+            "practical_has_evidence": "oui",
+            "practical_compared": "oui",
+            "practical_second_source": "www.exemple2.mg",
+            "practical_decision": "fiable",
+            "practical_explanation": "Les deux sources disent la même chose.",
+            "feedback_understood_today": "J'ai compris.",
+            "feedback_still_difficult": "",
+            "feedback_confidence_verify": "oui",
+        }
+
+    def test_module_4_form_get(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 4 - Sources fiables")
+        self.assertContains(response, "Envoyer")
+
+    def test_valid_submission_creates_student_and_submission(self):
+        response = self.client.post(reverse("surveys:module_4"), data=self.valid_payload())
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.count(), 1)
+        self.assertEqual(Module4Submission.objects.count(), 1)
+        submission = Module4Submission.objects.get()
+        self.assertEqual(submission.school_id_number_snapshot, "01")
+        self.assertEqual(submission.computed_score, 7)
+
+    def test_invalid_school_id_is_rejected(self):
+        payload = self.valid_payload()
+        payload["school_id_number"] = "1"
+        response = self.client.post(reverse("surveys:module_4"), data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Entre exactement 2 chiffres")
+        self.assertEqual(Student.objects.count(), 0)
+        self.assertEqual(Module4Submission.objects.count(), 0)
+
+    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
+        self.client.post(reverse("surveys:module_4"), data=self.valid_payload())
+        payload = self.valid_payload()
+        payload["full_name"] = "Autre eleve"
+        response = self.client.post(reverse("surveys:module_4"), data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
+        self.assertEqual(Module4Submission.objects.count(), 1)
+
+    def test_same_school_id_can_submit_all_modules_separately(self):
+        m2 = {
+            "school_id_number": "01", "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "auto_eval_internet_explained": "un_peu", "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui", "quiz_q1": "faux", "quiz_q2": "vrai",
+            "quiz_q3": "vrai", "quiz_q4_selected": ["chercher_une_explication"],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "test", "practical_site_text": "",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "test", "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+        self.assertEqual(self.client.post(reverse("surveys:module_2"), data=m2).status_code, 302)
+
+        m3 = {
+            "school_id_number": "01", "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "auto_eval_keywords": "bien", "auto_eval_improve": "un_peu",
+            "auto_eval_compare": "bien", "quiz_q1": "faux", "quiz_q2": "vrai",
+            "quiz_q3": "vrai", "quiz_q4": "faux", "quiz_q5": "cours_equation_seconde_exemple",
+            "quiz_q6": "photosynthese_cours_lycee_pdf", "quiz_q7_selected": ["ajouter_matiere_ou_niveau"],
+            "practical_starting_question": "test", "practical_keywords_used": "test",
+            "practical_site_found": "", "practical_subject": "mathematiques",
+            "practical_what_learned": "test",
+            "feedback_understood_today": "test", "feedback_still_difficult": "",
+            "feedback_confidence_search": "oui",
+        }
+        self.assertEqual(self.client.post(reverse("surveys:module_3"), data=m3).status_code, 302)
+
+        self.assertEqual(
+            self.client.post(reverse("surveys:module_4"), data=self.valid_payload()).status_code, 302,
+        )
+
+        self.assertEqual(Submission.objects.count(), 1)
+        self.assertEqual(Module3Submission.objects.count(), 1)
+        self.assertEqual(Module4Submission.objects.count(), 1)
+        self.assertEqual(Student.objects.count(), 3)
+
+    def test_success_page_requires_matching_session_submission_id(self):
+        self.client.post(reverse("surveys:module_4"), data=self.valid_payload())
+        submission = Module4Submission.objects.get()
+        other_client = self.client_class()
+        response = other_client.get(reverse("surveys:module_4_success", args=[submission.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("surveys:module_4"))
+
+    def test_module_4_form_returns_503_when_no_active_session(self):
+        self.session.is_active = False
+        self.session.save()
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+
+    def test_score_calculation_single_choice(self):
+        submission = Module4Submission.objects.create(
+            student=Student.objects.create(school_id_number="01", full_name="Test", class_level=Student.CLASS_LEVEL_SECONDE),
+            session=self.session,
+            school_id_number_snapshot="01",
+            auto_eval_explain_source="bien", auto_eval_verify_info="parfois",
+            auto_eval_spot_doubtful="bien",
+            quiz_q1="faux", quiz_q2="vrai", quiz_q3="vrai",
+            quiz_q4="verifier_autres_sources",
+            quiz_q7="faux",
+            quiz_q5_selected=list(Module4Submission.QUIZ_Q5_CORRECT_ANSWERS),
+            quiz_q6_selected=list(Module4Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            practical_subject="Test", practical_first_source="x",
+            practical_has_date="oui", practical_has_evidence="oui",
+            practical_compared="oui", practical_decision="fiable",
+            practical_explanation="x",
+            feedback_understood_today="x", feedback_confidence_verify="oui",
+        )
+        self.assertEqual(submission.computed_score, 7)
+
+    def test_score_zero_for_wrong_answers(self):
+        submission = Module4Submission.objects.create(
+            student=Student.objects.create(school_id_number="02", full_name="Test2", class_level=Student.CLASS_LEVEL_SECONDE),
+            session=self.session,
+            school_id_number_snapshot="02",
+            auto_eval_explain_source="pas_encore", auto_eval_verify_info="jamais",
+            auto_eval_spot_doubtful="pas_encore",
+            quiz_q1="vrai", quiz_q2="faux", quiz_q3="faux",
+            quiz_q4="partager_vite",
+            quiz_q7="vrai",
+            quiz_q5_selected=["titre_choquant"],
+            quiz_q6_selected=["preuves_claires"],
+            practical_subject="Test", practical_first_source="x",
+            practical_has_date="non", practical_has_evidence="non",
+            practical_compared="non", practical_decision="douteuse",
+            practical_explanation="x",
+            feedback_understood_today="x", feedback_confidence_verify="pas_encore",
+        )
+        self.assertEqual(submission.computed_score, 0)
+
+
+class DashboardModule4Tests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="formateur", password="motdepasse-solide-123",
+        )
+        self.module = TrainingModule.objects.create(
+            code="MODULE_4", title="Module 4 - Sources fiables",
+            description="Evaluer la credibilite.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module, date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M4-ANDO-001", is_active=True,
+        )
+        self.student = Student.objects.create(
+            school_id_number="01", full_name="Rakoto Aina",
+            class_level=Student.CLASS_LEVEL_SECONDE, group_name="Salle A",
+        )
+        Module4Submission.objects.create(
+            student=self.student, session=self.session,
+            school_id_number_snapshot="01",
+            auto_eval_explain_source="bien", auto_eval_verify_info="parfois",
+            auto_eval_spot_doubtful="tres_bien",
+            todo_chose_info=True, todo_opened_first_source=True,
+            todo_checked_publisher=True, todo_checked_date=True,
+            todo_checked_evidence=True, todo_compared_second=False,
+            todo_identified_reliable_sign=True, todo_identified_doubtful_sign=True,
+            todo_decided_reliable_or_not=True, todo_explained_choice=True,
+            quiz_q1="faux", quiz_q2="vrai", quiz_q3="vrai",
+            quiz_q4="verifier_autres_sources",
+            quiz_q5_selected=list(Module4Submission.QUIZ_Q5_CORRECT_ANSWERS),
+            quiz_q6_selected=list(Module4Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            quiz_q7="faux",
+            practical_subject="Volcans", practical_first_source="www.exemple.mg",
+            practical_publisher="Prof", practical_has_date="oui",
+            practical_has_evidence="oui", practical_compared="oui",
+            practical_second_source="www.exemple2.mg", practical_decision="fiable",
+            practical_explanation="Test.",
+            feedback_understood_today="Compris.", feedback_still_difficult="",
+            feedback_confidence_verify="oui",
+        )
+
+    def test_dashboard_module_4_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_module_4"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_csv_export_module_4_requires_login(self):
+        response = self.client.get(reverse("surveys:export_module_4_csv"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_module_4_renders_for_logged_in(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_module_4"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Score moyen")
+        self.assertContains(response, "Rakoto Aina")
+
+    def test_csv_export_module_4_contains_data(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:export_module_4_csv"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        content = response.content.decode()
+        self.assertIn("Rakoto Aina", content)
+        self.assertIn("school_id_number", content)
+        self.assertIn("computed_score", content)
+
+    def test_csv_export_sanitizes_formula_like_cells(self):
+        self.student.full_name = "=cmd"
+        self.student.save()
+        submission = Module4Submission.objects.get()
+        submission.practical_subject = "+danger"
+        submission.feedback_understood_today = "@risk"
+        submission.feedback_still_difficult = "-test"
+        submission.save()
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:export_module_4_csv"))
+        content = response.content.decode()
+        self.assertIn("'=cmd", content)
+        self.assertIn("'+danger", content)
+        self.assertIn("'@risk", content)
+        self.assertIn("'-test", content)
+
+
+class Module4HomeAndCockpitTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_4", title="Module 4 - Sources fiables",
+            description="Evaluer la credibilite.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module, date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M4-ANDO-001", is_active=True,
+        )
+
+    def test_home_page_shows_module_4_when_active(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 4 - Sources fiables")
+        self.assertContains(response, "Disponible")
+        self.assertContains(response, "Répondre au questionnaire")
+
+    def test_home_page_shows_module_4_unavailable_when_no_session(self):
+        self.session.is_active = False
+        self.session.save()
+        response = self.client.get(reverse("surveys:home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 4 - Sources fiables")
+        self.assertContains(response, "Indisponible")
+
+    def test_cockpit_shows_module_4_when_logged_in(self):
+        user = get_user_model().objects.create_user(
+            username="formateur", password="motdepasse-solide-123",
+        )
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 4 - Sources fiables")
+        self.assertContains(response, "Export CSV Module 4")
 
 
 class TrainingSessionConstraintTests(TestCase):

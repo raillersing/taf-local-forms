@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Module 4 - Sources fiables{% endblock %}
+{% block hero_title %}Module 4 - Sources fiables{% endblock %}
+{% block hero_text %}Apprends à reconnaître une information fiable sur Internet.{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    <section class="card intro-card">
+        <p class="pill">{{ session.session_code }}</p>
+        <h2>Avant de commencer</h2>
+        <p>{{ module_4_summary }}</p>
+    </section>
+
+    <section class="card">
+        <h2>Objectifs de la séance</h2>
+        <ul style="margin-top:0.75rem;padding-left:1.25rem;display:grid;gap:0.4rem">
+            <li>Je sais reconnaître une source fiable.</li>
+            <li>Je sais repérer une information douteuse.</li>
+            <li>Je sais regarder l'auteur ou l'organisation qui publie.</li>
+            <li>Je sais regarder la date d'une information.</li>
+            <li>Je sais chercher des preuves ou des exemples.</li>
+            <li>Je sais comparer au moins deux sources avant de croire une information.</li>
+            <li>Je comprends qu'il ne faut pas tout croire ni tout partager rapidement.</li>
+        </ul>
+    </section>
+
+    <form method="post" class="card form-card">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <section class="form-section">
+            <h2>Tes informations</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.school_id_number %}
+                {% include "surveys/partials/field.html" with field=form.full_name %}
+                {% include "surveys/partials/field.html" with field=form.class_level %}
+                {% include "surveys/partials/field.html" with field=form.group_name %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Avant la séance</h2>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_explain_source %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_verify_info %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_spot_doubtful %}
+        </section>
+
+        <section class="form-section">
+            <h2>Pendant la séance</h2>
+            <div class="checkbox-list">
+                {% include "surveys/partials/field.html" with field=form.todo_chose_info %}
+                {% include "surveys/partials/field.html" with field=form.todo_opened_first_source %}
+                {% include "surveys/partials/field.html" with field=form.todo_checked_publisher %}
+                {% include "surveys/partials/field.html" with field=form.todo_checked_date %}
+                {% include "surveys/partials/field.html" with field=form.todo_checked_evidence %}
+                {% include "surveys/partials/field.html" with field=form.todo_compared_second %}
+                {% include "surveys/partials/field.html" with field=form.todo_identified_reliable_sign %}
+                {% include "surveys/partials/field.html" with field=form.todo_identified_doubtful_sign %}
+                {% include "surveys/partials/field.html" with field=form.todo_decided_reliable_or_not %}
+                {% include "surveys/partials/field.html" with field=form.todo_explained_choice %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Petit quiz</h2>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q1 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q2 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q3 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q4 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q5_selected %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q6_selected %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q7 %}
+        </section>
+
+        <section class="form-section">
+            <h2>Activité pratique</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.practical_subject %}
+                {% include "surveys/partials/field.html" with field=form.practical_first_source %}
+                {% include "surveys/partials/field.html" with field=form.practical_publisher %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_has_date %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_has_evidence %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_compared %}
+                {% include "surveys/partials/field.html" with field=form.practical_second_source %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_decision %}
+                {% include "surveys/partials/field.html" with field=form.practical_explanation %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Fin de séance</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.feedback_understood_today %}
+                {% include "surveys/partials/field.html" with field=form.feedback_still_difficult %}
+            </div>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.feedback_confidence_verify %}
+        </section>
+
+        <button type="submit" class="primary-button">Envoyer</button>
+    </form>
+</main>
+{% endblock %}

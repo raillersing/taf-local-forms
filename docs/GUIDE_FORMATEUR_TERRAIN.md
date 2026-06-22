@@ -126,6 +126,7 @@ Adresses :
 
 - Module 2 : `http://<IP_PC>:8000/dashboard/module-2/`
 - Module 3 : `http://<IP_PC>:8000/dashboard/module-3/`
+- Module 4 : `http://<IP_PC>:8000/dashboard/module-4/`
 
 Les dashboards permettent de :
 

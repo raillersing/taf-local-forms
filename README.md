@@ -191,7 +191,7 @@ Si les élèves n'arrivent pas à ouvrir la page :
 - `SECRET_KEY` n'est plus la valeur d'exemple ;
 - l'IP locale de l'ordinateur est connue ;
 - l'accueil élèves `/` s'ouvre sur l'ordinateur ;
-- un téléphone sur le même réseau ouvre bien `/module-2/` et `/module-3/` ;
+- un téléphone sur le même réseau ouvre bien `/module-2/`, `/module-3/` et `/module-4/` ;
 - le cockpit formateur `/dashboard/` est accessible.
 
 Si vous utilisez le mode sans Docker, adaptez cette checklist à votre commande de lancement locale.
@@ -219,14 +219,18 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 - Accueil élèves (liste des modules) : `/`
 - Formulaire Module 2 : `/module-2/`
 - Formulaire Module 3 : `/module-3/`
+- Formulaire Module 4 : `/module-4/`
 - Page de confirmation : `/module-2/success/<id>/`
 - Page de confirmation Module 3 : `/module-3/success/<id>/`
+- Page de confirmation Module 4 : `/module-4/success/<id>/`
 - Cockpit formateur (centralisé) : `/dashboard/`
 - Dashboard Module 2 : `/dashboard/module-2/`
 - Dashboard Module 3 : `/dashboard/module-3/`
+- Dashboard Module 4 : `/dashboard/module-4/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - CSV Module 2 : `/dashboard/export/module-2.csv`
 - CSV Module 3 : `/dashboard/export/module-3.csv`
+- CSV Module 4 : `/dashboard/export/module-4.csv`
 - Admin : `/admin/`
 
 Le cockpit formateur `/dashboard/` regroupe tous les outils formateur :
