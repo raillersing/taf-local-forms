@@ -74,6 +74,61 @@ a:link, a:visited {
 
 #user-tools a {
   color: var(--taf-sky-strong);
+  font-weight: 600;
+}
+
+#user-tools a:hover {
+  color: var(--taf-white);
+}
+
+#recent-actions-module h2, .module h2, .module caption {
+  background: var(--taf-navy);
+  color: var(--taf-white);
+}
+
+.object-tools a:link, .object-tools a:visited {
+  color: var(--taf-white);
+  background: var(--taf-navy);
+}
+
+.selector-chosen h2 {
+  background: var(--taf-navy) !important;
+  color: var(--taf-white) !important;
+}
+
+.calendar td a:link, .calendar td a:visited {
+  color: var(--taf-navy);
+}
+
+.calendar td a:hover {
+  background: var(--taf-sky);
+}
+
+.calendar caption {
+  background: var(--taf-navy);
+  color: var(--taf-white);
+}
+
+#changelist-filter a {
+  color: var(--taf-navy);
+}
+
+#changelist-filter li.selected a {
+  color: var(--taf-navy);
+  font-weight: 700;
+}
+
+.help {
+  color: var(--taf-muted);
+}
+
+.field-box label {
+  color: var(--taf-text);
+  font-weight: 600;
+}
+
+#user-tools a {
+  color: var(--taf-sky-strong);
 }
 
 #user-tools a:hover {

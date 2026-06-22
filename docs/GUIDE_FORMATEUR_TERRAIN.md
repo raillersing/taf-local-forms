@@ -122,6 +122,28 @@ Le cockpit centralise tous les outils formateur :
 
 Connexion obligatoire.
 
+### Navigation
+
+La barre de navigation en haut de chaque page donne accès à :
+- **Modules de formation** → accueil public
+- **Espace formateur** → tableau de bord
+- **Accès réseau** → diagnostic et adresses (pages formateur uniquement)
+- **Configuration réseau** → paramètres IP (pages formateur uniquement)
+- **Admin avancé** → administration Django (pages formateur uniquement)
+
+Le logo Internet Society / TAfHSSiM redirige vers le cockpit formateur.
+
+### Sous-navigation du cockpit
+
+Le cockpit `/dashboard/` est organisé en sections avec onglets :
+- **Vue d'ensemble**, **Modules**, **Présence**, **Réseau**, **Exports**, **Admin**
+
+Chaque section est accessible par un clic sur l'onglet correspondant.
+
+### Adresse IP locale
+
+Quand `TAF_LAN_HOST` est défini, l'IP réelle du laptop s'affiche dans une bannière verte du dashboard. Tous les liens réseau s'ouvrent dans un nouvel onglet (`target="_blank"`, `rel="noopener noreferrer"`). Si l'IP n'est pas configurée, un message d'alerte invite à la définir.
+
 ## Dashboard par module
 
 Adresses :

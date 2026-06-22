@@ -102,11 +102,41 @@ Rappel : ne donnez pas `localhost`.
 
 ## Accès formateur
 
-- Admin Django : `http://192.168.1.23:8000/admin/`
+- Cockpit formateur (tableau de bord centralisé) : `http://192.168.1.23:8000/dashboard/`
+- Admin avancé : `http://192.168.1.23:8000/admin/`
+- Accès réseau (diagnostic) : `/dashboard/network/`
+- Configuration réseau : `/dashboard/settings/`
 - Dashboard Module 2 : `http://192.168.1.23:8000/dashboard/module-2/`
 - Export CSV : `http://192.168.1.23:8000/dashboard/export/module-2.csv`
 
 Le dashboard et l'admin demandent une connexion.
+
+### Navigation
+
+La barre de navigation en haut de chaque page donne accès à :
+- **Modules de formation** → accueil public
+- **Espace formateur** → tableau de bord
+- **Accès réseau** → diagnostic et adresses (pages formateur uniquement)
+- **Configuration réseau** → paramètres IP (pages formateur uniquement)
+- **Admin avancé** → administration Django (pages formateur uniquement)
+
+Le logo Internet Society / TAfHSSiM redirige vers le cockpit formateur.
+
+### Sous-navigation du dashboard
+
+Le cockpit formateur `/dashboard/` est organisé en sections accessibles par des onglets :
+- **Vue d'ensemble** — statistiques globales (total réponses, élèves, score, modules ouverts)
+- **Modules** — cartes Module 2/3/4 avec statut, actions et switch réponses
+- **Présence** — compteur en direct des élèves en cours de saisie
+- **Réseau** — adresses IP et liens cliquables vers chaque page
+- **Exports** — téléchargement CSV des résultats
+- **Admin** — outils avancés et documentation terrain
+
+### Adresse IP locale dans le dashboard
+
+Le dashboard affiche l'IP locale réelle du laptop quand `TAF_LAN_HOST` est configuré dans `.env`.
+Tous les liens réseau utilisent cette IP et s'ouvrent dans un nouvel onglet (`target="_blank"`).
+Si l'IP n'est pas configurée, un message d'alerte invite à la configurer dans `/dashboard/settings/`.
 
 ## Export CSV
 
@@ -167,6 +197,8 @@ Cette page affiche :
 - les adresses du dashboard, export CSV et admin ;
 - les IP candidates détectées automatiquement ;
 - des avertissements si l'adresse actuelle est locale uniquement.
+
+Tous les liens réseau s'ouvrent dans un nouvel onglet (`target="_blank"`, `rel="noopener noreferrer"`).
 
 Elle respecte la variable d'environnement `TAF_LAN_HOST` :
 
@@ -250,7 +282,9 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 - Admin : `/admin/`
 
 Le cockpit formateur `/dashboard/` regroupe tous les outils formateur :
-liens vers chaque dashboard, export CSV, diagnostic réseau, configuration réseau, et compteur temps réel des élèves en cours de saisie.
+liens vers chaque dashboard, export CSV, diagnostic réseau, configuration réseau, compteur temps réel des élèves, et switch d'ouverture/fermeture des réponses par module.
+
+Les liens réseau du dashboard s'ouvrent dans un nouvel onglet (`target="_blank"`, `rel="noopener noreferrer"`).
 
 ## Dépannage
 

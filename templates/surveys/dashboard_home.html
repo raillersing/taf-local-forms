@@ -1,37 +1,122 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Cockpit formateur{% endblock %}
+{% block title %}Cockpit formateur — Tableau de bord{% endblock %}
 {% block hero_title %}Cockpit formateur{% endblock %}
-{% block hero_text %}Vue d'ensemble des modules, des résultats et de la configuration réseau.{% endblock %}
+{% block hero_text %}Vue d'ensemble des modules, des résultats, de la présence et de la configuration réseau.{% endblock %}
 
-{% block nav_modules %}
-<a href="{% url 'surveys:home' %}">Modules de formation</a>
+{% block nav_extra_links %}
+<li><a href="{% url 'surveys:dashboard_network' %}">Accès réseau</a></li>
+<li><a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a></li>
+<li><a href="{% url 'admin:index' %}">Admin avancé</a></li>
 {% endblock %}
 
 {% block content %}
 <main class="content-grid">
-    <section class="card stats-grid">
-        <article class="stat-card">
-            <p class="stat-label">Total réponses</p>
-            <p class="stat-value">{{ total_submissions }}</p>
-        </article>
-        <article class="stat-card">
-            <p class="stat-label">Total élèves</p>
-            <p class="stat-value">{{ total_students }}</p>
-        </article>
-        <article class="stat-card">
-            <p class="stat-label">Score moyen</p>
-            <p class="stat-value">{{ average_score|floatformat:1 }}/5</p>
-        </article>
-        <article class="stat-card">
-            <p class="stat-label">Modules ouverts</p>
-            <p class="stat-value">{{ modules_open }}/{{ module_list|length }}</p>
-        </article>
+    <!-- Dashboard sub-navigation -->
+    <nav class="sub-nav" aria-label="Sections du tableau de bord">
+        <a href="#overview" class="sub-nav-link">Vue d'ensemble</a>
+        <a href="#modules" class="sub-nav-link">Modules</a>
+        <a href="#presence" class="sub-nav-link">Présence</a>
+        <a href="#network" class="sub-nav-link">Réseau</a>
+        <a href="#exports" class="sub-nav-link">Exports</a>
+        <a href="#advanced" class="sub-nav-link">Admin</a>
+    </nav>
+
+    <!-- Section: Vue d'ensemble -->
+    <section id="overview" class="card">
+        <h2>Vue d'ensemble</h2>
+        <div class="stats-grid">
+            <article class="stat-card">
+                <p class="stat-label">Total réponses</p>
+                <p class="stat-value">{{ total_submissions }}</p>
+            </article>
+            <article class="stat-card">
+                <p class="stat-label">Total élèves</p>
+                <p class="stat-value">{{ total_students }}</p>
+            </article>
+            <article class="stat-card">
+                <p class="stat-label">Score moyen</p>
+                <p class="stat-value">{{ average_score|floatformat:1 }}/5</p>
+            </article>
+            <article class="stat-card">
+                <p class="stat-label">Modules ouverts</p>
+                <p class="stat-value">{{ modules_open }}/{{ module_list|length }}</p>
+            </article>
+        </div>
     </section>
 
-    <section class="card">
-        <h2>Élèves en cours de saisie</h2>
-        <div id="presence-container" style="display:grid;gap:0.7rem;margin-top:0.75rem">
+    <!-- Section: Modules -->
+    <section id="modules" class="card">
+        <h2>Modules de formation</h2>
+        <p class="muted" style="margin-top:0.25rem">Gère les modules, active ou désactive les réponses, accède aux résultats.</p>
+        <div class="module-grid" style="margin-top:1rem">
+            {% for item in module_list %}
+                <div class="module-card" style="padding:1.25rem;border:1px solid var(--line);border-radius:12px">
+                    <div class="module-card-header">
+                        <div>
+                            <strong style="font-size:1.1rem">{{ item.module.title }}</strong>
+                            <br>
+                            <span class="muted" style="font-size:0.85rem">{{ item.module.code }}</span>
+                            {% if item.has_active_session %}
+                                {% if item.accepting_responses %}
+                                    <span class="pill" style="margin-left:0.5rem;background:#d9f2e3;color:#155724">Réponses ouvertes</span>
+                                {% else %}
+                                    <span class="pill" style="margin-left:0.5rem;background:#fff3cd;color:#856404">Réponses fermées</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p style="margin-top:0.5rem;color:var(--muted);font-size:0.9rem">{{ item.module.description|default:"" }}</p>
+                    <div class="module-card-actions">
+                        {% if item.has_active_session %}
+                            {% if item.module.code == "MODULE_2" %}
+                                <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">Dashboard</a>
+                                <a class="text-link" href="{% url 'surveys:module_2' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
+                                <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV</a>
+                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_2' %}" style="display:inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
+                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
+                                    </button>
+                                </form>
+                            {% elif item.module.code == "MODULE_3" %}
+                                <a class="text-link" href="{% url 'surveys:dashboard_module_3' %}">Dashboard</a>
+                                <a class="text-link" href="{% url 'surveys:module_3' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
+                                <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}">Export CSV</a>
+                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_3' %}" style="display:inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
+                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
+                                    </button>
+                                </form>
+                            {% elif item.module.code == "MODULE_4" %}
+                                <a class="text-link" href="{% url 'surveys:dashboard_module_4' %}">Dashboard</a>
+                                <a class="text-link" href="{% url 'surveys:module_4' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
+                                <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}">Export CSV</a>
+                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_4' %}" style="display:inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
+                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <span class="muted" style="font-size:0.9rem">Aucune session active</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p class="muted">Aucun module enregistré.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Section: Présence en direct -->
+    <section id="presence" class="card">
+        <h2>Présence en direct</h2>
+        <p class="muted" style="margin-top:0.25rem">Élèves actuellement en train de remplir un questionnaire. Mise à jour toutes les 8 secondes.</p>
+        <div id="presence-container" style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:0.75rem">
             <div class="presence-counter">
                 <span class="presence-dot"></span>
                 <span>Module 2 : </span>
@@ -52,103 +137,90 @@
                 <span class="presence-count" id="presence-total">…</span>
             </div>
         </div>
+        <p class="muted" style="margin-top:0.5rem;font-size:0.85rem">Le compteur est indicatif. Un élève peut être compté même s'il a fini depuis moins d'une minute.</p>
     </section>
 
-    <section class="card">
-        <h2>Modules de formation</h2>
-        <div style="display:grid;gap:1.25rem;margin-top:0.75rem">
-            {% for item in module_list %}
-                <div class="module-card" style="padding:1rem;border:1px solid var(--line);border-radius:8px">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
-                        <div>
-                            <strong>{{ item.module.title }}</strong>
-                            <br>
-                            <span class="muted">{{ item.module.code }}</span>
-                            {% if item.has_active_session %}
-                                {% if item.accepting_responses %}
-                                    <span class="pill" style="margin-left:0.5rem;background:#d9f2e3;color:#155724">Réponses ouvertes</span>
-                                {% else %}
-                                    <span class="pill" style="margin-left:0.5rem;background:#fff3cd;color:#856404">Réponses fermées</span>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                        <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
-                            {% if item.has_active_session %}
-                                {% if item.module.code == "MODULE_2" %}
-                                    <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">Dashboard</a>
-                                    <a class="text-link" href="{% url 'surveys:module_2' %}">Consulter formulaire</a>
-                                    <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV</a>
-                                    <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_2' %}" style="display:inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                            {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                        </button>
-                                    </form>
-                                {% elif item.module.code == "MODULE_3" %}
-                                    <a class="text-link" href="{% url 'surveys:dashboard_module_3' %}">Dashboard</a>
-                                    <a class="text-link" href="{% url 'surveys:module_3' %}">Consulter formulaire</a>
-                                    <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}">Export CSV</a>
-                                    <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_3' %}" style="display:inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                            {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                        </button>
-                                    </form>
-                                {% elif item.module.code == "MODULE_4" %}
-                                    <a class="text-link" href="{% url 'surveys:dashboard_module_4' %}">Dashboard</a>
-                                    <a class="text-link" href="{% url 'surveys:module_4' %}">Consulter formulaire</a>
-                                    <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}">Export CSV</a>
-                                    <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_4' %}" style="display:inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                            {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                        </button>
-                                    </form>
-                                {% endif %}
-                            {% else %}
-                                <span class="muted">Aucune session active</span>
-                            {% endif %}
-                        </div>
-                    </div>
+    <!-- Section: Réseau -->
+    <section id="network" class="card">
+        <h2>Accès réseau</h2>
+        <p class="muted" style="margin-top:0.25rem">Adresses à donner aux élèves pour accéder aux questionnaires depuis leur téléphone.</p>
+        <div class="network-links" style="margin-top:1rem">
+            {% if network.configured_host %}
+                <div class="network-ip-banner">
+                    <strong>IP locale du laptop :</strong> <code>{{ network.configured_host }}</code>
                 </div>
-            {% empty %}
-                <p class="muted">Aucun module enregistré.</p>
-            {% endfor %}
+            {% else %}
+                <div class="alert">
+                    <strong>IP locale non configurée.</strong> Les liens ci-dessous utilisent l'adresse locale actuelle. Si les élèves ne peuvent pas accéder à l'application, configure l'IP dans <a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a>.
+                </div>
+            {% endif %}
+
+            <dl class="setting-list" style="margin-top:1rem">
+                <dt class="muted setting-label">Adresse à donner aux élèves (accueil)</dt>
+                <dd style="margin:0">
+                    <a class="network-link" href="{{ network.student_form_url }}" target="_blank" rel="noopener noreferrer">{{ network.student_form_url }}</a>
+                </dd>
+
+                <dt class="muted setting-label" style="margin-top:0.75rem">Module 2 — Comprendre Internet</dt>
+                <dd style="margin:0">
+                    <a class="network-link" href="{{ network.module_2_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_2_url }}</a>
+                </dd>
+
+                <dt class="muted setting-label" style="margin-top:0.75rem">Module 3 — Recherche efficace</dt>
+                <dd style="margin:0">
+                    <a class="network-link" href="{{ network.module_3_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_3_url }}</a>
+                </dd>
+
+                <dt class="muted setting-label" style="margin-top:0.75rem">Module 4 — Sources fiables</dt>
+                <dd style="margin:0">
+                    <a class="network-link" href="{{ network.module_4_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_4_url }}</a>
+                </dd>
+
+                <dt class="muted setting-label" style="margin-top:0.75rem">Adresse formateur (cockpit)</dt>
+                <dd style="margin:0">
+                    <a class="network-link" href="{{ network.cockpit_url }}" target="_blank" rel="noopener noreferrer">{{ network.cockpit_url }}</a>
+                </dd>
+            </dl>
+
+            <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap">
+                <a class="text-link" href="{% url 'surveys:dashboard_network' %}" target="_blank" rel="noopener noreferrer">Diagnostic réseau complet &rarr;</a>
+                <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer l'IP locale &rarr;</a>
+            </div>
         </div>
     </section>
 
-    <section class="card">
-        <h2>Outils formateur</h2>
+    <!-- Section: Exports -->
+    <section id="exports" class="card">
+        <h2>Exports CSV</h2>
+        <p class="muted" style="margin-top:0.25rem">Télécharge les résultats de chaque module au format CSV (tableur).</p>
         <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.75rem">
-            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Accès réseau</a>
-            <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a>
-            <a class="text-link" href="{% url 'admin:index' %}">Admin avancé</a>
-            <a class="text-link" href="/docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md" target="_blank">Guide dépannage réseau</a>
+            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 2</a>
+            <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 3</a>
+            <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 4</a>
         </div>
     </section>
 
-    <section class="card">
-        <h2>Configuration réseau</h2>
-        <dl style="display:grid;gap:0.5rem;margin-top:0.75rem">
-            <dt class="muted" style="font-weight:600">URL élève recommandée</dt>
-            <dd style="margin:0">
-                <strong>{{ network.student_form_url }}</strong>
-            </dd>
-
-            <dt class="muted" style="font-weight:600;margin-top:0.5rem"><code>TAF_LAN_HOST</code></dt>
-            <dd style="margin:0">
-                {% if network.configured_host %}
-                    {{ network.configured_host }}
-                {% else %}
-                    <span class="alert" style="display:inline-block;padding:0.4rem 0.8rem;font-size:0.9rem">
-                        Non défini. Ajoute <code>TAF_LAN_HOST=&lt;IP_DU_LAPTOP&gt;</code> dans <code>.env</code>.
-                    </span>
-                {% endif %}
-            </dd>
-        </dl>
-        <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap">
-            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet</a>
-            <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer depuis l'interface &rarr;</a>
+    <!-- Section: Admin avancé -->
+    <section id="advanced" class="card">
+        <h2>Outils formateur</h2>
+        <p class="muted" style="margin-top:0.25rem">Configuration avancée, accès réseau et documentation terrain.</p>
+        <div class="tools-grid" style="margin-top:0.75rem">
+            <a class="tool-card" href="{% url 'surveys:dashboard_network' %}" target="_blank" rel="noopener noreferrer">
+                <strong>Accès réseau</strong>
+                <span class="muted" style="font-size:0.85rem">Adresses et diagnostic réseau</span>
+            </a>
+            <a class="tool-card" href="{% url 'surveys:dashboard_settings' %}">
+                <strong>Configuration réseau</strong>
+                <span class="muted" style="font-size:0.85rem">IP, port, hébergement autorisé</span>
+            </a>
+            <a class="tool-card" href="{% url 'admin:index' %}">
+                <strong>Admin avancé</strong>
+                <span class="muted" style="font-size:0.85rem">Gérer sessions, élèves, modules</span>
+            </a>
+            <a class="tool-card" href="/docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer">
+                <strong>Guide dépannage réseau</strong>
+                <span class="muted" style="font-size:0.85rem">WSL, pare-feu, accès téléphone</span>
+            </a>
         </div>
     </section>
 </main>

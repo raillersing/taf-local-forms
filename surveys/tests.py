@@ -1976,3 +1976,198 @@ class AdminAdvancedTests(TestCase):
     def test_admin_has_no_raw_secrets(self):
         response = self.client.get(reverse("admin:index"))
         self.assertNotContains(response, "SECRET_KEY")
+
+
+class F019NavigationUXTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(username="navux", password="secret", is_staff=True)
+        self.client.login(username="navux", password="secret")
+
+    def test_home_contains_modules_link(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Modules de formation")
+
+    def test_home_contains_espace_formateur(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    def test_logo_points_to_dashboard(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    def test_dashboard_shows_full_nav(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Modules de formation")
+        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, "Accès réseau")
+        self.assertContains(response, "Configuration réseau")
+        self.assertContains(response, "Admin avancé")
+
+    def test_dashboard_shows_all_subnav_tabs(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        for tab in ["Vue d'ensemble", "Modules", "Présence", "Réseau", "Exports", "Admin"]:
+            self.assertContains(response, tab)
+
+    def test_dashboard_shows_overview_stats(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Total réponses")
+        self.assertContains(response, "Total élèves")
+        self.assertContains(response, "Score moyen")
+        self.assertContains(response, "Modules ouverts")
+
+    def test_dashboard_shows_presence_section(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Présence en direct")
+        self.assertContains(response, "presence-module-2")
+        self.assertContains(response, "presence-module-3")
+        self.assertContains(response, "presence-module-4")
+
+    def test_dashboard_shows_network_section(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Accès réseau")
+        self.assertContains(response, "Diagnostic réseau complet")
+
+    def test_dashboard_shows_exports_section(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Exports CSV")
+        self.assertContains(response, "Export Module 2")
+        self.assertContains(response, "Export Module 3")
+        self.assertContains(response, "Export Module 4")
+
+    def test_dashboard_shows_advanced_section(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Outils formateur")
+        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Guide dépannage réseau")
+
+    def test_dashboard_links_have_target_blank(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, 'target="_blank"')
+        self.assertContains(response, 'rel="noopener noreferrer"')
+
+    def test_dashboard_shows_no_ip_placeholder(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertNotContains(response, "IP_DU_LAPTOP")
+
+    def test_dashboard_shows_ip_alert_when_not_configured(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "IP locale non configurée")
+
+    def test_network_page_links_have_target_blank(self):
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertContains(response, 'target="_blank"')
+        self.assertContains(response, 'rel="noopener noreferrer"')
+
+    def test_network_page_shows_ip_alert(self):
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertContains(response, "IP locale non configurée")
+
+    def test_subnav_is_present(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "sub-nav")
+        self.assertContains(response, "sub-nav-link")
+
+
+class F019NetworkIPTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(username="ipuser", password="secret", is_staff=True)
+        self.client.login(username="ipuser", password="secret")
+
+    @override_settings(TAF_LAN_HOST="192.168.0.100")
+    def test_dashboard_shows_configured_ip(self):
+        import os
+        os.environ["TAF_LAN_HOST"] = "192.168.0.100"
+        try:
+            response = self.client.get(reverse("surveys:dashboard_home"))
+            self.assertContains(response, "192.168.0.100")
+        finally:
+            os.environ.pop("TAF_LAN_HOST", None)
+
+    @override_settings(TAF_LAN_HOST="192.168.0.100")
+    def test_dashboard_links_use_configured_ip(self):
+        import os
+        os.environ["TAF_LAN_HOST"] = "192.168.0.100"
+        try:
+            response = self.client.get(reverse("surveys:dashboard_home"))
+            self.assertContains(response, "http://192.168.0.100:8000/")
+        finally:
+            os.environ.pop("TAF_LAN_HOST", None)
+
+    def test_dashboard_shows_config_link_when_no_ip(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Configurer l'IP locale")
+        self.assertContains(response, reverse("surveys:dashboard_settings"))
+
+
+class F019ModuleFormRegressionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+
+    def test_module_2_accessible(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 2")
+
+    def test_module_3_accessible(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 3")
+
+    def test_module_4_accessible(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 4")
+
+    def test_toggle_still_works(self):
+        from django.contrib.auth.models import User
+        User.objects.create_user(username="tog", password="tog", is_staff=True)
+        self.client.login(username="tog", password="tog")
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        self.assertTrue(session.accepting_responses)
+        response = self.client.post(
+            reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_2"}),
+            follow=True,
+        )
+        session.refresh_from_db()
+        self.assertFalse(session.accepting_responses)
+        self.assertEqual(response.status_code, 200)
+
+    def test_closed_submission_blocked(self):
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+        response = self.client.post(
+            reverse("surveys:module_2"),
+            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+        )
+        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
+
+
+class F019AdminContrastTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_superuser(
+            username="superux", password="superux", email="super@example.com"
+        )
+        self.client.login(username="superux", password="superux")
+
+    def test_admin_shows_cockpit_link(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    def test_admin_has_css(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, "css/admin.css")
+
+    def test_admin_no_raw_secrets(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertNotContains(response, "SECRET_KEY")
+
+    def test_admin_shows_formateur_tools(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, "Cockpit formateur")
