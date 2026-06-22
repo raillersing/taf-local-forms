@@ -14,11 +14,11 @@
             <div class="brand-mark">
                 {% brand_logo_exists as logo_exists %}
                 {% if logo_exists %}
-                    <a href="{% url 'surveys:dashboard_home' %}">
+                    <a href="{% url 'surveys:home' %}">
                         <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
                     </a>
                 {% else %}
-                    <a href="{% url 'surveys:dashboard_home' %}" class="brand-fallback-link">
+                    <a href="{% url 'surveys:home' %}" class="brand-fallback-link">
                         <div class="brand-fallback">Internet Society – Chapitre Madagascar</div>
                     </a>
                 {% endif %}
@@ -30,13 +30,7 @@
             </div>
         </header>
         {% block main_nav %}
-        <nav class="main-nav" aria-label="Navigation principale">
-            <ul class="nav-list">
-                <li><a href="{% url 'surveys:student_modules' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' %} class="nav-active"{% endif %}>Modules de formation</a></li>
-                <li><a href="{% url 'surveys:dashboard_home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_home' %} class="nav-active"{% endif %}>Dashboard</a></li>
-                {% block nav_extra_links %}{% endblock %}
-            </ul>
-        </nav>
+            {% include "surveys/partials/nav_public_landing.html" %}
         {% endblock %}
         {% if messages %}
         <div class="messages-container">

@@ -58,16 +58,45 @@ def home(request: HttpRequest) -> HttpResponse:
 
 
 def student_modules(request: HttpRequest) -> HttpResponse:
+    from django.urls import reverse
+    URL_MAP = {
+        "MODULE_2": "surveys:student_module_2_detail",
+        "MODULE_3": "surveys:student_module_3_detail",
+        "MODULE_4": "surveys:student_module_4_detail",
+    }
     modules = TrainingModule.objects.all().order_by("code")
     module_data = []
     for mod in modules:
         active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        detail_url = reverse(URL_MAP[mod.code])
         module_data.append({
             "module": mod,
             "has_active_session": active_session is not None,
             "active_session": active_session,
+            "detail_url": detail_url,
         })
     return render(request, "surveys/student_modules.html", {"module_data": module_data})
+
+
+def student_module_detail(request: HttpRequest, module_code: str) -> HttpResponse:
+    mod = get_object_or_404(TrainingModule, code=module_code)
+    active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+    accepting = active_session.accepting_responses if active_session else False
+
+    summary_map = {
+        "MODULE_2": MODULE_2_SUMMARY,
+        "MODULE_3": MODULE_3_SUMMARY,
+        "MODULE_4": MODULE_4_SUMMARY,
+    }
+    summary = summary_map.get(module_code, "")
+
+    return render(request, "surveys/student_module_detail.html", {
+        "module": mod,
+        "active_session": active_session,
+        "has_active_session": active_session is not None,
+        "accepting_responses": accepting,
+        "summary": summary,
+    })
 
 
 def module_2_form(request: HttpRequest) -> HttpResponse:

@@ -63,43 +63,52 @@ def get_network_access_context(request):
     detected_ip_candidates = [ip for ip in raw_candidates if not _is_docker_ip(ip)]
     detected_ip_candidates = detected_ip_candidates[:5]
 
+    has_detected_ips = bool(detected_ip_candidates)
+
     if explicit_host:
         recommended_host = explicit_host
-    elif current_host not in ("127.0.0.1", "localhost", "0.0.0.0"):
+    elif current_host not in ("127.0.0.1", "localhost", "0.0.0.0", ""):
         recommended_host = current_host
-    elif detected_ip_candidates:
+    elif has_detected_ips:
         recommended_host = detected_ip_candidates[0]
     else:
-        recommended_host = "<IP_DU_LAPTOP>"
+        recommended_host = ""
 
     port = taf_host_port or current_port or "8000"
 
+    has_lan_host = bool(explicit_host)
+
     def url_for(path):
-        return f"http://{recommended_host}:{port}{path}"
+        if recommended_host:
+            return f"http://{recommended_host}:{port}{path}"
+        url = f"http://localhost:{port}{path}"
+        return url
 
     warnings = []
 
-    if current_host in ("127.0.0.1", "localhost", "0.0.0.0"):
-        warnings.append(
-            "L'adresse actuelle ({}) ne fonctionne que sur cet ordinateur. "
-            "Les élèves ne peuvent pas l'utiliser depuis leur téléphone.".format(current_host)
-        )
-        if not explicit_host:
+    if not has_lan_host:
+        if not has_detected_ips:
             warnings.append(
-                "Ajoute TAF_LAN_HOST=<IP_DU_LAPTOP> dans .env "
-                "pour que la page affiche automatiquement la bonne adresse."
+                "IP locale non configurée. Aucune IP candidate détectée automatiquement. "
+                "Configure TAF_LAN_HOST dans l'interface Configuration réseau."
+            )
+        else:
+            warnings.append(
+                "IP locale non configurée. Les liens ci-dessous utilisent une IP détectée. "
+                "Configure TAF_LAN_HOST dans Configuration réseau pour une adresse stable."
             )
 
-    if _is_docker_ip(recommended_host):
-        warnings.append(
-            "L'adresse recommandée ({}) ressemble à une IP Docker. "
-            "Les élèves ne pourront probablement pas y accéder.".format(recommended_host)
-        )
+    if current_host in ("127.0.0.1", "localhost", "0.0.0.0"):
+        if not has_lan_host:
+            warnings.append(
+                "L'adresse actuelle ({}) ne fonctionne que sur cet ordinateur. "
+                "Les élèves ne peuvent pas l'utiliser depuis leur téléphone.".format(current_host)
+            )
 
-    if not explicit_host and not detected_ip_candidates:
+    if recommended_host and _is_docker_ip(recommended_host):
         warnings.append(
-            "Aucune IP locale candidate détectée automatiquement. "
-            "Renseigne TAF_LAN_HOST=<IP_DU_LAPTOP> dans .env."
+            "L'adresse actuelle ({}) ressemble à une IP Docker. "
+            "Les élèves ne pourront probablement pas y accéder.".format(recommended_host)
         )
 
     # ── LAN diagnostics ────────────────────────────────────
@@ -111,6 +120,7 @@ def get_network_access_context(request):
         "current_port": current_port,
         "configured_host": explicit_host or "",
         "configured_port": taf_host_port or "",
+        "has_lan_host": has_lan_host,
         "detected_ip_candidates": detected_ip_candidates,
         "recommended_host": recommended_host,
         "port": port,

@@ -1,0 +1,6 @@
+<nav class="main-nav" aria-label="Navigation étudiant">
+    <ul class="nav-list">
+        <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
+        <li><a href="{% url 'surveys:student_modules' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' or request.resolver_match and 'student_module_detail' in request.resolver_match.view_name %} class="nav-active"{% endif %}>Modules</a></li>
+    </ul>
+</nav>

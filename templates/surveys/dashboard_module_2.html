@@ -4,6 +4,10 @@
 {% block hero_title %}Dashboard Module 2{% endblock %}
 {% block hero_text %}Vue formateur pour suivre les réponses, le score moyen et l'avancement des activités.{% endblock %}
 
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
 {% block content %}
 <main class="content-grid">
     <section class="card stats-grid">
@@ -45,8 +49,6 @@
         <div class="section-row">
             <h2>Progression des activités</h2>
             <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
-                <a class="text-link" href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a>
-                <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Accès réseau</a>
                 <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Exporter le CSV</a>
             </div>
         </div>

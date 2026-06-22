@@ -5,6 +5,10 @@
 {% block hero_title %}Modules de formation{% endblock %}
 {% block hero_text %}Choisis un module et réponds aux questions.{% endblock %}
 
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
 {% block content %}
 <main class="content-grid">
     <section class="card intro-card">
@@ -30,33 +34,11 @@
             </div>
         </div>
 
-        {% if item.module.code == "MODULE_2" %}
-            {% include "surveys/partials/module_2_pedagogy.html" %}
-        {% elif item.module.code == "MODULE_3" %}
-            {% include "surveys/partials/module_3_pedagogy.html" %}
-        {% elif item.module.code == "MODULE_4" %}
-            {% include "surveys/partials/module_4_pedagogy.html" %}
-        {% endif %}
+        <p style="margin-top:0.75rem;color:var(--muted)">{{ item.module.description|default:"" }}</p>
 
         <div style="margin-top:1.25rem">
             {% if item.has_active_session %}
-                {% if item.active_session.accepting_responses %}
-                    {% if item.module.code == "MODULE_2" %}
-                        <a class="primary-button" href="{% url 'surveys:module_2' %}">Répondre au questionnaire</a>
-                    {% elif item.module.code == "MODULE_3" %}
-                        <a class="primary-button" href="{% url 'surveys:module_3' %}">Répondre au questionnaire</a>
-                    {% elif item.module.code == "MODULE_4" %}
-                        <a class="primary-button" href="{% url 'surveys:module_4' %}">Répondre au questionnaire</a>
-                    {% endif %}
-                {% else %}
-                    {% if item.module.code == "MODULE_2" %}
-                        <a class="primary-button consult-button" href="{% url 'surveys:module_2' %}">Consulter le questionnaire</a>
-                    {% elif item.module.code == "MODULE_3" %}
-                        <a class="primary-button consult-button" href="{% url 'surveys:module_3' %}">Consulter le questionnaire</a>
-                    {% elif item.module.code == "MODULE_4" %}
-                        <a class="primary-button consult-button" href="{% url 'surveys:module_4' %}">Consulter le questionnaire</a>
-                    {% endif %}
-                {% endif %}
+                <a class="primary-button" href="{{ item.detail_url }}">Voir le module</a>
             {% else %}
                 <p class="muted">Aucune session active pour ce module. Reviens plus tard.</p>
             {% endif %}

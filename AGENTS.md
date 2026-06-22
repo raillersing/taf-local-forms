@@ -137,6 +137,7 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 | F010 | Safe cleanup workflow | in_progress |
 | F011 | Logo integration (official file) | pending |
 | F012 | Dashboard UX polish after field feedback | pending |
+| F022R | Navigation rewire (student/trainer context separation) | done |
 
 ## Prompt contracts
 

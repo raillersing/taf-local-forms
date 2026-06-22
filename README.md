@@ -14,15 +14,23 @@ Les élèves connectés au même Wi-Fi ou au même partage de connexion ouvrent 
 
 La page d'accueil (`/`) propose un choix entre **étudiant** (accès aux modules) et **formateur** (accès au cockpit).
 
-Les élèves cliquent sur **« Je suis étudiant »** pour accéder à l'espace modules : `/modules/`.
+Les élèves cliquent sur **« Je suis étudiant »** pour accéder à la liste des modules : `/modules/`.
 
-Chaque module actif affiche un **bloc pédagogique** structuré qui contient désormais le contenu réel des présentations PowerPoint des Modules 2, 3 et 4, organisé en sections (résumé, objectifs, notions clés, méthode, activités, à éviter/erreurs, à retenir).
+Chaque module propose un bouton **« Voir le module »** qui mène vers une page détail dédiée.
 
-Modules disponibles :
+Pages détail étudiant par module :
 
-- **Module 2** : Comprendre Internet  (`/module-2/`)
-- **Module 3** : Recherche efficace  (`/module-3/`)
-- **Module 4** : Sources fiables  (`/module-4/`)
+- **Module 2** : Comprendre Internet  (`/modules/module-2/`)
+- **Module 3** : Recherche efficace  (`/modules/module-3/`)
+- **Module 4** : Sources fiables  (`/modules/module-4/`)
+
+Chaque page détail affiche un **bloc pédagogique** structuré qui contient le contenu réel des présentations PowerPoint (résumé, objectifs, notions clés, méthode, activités, à éviter/erreurs, à retenir), ainsi qu'un bouton CTA **« Commencer le questionnaire »** (ou **« Consulter le questionnaire »** si les réponses sont fermées).
+
+Les questionnaires sont accessibles directement :
+
+- **Module 2** : `/module-2/`
+- **Module 3** : `/module-3/`
+- **Module 4** : `/module-4/`
 
 ## Démarrage rapide
 

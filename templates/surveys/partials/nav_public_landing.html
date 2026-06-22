@@ -1,0 +1,5 @@
+<nav class="main-nav" aria-label="Navigation principale">
+    <ul class="nav-list">
+        <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
+    </ul>
+</nav>

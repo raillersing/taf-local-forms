@@ -4,6 +4,10 @@
 {% block hero_title %}Module 3 - Recherche efficace{% endblock %}
 {% block hero_text %}Apprends à chercher efficacement sur Internet avec de bons mots-clés.{% endblock %}
 
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
 {% block content %}
 <main class="content-grid">
     {% if not accepting_responses %}

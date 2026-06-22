@@ -247,7 +247,7 @@ class Module2FormViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 2 - Comprendre Internet")
         self.assertContains(response, "Réponses ouvertes")
-        self.assertContains(response, "Répondre au questionnaire")
+        self.assertContains(response, "Voir le module")
 
     def test_home_page_shows_module_2_unavailable_when_no_active_session(self):
         self.session.is_active = False
@@ -902,7 +902,7 @@ class Module3HomeAndCockpitTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 3 - Recherche efficace")
         self.assertContains(response, "Réponses ouvertes")
-        self.assertContains(response, "Répondre au questionnaire")
+        self.assertContains(response, "Voir le module")
 
     def test_home_page_shows_module_3_unavailable_when_no_active_session(self):
         self.session.is_active = False
@@ -1351,7 +1351,7 @@ class Module4HomeAndCockpitTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 4 - Sources fiables")
         self.assertContains(response, "Réponses ouvertes")
-        self.assertContains(response, "Répondre au questionnaire")
+        self.assertContains(response, "Voir le module")
 
     def test_home_page_shows_module_4_unavailable_when_no_session(self):
         self.session.is_active = False
@@ -1694,15 +1694,17 @@ class NavigationTests(TestCase):
 
     def test_home_contains_modules_link(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Modules de formation")
+        self.assertContains(response, "Je suis étudiant")
+        self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_home_contains_espace_formateur_link_to_dashboard(self):
         response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Je suis formateur")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
-    def test_logo_links_to_dashboard(self):
+    def test_logo_links_to_home(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, reverse("surveys:dashboard_home"))
+        self.assertContains(response, 'href="/"')
 
     def test_dashboard_requires_login(self):
         self.client.logout()
@@ -1987,23 +1989,24 @@ class F019NavigationUXTests(TestCase):
 
     def test_home_contains_modules_link(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Modules de formation")
+        self.assertContains(response, "Je suis étudiant")
+        self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_home_contains_espace_formateur(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "l'espace formateur")
+        self.assertContains(response, "Je suis formateur")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
-    def test_logo_points_to_dashboard(self):
+    def test_logo_points_to_home(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, reverse("surveys:dashboard_home"))
+        self.assertContains(response, 'href="/"')
 
     def test_dashboard_shows_full_nav(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Modules de formation")
-        self.assertContains(response, "Dashboard")
-        self.assertContains(response, "Accès réseau")
-        self.assertContains(response, "Configuration réseau")
+        self.assertContains(response, "Accueil")
+        self.assertContains(response, "Cockpit")
+        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Configuration")
         self.assertContains(response, "Admin avancé")
 
     def test_dashboard_shows_all_subnav_tabs(self):
@@ -2156,17 +2159,17 @@ class F021PedagogyContentTests(TestCase):
         call_command("seed_module4")
 
     def test_student_modules_shows_module_2_pedagogy_summary(self):
-        response = self.client.get(reverse("surveys:student_modules"))
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Internet est un")
 
     def test_student_modules_shows_module_3_pedagogy_summary(self):
-        response = self.client.get(reverse("surveys:student_modules"))
+        response = self.client.get(reverse("surveys:student_module_3_detail"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Trouver rapidement")
 
     def test_student_modules_shows_module_4_pedagogy_summary(self):
-        response = self.client.get(reverse("surveys:student_modules"))
+        response = self.client.get(reverse("surveys:student_module_4_detail"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "source fiable")
 
@@ -2259,6 +2262,230 @@ class F021PedagogyContentTests(TestCase):
         response_m = self.client.get(reverse("surveys:student_modules"))
         self.assertNotContains(response_m, "/admin/")
         self.assertNotContains(response_m, "Cockpit formateur")
+
+
+class F022RNavigationRewireTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+        self.user = User.objects.create_user(username="f022ruser", password="secret", is_staff=True)
+
+    # --- Logo ---
+    def test_logo_points_to_home(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, 'href="/"')
+
+    # --- Landing page ---
+    def test_landing_shows_student_choice(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Je suis étudiant")
+        self.assertContains(response, reverse("surveys:student_modules"))
+
+    def test_landing_shows_trainer_choice(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Je suis formateur")
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    def test_landing_shows_about(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "À propos du projet")
+
+    def test_landing_nav_minimal(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, ">Accueil<")
+        self.assertNotContains(response, "Modules</a>")
+        self.assertNotContains(response, "Cockpit</a>")
+
+    # --- Student module list ---
+    def test_student_modules_status_200(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_modules_shows_module_list(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertContains(response, "Module 2")
+        self.assertContains(response, "Module 3")
+        self.assertContains(response, "Module 4")
+
+    def test_student_modules_shows_voir_le_module(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertContains(response, "Voir le module")
+
+    def test_student_modules_no_full_pedagogy(self):
+        """Module list should NOT contain the full detailed pedagogy for all modules."""
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response, "Qu'est-ce qu'Internet ?")
+        self.assertNotContains(response, "La méthode en 4 étapes")
+        self.assertNotContains(response, "Pourquoi vérifier une information")
+
+    def test_student_modules_no_trainer_links(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response, "Cockpit")
+        self.assertNotContains(response, "Dashboard")
+        self.assertNotContains(response, "Admin avancé")
+        self.assertNotContains(response, "Export CSV")
+        self.assertNotContains(response, "Fermer les réponses")
+
+    def test_student_modules_no_dashboard_nav(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response, ">Cockpit<")
+        self.assertNotContains(response, ">Réseau<")
+        self.assertNotContains(response, ">Configuration<")
+
+    # --- Student module detail pages ---
+    def test_student_module_2_detail_status_200(self):
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_module_3_detail_status_200(self):
+        response = self.client.get(reverse("surveys:student_module_3_detail"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_module_4_detail_status_200(self):
+        response = self.client.get(reverse("surveys:student_module_4_detail"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_module_2_contains_pedagogy(self):
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+        self.assertContains(response, "Qu'est-ce qu'Internet ?")
+        self.assertContains(response, "Notions clés")
+
+    def test_student_module_3_contains_pedagogy(self):
+        response = self.client.get(reverse("surveys:student_module_3_detail"))
+        self.assertContains(response, "La méthode en 4 étapes")
+        self.assertContains(response, "mots-clés")
+
+    def test_student_module_4_contains_pedagogy(self):
+        response = self.client.get(reverse("surveys:student_module_4_detail"))
+        self.assertContains(response, "Pourquoi vérifier une information")
+        self.assertContains(response, "5 questions")
+
+    def test_student_module_open_shows_commencer(self):
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+        self.assertContains(response, "Commencer le questionnaire")
+
+    def test_student_module_closed_shows_consulter(self):
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+        self.assertContains(response, "Consulter le questionnaire")
+        session.accepting_responses = True
+        session.save(update_fields=["accepting_responses"])
+
+    def test_student_module_detail_has_return_link(self):
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+        self.assertContains(response, reverse("surveys:student_modules"))
+
+    def test_student_module_detail_no_trainer_links(self):
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+        self.assertNotContains(response, "Cockpit")
+        self.assertNotContains(response, "Export CSV")
+        self.assertNotContains(response, "Admin avancé")
+
+    # --- Student form pages ---
+    def test_module_2_form_status_200(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_3_form_status_200(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_4_form_status_200(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_form_no_trainer_links(self):
+        for url_name in ["surveys:module_2", "surveys:module_3", "surveys:module_4"]:
+            response = self.client.get(reverse(url_name))
+            self.assertNotContains(response, "Cockpit")
+            self.assertNotContains(response, "Admin avancé")
+            self.assertNotContains(response, "Export CSV")
+
+    # --- Trainer dashboard ---
+    def test_dashboard_requires_login(self):
+        self.client.logout()
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertIn(response.status_code, (302, 401))
+
+    def test_dashboard_logged_in_shows_trainer_actions(self):
+        self.client.login(username="f022ruser", password="secret")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Dashboard")
+        self.assertContains(response, "Consulter formulaire")
+        self.assertContains(response, "Export CSV")
+
+    def test_dashboard_no_student_actions(self):
+        self.client.login(username="f022ruser", password="secret")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertNotContains(response, "Commencer le questionnaire")
+        self.assertNotContains(response, "Voir le module")
+
+    def test_dashboard_has_trainer_nav(self):
+        self.client.login(username="f022ruser", password="secret")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Cockpit")
+        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Configuration")
+        self.assertContains(response, "Admin avancé")
+
+    def test_dashboard_toggle_staff_only(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_2"})
+        )
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_dashboard_network_protected(self):
+        self.client.logout()
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertIn(response.status_code, (302, 401))
+
+    def test_dashboard_settings_protected(self):
+        self.client.logout()
+        response = self.client.get(reverse("surveys:dashboard_settings"))
+        self.assertIn(response.status_code, (302, 401))
+
+    # --- Network page ---
+    def test_network_page_shows_links(self):
+        self.client.login(username="f022ruser", password="secret")
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 2")
+
+    def test_network_links_have_target_blank(self):
+        self.client.login(username="f022ruser", password="secret")
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertContains(response, 'target="_blank"')
+        self.assertContains(response, 'rel="noopener noreferrer"')
+
+    # --- Admin page ---
+    def test_admin_accessible(self):
+        self.client.login(username="f022ruser", password="secret")
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_has_cockpit_link(self):
+        self.client.login(username="f022ruser", password="secret")
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+
+    # --- Regression: pedagogy content remains on form pages ---
+    def test_module_2_form_has_pedagogy(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertContains(response, "Notions clés")
+
+    def test_module_3_form_has_pedagogy(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertContains(response, "4 étapes")
+
+    def test_module_4_form_has_pedagogy(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertContains(response, "5 questions")
 
 
 class F019AdminContrastTests(TestCase):
