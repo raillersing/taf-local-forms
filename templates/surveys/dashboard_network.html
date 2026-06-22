@@ -114,6 +114,26 @@
     {% endif %}
 
     <section class="card">
+        <h2>Diagnostic LAN (côté serveur)</h2>
+        <dl class="setting-list">
+            <dt class="muted setting-label">Environnement WSL</dt>
+            <dd>{% if under_wsl %}Oui (WSL2){% else %}Non détecté{% endif %}</dd>
+
+            <dt class="muted setting-label">Passerelle WSL</dt>
+            <dd>{% if wsl_gateway %}{{ wsl_gateway }}{% else %}<span class="muted">Non détectée</span>{% endif %}</dd>
+
+            <dt class="muted setting-label">Script diagnostic (WSL)</dt>
+            <dd><code class="code-block">bash scripts/dev/taf-lan-diagnose</code></dd>
+
+            <dt class="muted setting-label">Script statut (Windows)</dt>
+            <dd><code class="code-block">.\scripts\windows\taf-lan-show-status.ps1</code></dd>
+
+            <dt class="muted setting-label">Ouvrir le port (Windows Admin)</dt>
+            <dd><code class="code-block">.\scripts\windows\taf-lan-open-port.ps1</code></dd>
+        </dl>
+    </section>
+
+    <section class="card">
         <h2>Si les élèves ne voient pas la page</h2>
         <ul class="troubleshoot-list">
             <li>Vérifie que le téléphone et l'ordinateur sont sur le <strong>même Wi-Fi ou hotspot</strong>.</li>

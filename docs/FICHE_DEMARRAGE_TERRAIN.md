@@ -336,15 +336,16 @@ Redémarrez les seeds si de nouveaux modules ont été ajoutés (cf. « Initiali
 
 | Problème | Solution |
 |----------|----------|
-| Le téléphone ne voit pas la page | Vérifiez l'IP, le Wi-Fi, le pare-feu |
+| Le téléphone ne voit pas la page | Vérifiez l'IP, le Wi-Fi, le pare-feu ; lancez le diagnostic : `bash scripts/dev/taf-lan-diagnose` (WSL) ou `.\scripts\windows\taf-lan-show-status.ps1` (Windows) |
 | Mauvaise IP | Relancez `ipconfig`, utilisez l'IPv4 de la carte active |
-| Pare-feu Windows bloque | Autorisez le port `8010` ou Docker Desktop |
+| Pare-feu Windows bloque | Exécutez (Admin) `.\scripts\windows\taf-lan-open-port.ps1` ou autorisez le port `8010` manuellement |
 | VPN actif | Déconnectez le VPN |
 | Pas le même Wi-Fi | Formateur et élèves doivent être sur le même réseau |
 | Module absent (« non disponible ») | Relancez `seed_moduleX` |
 | Dashboard demande connexion | Normal — connectez-vous avec le compte formateur |
 | `curl` échoue juste après démarrage | Attendez 5 secondes, le temps que Gunicorn soit prêt |
 | Erreur CSRF ou Host | Vérifiez `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS` dans `.env` |
+| Problème persistant | Consultez `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md` |
 
 ---
 

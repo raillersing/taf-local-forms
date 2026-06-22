@@ -1,10 +1,11 @@
 import json
 import os
-import re
 import shutil
 from pathlib import Path
 
-SETTINGS_FILE = Path(os.environ.get("DATABASE_PATH", "/app/data/db.sqlite3")).parent / "settings.env"
+
+def _settings_file():
+    return Path(os.environ.get("DATABASE_PATH", "/app/data/db.sqlite3")).parent / "settings.env"
 
 WHITELIST_EDITABLE = {
     "TAF_HOST_PORT",
@@ -19,33 +20,42 @@ WHITELIST_READONLY = {
     "DATABASE_PATH",
 }
 
-SENSITIVE_KEYS_PATTERNS = [
-    re.compile(r"SECRET", re.IGNORECASE),
-    re.compile(r"KEY", re.IGNORECASE),
-    re.compile(r"PASSWORD", re.IGNORECASE),
-    re.compile(r"TOKEN", re.IGNORECASE),
-    re.compile(r"API", re.IGNORECASE),
-    re.compile(r"PRIVATE", re.IGNORECASE),
-    re.compile(r"DATABASE_URL", re.IGNORECASE),
-]
+DEFAULT_EDITABLE = {
+    "TAF_HOST_PORT": "8010",
+    "TAF_LAN_HOST": "",
+    "ALLOWED_HOSTS": "localhost,127.0.0.1,[::1]",
+    "CSRF_TRUSTED_ORIGINS": "http://localhost:8010,http://127.0.0.1:8010",
+    "TIME_ZONE": "Indian/Antananarivo",
+}
 
 
-def _is_sensitive(key):
-    return any(p.search(key) for p in SENSITIVE_KEYS_PATTERNS)
+def _load_settings_file():
+    sf = _settings_file()
+    if sf.exists():
+        try:
+            with open(sf) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
 
 
 def get_filtered_settings():
-    result = {"editable": {}, "readonly": {}, "sensitive": {}}
-    for key, value in sorted(os.environ.items()):
-        if key in WHITELIST_EDITABLE:
-            result["editable"][key] = value
-        elif key in WHITELIST_READONLY:
-            result["readonly"][key] = value
-        elif _is_sensitive(key):
-            result["sensitive"][key] = bool(value)
-    if "SECRET_KEY" not in result["sensitive"]:
-        result["sensitive"]["SECRET_KEY"] = bool(os.environ.get("SECRET_KEY"))
-    return result
+    stored = _load_settings_file()
+    editable = {}
+    for key in sorted(WHITELIST_EDITABLE):
+        value = os.environ.get(key) or stored.get(key) or DEFAULT_EDITABLE.get(key, "")
+        editable[key] = value
+    readonly = {}
+    for key in sorted(WHITELIST_READONLY):
+        value = os.environ.get(key, "")
+        readonly[key] = value
+    has_secret = bool(os.environ.get("SECRET_KEY"))
+    return {
+        "editable": editable,
+        "readonly": readonly,
+        "has_secret_key": has_secret,
+    }
 
 
 def _validate_ipv4_or_empty(value):
@@ -116,18 +126,20 @@ def apply_setting(key, value):
         if not ok:
             return False, msg
     current = {}
-    if SETTINGS_FILE.exists():
+    sf = _settings_file()
+    if sf.exists():
         try:
-            with open(SETTINGS_FILE) as f:
+            with open(sf) as f:
                 current = json.load(f)
         except (json.JSONDecodeError, OSError):
             pass
     current[key] = value.strip() if isinstance(value, str) else value
-    backup = SETTINGS_FILE.with_suffix(".env.bak")
+    backup = sf.with_suffix(".env.bak")
     try:
-        if SETTINGS_FILE.exists():
-            shutil.copy2(SETTINGS_FILE, backup)
-        with open(SETTINGS_FILE, "w") as f:
+        sf.parent.mkdir(parents=True, exist_ok=True)
+        if sf.exists():
+            shutil.copy2(sf, backup)
+        with open(sf, "w") as f:
             json.dump(current, f, indent=2)
     except OSError as e:
         return False, f"Impossible d'écrire la configuration : {e}"
@@ -135,9 +147,10 @@ def apply_setting(key, value):
 
 
 def load_settings_env():
-    if SETTINGS_FILE.exists():
+    sf = _settings_file()
+    if sf.exists():
         try:
-            with open(SETTINGS_FILE) as f:
+            with open(sf) as f:
                 overrides = json.load(f)
             for key, value in overrides.items():
                 os.environ[key] = str(value)
