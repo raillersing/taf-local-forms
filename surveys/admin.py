@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Student, Submission, TrainingModule, TrainingSession
+from .models import Module3Submission, Module4Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 @admin.register(Student)
@@ -25,6 +25,34 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
+    list_display = (
+        "school_id_number_snapshot",
+        "student",
+        "session",
+        "computed_score",
+        "created_at",
+    )
+    list_filter = ("session", "student__class_level", "student__group_name", "created_at")
+    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    autocomplete_fields = ("student", "session")
+
+
+@admin.register(Module3Submission)
+class Module3SubmissionAdmin(admin.ModelAdmin):
+    list_display = (
+        "school_id_number_snapshot",
+        "student",
+        "session",
+        "computed_score",
+        "created_at",
+    )
+    list_filter = ("session", "student__class_level", "student__group_name", "created_at")
+    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    autocomplete_fields = ("student", "session")
+
+
+@admin.register(Module4Submission)
+class Module4SubmissionAdmin(admin.ModelAdmin):
     list_display = (
         "school_id_number_snapshot",
         "student",

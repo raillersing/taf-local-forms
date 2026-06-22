@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Student, Submission
+from .models import Module3Submission, Module4Submission, Student, Submission
 
 
 class Module2SubmissionForm(forms.Form):
@@ -115,6 +115,307 @@ class Module2SubmissionForm(forms.Form):
     feedback_confidence = forms.ChoiceField(
         label="Je me sens plus capable d'utiliser Internet pour apprendre.",
         choices=Submission.CONFIDENCE_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    def clean_school_id_number(self):
+        value = self.cleaned_data["school_id_number"].strip()
+        if not value.isdigit() or len(value) != 2:
+            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
+        return value
+
+
+class Module4SubmissionForm(forms.Form):
+    school_id_number = forms.CharField(
+        label="Numéro à l'école",
+        min_length=2,
+        max_length=2,
+        help_text="Exemple : 01, 09, 39",
+        error_messages={
+            "required": "Entre ton numéro.",
+            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
+            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
+        },
+    )
+    full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
+    class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
+    group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
+
+    auto_eval_explain_source = forms.ChoiceField(
+        label="Je sais expliquer ce qu'est une source fiable.",
+        choices=Module4Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_verify_info = forms.ChoiceField(
+        label="Je vérifie une information avant de la croire.",
+        choices=Module4Submission.VERIFY_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_spot_doubtful = forms.ChoiceField(
+        label="Je sais repérer une information douteuse.",
+        choices=Module4Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    todo_chose_info = forms.BooleanField(
+        label="J'ai choisi une information ou un sujet à vérifier.", required=False,
+    )
+    todo_opened_first_source = forms.BooleanField(
+        label="J'ai ouvert une première source.", required=False,
+    )
+    todo_checked_publisher = forms.BooleanField(
+        label="J'ai regardé qui a publié l'information.", required=False,
+    )
+    todo_checked_date = forms.BooleanField(
+        label="J'ai cherché la date de publication.", required=False,
+    )
+    todo_checked_evidence = forms.BooleanField(
+        label="J'ai regardé s'il y a des preuves, chiffres ou exemples.", required=False,
+    )
+    todo_compared_second = forms.BooleanField(
+        label="J'ai comparé avec une deuxième source.", required=False,
+    )
+    todo_identified_reliable_sign = forms.BooleanField(
+        label="J'ai identifié au moins un signe de fiabilité.", required=False,
+    )
+    todo_identified_doubtful_sign = forms.BooleanField(
+        label="J'ai identifié au moins un signe de doute.", required=False,
+    )
+    todo_decided_reliable_or_not = forms.BooleanField(
+        label="J'ai décidé si l'information semble fiable ou non.", required=False,
+    )
+    todo_explained_choice = forms.BooleanField(
+        label="J'ai expliqué mon choix avec mes propres mots.", required=False,
+    )
+
+    quiz_q1 = forms.ChoiceField(
+        label="1. Tout ce qu'on trouve sur Internet est vrai.",
+        choices=Module4Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q2 = forms.ChoiceField(
+        label="2. Une source fiable indique souvent qui publie l'information.",
+        choices=Module4Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q3 = forms.ChoiceField(
+        label="3. Une information sans auteur, sans date et sans preuve peut être douteuse.",
+        choices=Module4Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q4 = forms.ChoiceField(
+        label="4. Si une information est très surprenante, que dois-je faire ?",
+        choices=Module4Submission.QUIZ_Q4_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q5_selected = forms.MultipleChoiceField(
+        label="5. Quels signes peuvent montrer qu'une source est plus fiable ?",
+        choices=Module4Submission.QUIZ_Q5_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    quiz_q6_selected = forms.MultipleChoiceField(
+        label="6. Quels signes peuvent montrer qu'une information est douteuse ?",
+        choices=Module4Submission.QUIZ_Q6_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    quiz_q7 = forms.ChoiceField(
+        label="7. Une publication Facebook est toujours une source fiable pour un devoir scolaire.",
+        choices=Module4Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    practical_subject = forms.CharField(
+        label="Écris le sujet ou l'information que tu as vérifié.",
+        max_length=255,
+        help_text="Exemple : les volcans à Madagascar, la photosynthèse, une information vue sur Facebook.",
+    )
+    practical_first_source = forms.CharField(
+        label="Écris le nom ou l'adresse de la première source.",
+        max_length=255,
+    )
+    practical_publisher = forms.CharField(
+        label="Qui a publié cette information ?",
+        max_length=255,
+        required=False,
+        help_text="Exemple : un professeur, un média, une organisation, un site inconnu.",
+    )
+    practical_has_date = forms.ChoiceField(
+        label="Y a-t-il une date ?",
+        choices=Module4Submission.HAS_DATE_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    practical_has_evidence = forms.ChoiceField(
+        label="La source donne-t-elle des preuves, chiffres ou exemples ?",
+        choices=Module4Submission.HAS_EVIDENCE_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    practical_compared = forms.ChoiceField(
+        label="As-tu comparé avec une autre source ?",
+        choices=Module4Submission.YES_NO_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    practical_second_source = forms.CharField(
+        label="Écris le nom ou l'adresse de la deuxième source.",
+        max_length=255,
+        required=False,
+    )
+    practical_decision = forms.ChoiceField(
+        label="Selon toi, cette information est :",
+        choices=Module4Submission.DECISION_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    practical_explanation = forms.CharField(
+        label="Explique ton choix avec tes propres mots.",
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+
+    feedback_understood_today = forms.CharField(
+        label="Ce que j'ai compris aujourd'hui :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+    feedback_still_difficult = forms.CharField(
+        label="Ce qui reste difficile pour moi :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        required=False,
+    )
+    feedback_confidence_verify = forms.ChoiceField(
+        label="Je me sens plus capable de vérifier une information.",
+        choices=Module4Submission.CONFIDENCE_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    def clean_school_id_number(self):
+        value = self.cleaned_data["school_id_number"].strip()
+        if not value.isdigit() or len(value) != 2:
+            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
+        return value
+
+
+class Module3SubmissionForm(forms.Form):
+    school_id_number = forms.CharField(
+        label="Numéro à l'école",
+        min_length=2,
+        max_length=2,
+        help_text="Exemple : 01, 09, 39",
+        error_messages={
+            "required": "Entre ton numéro.",
+            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
+            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
+        },
+    )
+    full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
+    class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
+    group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
+
+    auto_eval_keywords = forms.ChoiceField(
+        label="Je sais choisir de bons mots-clés.",
+        choices=Module3Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_improve = forms.ChoiceField(
+        label="Je sais améliorer une recherche quand les résultats ne sont pas bons.",
+        choices=Module3Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_compare = forms.ChoiceField(
+        label="Je sais comparer deux résultats de recherche.",
+        choices=Module3Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    todo_chose_subject = forms.BooleanField(label="J'ai choisi une matière scolaire.", required=False)
+    todo_written_question = forms.BooleanField(label="J'ai écrit une question de départ.", required=False)
+    todo_keywords_from_question = forms.BooleanField(
+        label="J'ai transformé ma question en mots-clés.", required=False,
+    )
+    todo_did_search = forms.BooleanField(label="J'ai lancé une recherche.", required=False)
+    todo_read_titles = forms.BooleanField(label="J'ai lu les titres des premiers résultats.", required=False)
+    todo_opened_result = forms.BooleanField(label="J'ai ouvert un résultat utile.", required=False)
+    todo_compared_two_results = forms.BooleanField(
+        label="J'ai comparé au moins deux résultats.", required=False,
+    )
+    todo_improved_keywords = forms.BooleanField(
+        label="J'ai amélioré ma recherche avec de meilleurs mots-clés.", required=False,
+    )
+    todo_found_useful_resource = forms.BooleanField(
+        label="J'ai trouvé une ressource utile pour apprendre.", required=False,
+    )
+    todo_noted_learning = forms.BooleanField(
+        label="J'ai noté ce que cette ressource m'a appris.", required=False,
+    )
+
+    quiz_q1 = forms.ChoiceField(
+        label="1. Pour chercher efficacement, il faut toujours écrire une très longue phrase.",
+        choices=Module3Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q2 = forms.ChoiceField(
+        label="2. Les mots-clés sont les mots importants d'une recherche.",
+        choices=Module3Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q3 = forms.ChoiceField(
+        label="3. Si les résultats ne sont pas utiles, je peux changer mes mots-clés.",
+        choices=Module3Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q4 = forms.ChoiceField(
+        label="4. Quand je vois les résultats, je dois regarder seulement le premier lien.",
+        choices=Module3Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q5 = forms.ChoiceField(
+        label="5. Quelle recherche est la plus précise ?",
+        choices=Module3Submission.QUIZ_Q5_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q6 = forms.ChoiceField(
+        label="6. Pour trouver un document PDF sur la photosynthèse, quelle recherche est la meilleure ?",
+        choices=Module3Submission.QUIZ_Q6_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q7_selected = forms.MultipleChoiceField(
+        label="7. Que peut-on faire pour améliorer une recherche ?",
+        choices=Module3Submission.QUIZ_Q7_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    practical_starting_question = forms.CharField(
+        label="Écris ta question de départ.",
+        max_length=255,
+        help_text="Exemple : Comment résoudre une équation ?",
+    )
+    practical_keywords_used = forms.CharField(
+        label="Écris les mots-clés que tu as utilisés.",
+        max_length=255,
+        help_text="Exemple : équation seconde exemple simple",
+    )
+    practical_site_found = forms.CharField(
+        label="Écris le nom ou l'adresse du site trouvé.",
+        max_length=255,
+        required=False,
+    )
+    practical_subject = forms.ChoiceField(
+        label="Cette ressource peut m'aider dans quelle matière ?",
+        choices=Module3Submission.PRACTICAL_SUBJECT_CHOICES,
+    )
+    practical_what_learned = forms.CharField(
+        label="Qu'est-ce que cette ressource t'a appris ?",
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+
+    feedback_understood_today = forms.CharField(
+        label="Ce que j'ai compris aujourd'hui :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+    feedback_still_difficult = forms.CharField(
+        label="Ce qui reste difficile pour moi :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        required=False,
+    )
+    feedback_confidence_search = forms.ChoiceField(
+        label="Je me sens plus capable de chercher efficacement sur Internet.",
+        choices=Module3Submission.CONFIDENCE_CHOICES,
         widget=forms.RadioSelect,
     )
 
