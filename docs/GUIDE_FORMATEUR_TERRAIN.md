@@ -16,8 +16,10 @@ La page d'accueil `/` propose deux entrées :
 
 Cette page liste les modules actifs avec :
 - le statut (Réponses ouvertes / Consultation seulement / Indisponible)
-- un bloc pédagogique décrivant les objectifs de formation
+- un bloc pédagogique contenant le contenu réel des présentations PowerPoint (résumé, objectifs, notions clés, méthode, activités, erreurs, à retenir)
 - un bouton pour répondre ou consulter le questionnaire
+
+Les blocs pédagogiques sont des templates partiels (fichiers `templates/surveys/module_X_pedagogy.html`) qui peuvent être mis à jour module par module. Les présentations PowerPoint restent la source de référence.
 
 ## Avant la séance
 

@@ -39,3 +39,7 @@ Thumbs.db
 
 # Graphviz / Graphify generated output
 docs/architecture/graphs/out/
+
+# PowerPoint source files (not committed)
+documents/
+*:Zone.Identifier

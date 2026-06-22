@@ -32,6 +32,7 @@
 | F016 | LAN diagnostics + admin Django interface refinement | done |
 | F019 | Dashboard UX (navigation, sub-nav tabs, LAN links, target_blank, IP display) | done |
 | F020 | Landing page with Student/Formateur split, /modules/ student space, pedagogical module presentations | done |
+| F021 | Integrated PowerPoint pedagogy content into student space (Modules 2, 3, 4 actual content, new CSS classes, 10 new pedagogy tests) | done |
 
 ## Managing the queue
 

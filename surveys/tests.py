@@ -2149,6 +2149,118 @@ class F019ModuleFormRegressionTests(TestCase):
         self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
 
+class F021PedagogyContentTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+
+    def test_student_modules_shows_module_2_pedagogy_summary(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Internet est un")
+
+    def test_student_modules_shows_module_3_pedagogy_summary(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Trouver rapidement")
+
+    def test_student_modules_shows_module_4_pedagogy_summary(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "source fiable")
+
+    def test_module_2_form_contains_pedagogy_content(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Internet est un outil")
+        self.assertContains(response, "navigateur")
+        self.assertContains(response, "moteur de recherche")
+
+    def test_module_3_form_contains_pedagogy_content(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Question")
+        self.assertContains(response, "mots-clés")
+        self.assertContains(response, "résultats")
+        self.assertContains(response, "choix")
+
+    def test_module_4_form_contains_pedagogy_content(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "QUI ?")
+        self.assertContains(response, "QUOI ?")
+        self.assertContains(response, "QUAND ?")
+        self.assertContains(response, "POURQUOI ?")
+
+    def test_module_2_pedagogy_contains_notions_cles(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertContains(response, "Notions clés")
+        self.assertContains(response, "Navigateur")
+        self.assertContains(response, "Moteur de recherche")
+
+    def test_module_3_pedagogy_contains_4_etapes(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertContains(response, "4 étapes")
+        self.assertContains(response, "Je précise ma question")
+
+    def test_module_4_pedagogy_contains_5_questions(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertContains(response, "5 questions")
+        self.assertContains(response, "OÙ ?")
+
+    def test_module_2_pedagogy_contains_activites(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertContains(response, "Activité")
+        self.assertContains(response, "Reconnaître")
+
+    def test_module_3_pedagogy_contains_bons_mots_cles(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertContains(response, "formule")
+        self.assertContains(response, "Matière + notion")
+
+    def test_module_4_pedagogy_contains_3_reflexes(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertContains(response, "3 réflexes")
+        self.assertContains(response, "Je regarde la source")
+
+    def test_module_2_pedagogy_contains_a_eviter(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertContains(response, "Copier sans comprendre")
+        self.assertContains(response, "Croire tout ce qu'on voit")
+
+    def test_module_3_pedagogy_contains_erreurs_frequentes(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertContains(response, "Erreurs fréquentes")
+        self.assertContains(response, "Abandonner trop vite")
+
+    def test_module_4_pedagogy_contains_auteur_organisation(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertContains(response, "L'auteur ou l'organisation")
+        self.assertContains(response, "Bon signe")
+
+    def test_module_2_pedagogy_contains_regles_travail(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertContains(response, "Règles de travail")
+
+    def test_module_4_pedagogy_contains_reseaux_sociaux(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertContains(response, "réseaux sociaux")
+        self.assertContains(response, "likes")
+
+    def test_module_3_pedagogy_contains_outils_utiles(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertContains(response, "Outils utiles")
+        self.assertContains(response, "filetype:pdf")
+
+    def test_student_pages_no_trainer_links(self):
+        response_2 = self.client.get(reverse("surveys:module_2"))
+        self.assertNotContains(response_2, "Export CSV")
+        response_m = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response_m, "/admin/")
+        self.assertNotContains(response_m, "Cockpit formateur")
+
+
 class F019AdminContrastTests(TestCase):
     def setUp(self):
         from django.contrib.auth.models import User

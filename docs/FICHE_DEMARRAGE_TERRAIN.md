@@ -26,7 +26,7 @@ Les élèves arrivent sur cette page après avoir cliqué sur « Je suis étudia
 Chaque module actif est présenté avec :
 
 - son **titre** et un **statut** (Réponses ouvertes / Consultation seulement / Indisponible)
-- un **bloc pédagogique** décrivant les objectifs et le contenu de la formation
+- un **bloc pédagogique** contenant le contenu réel des présentations PowerPoint (Modules 2, 3, 4) — résumé, objectifs, notions clés, méthode, activités, erreurs fréquentes, à retenir
 - un bouton **« Répondre au questionnaire »** (ou « Consulter le questionnaire »)
 
 ### Adresses principales
