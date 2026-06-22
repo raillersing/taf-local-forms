@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# taf-lan-diagnose — READ-ONLY LAN connectivity diagnostic
+# SHALL NOT modify any configuration, firewall, or network setting.
+# Usage: bash scripts/dev/taf-lan-diagnose
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+PASS="${GREEN}PASS${NC}"; FAIL="${RED}FAIL${NC}"; WARN="${YELLOW}SKIP${NC}"
+RESULT_PASS=0; RESULT_FAIL=0; RESULT_SKIP=0
+record() { local s=$1; shift; echo -e "  [$s] $*"; case $s in PASS) ((RESULT_PASS++));; FAIL) ((RESULT_FAIL++));; SKIP) ((RESULT_SKIP++));; esac; }
+
+# ------------------------------------------------------------------
+echo -e "${CYAN}═══ TAf Local Forms — LAN Diagnostic ${NC}"
+echo "Date: $(date -Iseconds)"
+echo ""
+
+# 1. Which user / OS
+echo -e "${CYAN}── 1. Environment ──${NC}"
+record PASS "User: $(whoami)  OS: $(uname -srm)"
+record PASS "Hostname: $(hostname 2>/dev/null || hostnamectl hostname 2>/dev/null || echo 'N/A')"
+
+# 2. WSL-specific check
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    record PASS "WSL2 detected"
+else
+    record SKIP "Not running under WSL"
+fi
+
+# 3. LAN IP
+MY_IPS="$(hostname -I 2>/dev/null)" || MY_IPS=""
+if [ -n "$MY_IPS" ]; then
+    record PASS "WSL LAN IP(s): $MY_IPS"
+else
+    record FAIL "Cannot determine LAN IP"
+fi
+
+# 4. Docker compose status
+echo ""
+echo -e "${CYAN}── 2. Docker ──${NC}"
+if docker compose ps --services 2>/dev/null | grep -q .; then
+    record PASS "Docker Compose services are defined"
+    docker compose ps --format 'table {{.Name}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null | sed 's/^/  /'
+else
+    record FAIL "Docker Compose not running or not found"
+fi
+
+# 5. Container port mapping
+echo ""
+echo -e "${CYAN}── 3. Port mapping ──${NC}"
+PORT_MAP=$(docker port taf-local-forms-web-1 8000 2>/dev/null) || PORT_MAP=""
+if [ -n "$PORT_MAP" ]; then
+    record PASS "Docker port mapping: $PORT_MAP"
+else
+    # try alternative container name
+    PORT_MAP=$(docker ps --filter "name=taf" --format '{{.Ports}}' 2>/dev/null)
+    if [ -n "$PORT_MAP" ]; then
+        record PASS "Docker port: $PORT_MAP"
+    else
+        record FAIL "No port mapping found for taf-local-forms-web-1"
+    fi
+fi
+
+# 6. Check if port 8010 is reachable from WSL (localhost)
+echo ""
+echo -e "${CYAN}── 4. Reachability (from WSL) ──${NC}"
+if curl -sI http://127.0.0.1:8010/ --connect-timeout 3 -o /dev/null -w '%{http_code}' 2>/dev/null | grep -qE '^[23]'; then
+    record PASS "http://127.0.0.1:8010/ — reachable"
+else
+    record FAIL "http://127.0.0.1:8010/ — NOT reachable"
+fi
+if curl -sI http://127.0.0.1:8010/admin/ --connect-timeout 3 -o /dev/null -w '%{http_code}' 2>/dev/null | grep -qE '^[23]'; then
+    record PASS "http://127.0.0.1:8010/admin/ — reachable"
+else
+    record FAIL "http://127.0.0.1:8010/admin/ — NOT reachable"
+fi
+if curl -sI http://127.0.0.1:8010/dashboard/ --connect-timeout 3 -o /dev/null -w '%{http_code}' 2>/dev/null | grep -qE '^[23]'; then
+    record PASS "http://127.0.0.1:8010/dashboard/ — reachable"
+else
+    record FAIL "http://127.0.0.1:8010/dashboard/ — NOT reachable"
+fi
+
+# 7. Try from WSL LAN IP
+if [ -n "$MY_IPS" ]; then
+    MY_IP=$(echo "$MY_IPS" | awk '{print $1}')
+    HTTP_CODE=$(curl -sI "http://${MY_IP}:8010/" --connect-timeout 3 -o /dev/null -w '%{http_code}' 2>/dev/null) || HTTP_CODE="000"
+    if echo "$HTTP_CODE" | grep -qE '^[23]'; then
+        record PASS "http://${MY_IP}:8010/ — reachable from WSL LAN IP"
+    else
+        record FAIL "http://${MY_IP}:8010/ — NOT reachable (HTTP $HTTP_CODE)"
+    fi
+fi
+
+# 8. Gateway info
+echo ""
+echo -e "${CYAN}── 5. Gateway / Routing ──${NC}"
+GW=$(ip route show default 2>/dev/null | awk '{print $3}') || GW=""
+if [ -n "$GW" ]; then
+    record PASS "Default gateway: $GW"
+else
+    record SKIP "No default gateway (expected in WSL1)"
+fi
+
+# 9. ALLOWED_HOSTS / CSRF
+echo ""
+echo -e "${CYAN}── 6. Django allowed hosts ──${NC}"
+ENV_FILE=".env"
+if [ -f "$ENV_FILE" ]; then
+    AH=$(grep -E '^ALLOWED_HOSTS=' "$ENV_FILE" | head -1) || AH="# (not set, using defaults)"
+    CT=$(grep -E '^CSRF_TRUSTED_ORIGINS=' "$ENV_FILE" | head -1) || CT="# (not set, using defaults)"
+    record PASS "ALLOWED_HOSTS: $AH"
+    record PASS "CSRF_TRUSTED_ORIGINS: $CT"
+else
+    record SKIP "No .env file found (Docker default config)"
+fi
+
+# 10. Windows firewall hints
+echo ""
+echo -e "${CYAN}── 7. Windows LAN recommendations ──${NC}"
+echo "  If the app is NOT reachable from another device on the LAN:"
+echo "  1. Windows Firewall may block port 8010."
+echo "     -> Run (as Admin): New-NetFirewallRule -DisplayName 'TAf Local' -Direction Inbound -Protocol TCP -LocalPort 8010 -Action Allow"
+echo "  2. The Windows network profile must be 'Private' (not 'Public')."
+echo "     -> Settings > Network & Internet > Wi-Fi > Properties > Network profile > Private"
+echo "  3. (WSL2 only) If Docker Desktop fails to proxy, add a portproxy:"
+echo "     -> netsh interface portproxy add v4tov4 listenport=8010 listenaddress=0.0.0.0 connectport=8010 connectaddress=127.0.0.1"
+echo "  4. Verify from Windows: curl http://localhost:8010/"
+echo "  5. Verify from another device: curl http://<WINDOWS_LAN_IP>:8010/"
+
+# ------------------------------------------------------------------
+echo ""
+echo -e "${CYAN}═══ Summary ═══${NC}"
+echo -e "  ${GREEN}PASS${NC}: $RESULT_PASS   ${RED}FAIL${NC}: $RESULT_FAIL   ${YELLOW}SKIP${NC}: $RESULT_SKIP"
+echo ""
+if [ "$RESULT_FAIL" -gt 0 ]; then
+    echo -e "  ${RED}Some checks failed.${NC} Refer to docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md"
+    exit 1
+fi
+echo -e "  ${GREEN}All checks passed.${NC}"

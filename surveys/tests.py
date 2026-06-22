@@ -1,5 +1,6 @@
 import os
 from datetime import date
+from tempfile import mkdtemp
 from unittest.mock import patch
 
 import json
@@ -1497,6 +1498,17 @@ class DashboardSettingsTests(TestCase):
         from django.contrib.auth.models import User
         self.user = User.objects.create_user(username="test", password="test", is_staff=True)
         self.url = reverse("surveys:dashboard_settings")
+        self.tmpdir = mkdtemp()
+        self._old_db_path = os.environ.get("DATABASE_PATH")
+        os.environ["DATABASE_PATH"] = os.path.join(self.tmpdir, "db.sqlite3")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        if self._old_db_path is None:
+            os.environ.pop("DATABASE_PATH", None)
+        else:
+            os.environ["DATABASE_PATH"] = self._old_db_path
 
     def test_requires_login(self):
         response = self.client.get(self.url)
@@ -1523,6 +1535,63 @@ class DashboardSettingsTests(TestCase):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
         self.assertNotContains(response, ".env")
+
+    def test_shows_taf_host_port(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertContains(response, "TAF_HOST_PORT")
+
+    def test_shows_taf_lan_host(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertContains(response, "TAF_LAN_HOST")
+
+    def test_shows_allowed_hosts(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertContains(response, "ALLOWED_HOSTS")
+
+    def test_shows_csrf_trusted_origins(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertContains(response, "CSRF_TRUSTED_ORIGINS")
+
+    def test_shows_timezone_field(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertContains(response, "TIME_ZONE")
+
+    def test_does_not_show_gpg_key(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "GPG_KEY")
+
+    def test_never_exposes_raw_secret_key(self):
+        self.client.login(username="test", password="test")
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "change-me-for-docker-local-use")
+
+    def test_save_taf_lan_host(self):
+        self.client.login(username="test", password="test")
+        response = self.client.post(self.url, {"key": "TAF_LAN_HOST", "value": "192.168.1.42"}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Valeur enregistrée")
+
+    def test_save_taf_host_port(self):
+        self.client.login(username="test", password="test")
+        response = self.client.post(self.url, {"key": "TAF_HOST_PORT", "value": "9010"}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Valeur enregistrée")
+
+    def test_denies_allowed_hosts_star(self):
+        self.client.login(username="test", password="test")
+        response = self.client.post(self.url, {"key": "ALLOWED_HOSTS", "value": "*"}, follow=True)
+        self.assertContains(response, "interdit")
+
+    def test_denies_csrf_origin_without_scheme(self):
+        self.client.login(username="test", password="test")
+        response = self.client.post(self.url, {"key": "CSRF_TRUSTED_ORIGINS", "value": "192.168.1.42:8010"}, follow=True)
+        self.assertContains(response, "http://")
 
 
 class DashboardNetworkTests(TestCase):
@@ -1566,3 +1635,52 @@ class CleanupPresenceCommandTests(TestCase):
         call_command("cleanup_presence")
         self.assertEqual(FormPresence.objects.filter(status=FormPresence.STATUS_ACTIVE).count(), 1)
         self.assertEqual(FormPresence.objects.filter(status=FormPresence.STATUS_EXPIRED).count(), 1)
+
+
+class AdminBrandingTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_superuser(
+            username="admin", password="admin", email="admin@example.com"
+        )
+        self.client.login(username="admin", password="admin")
+
+    def test_admin_site_header_customized(self):
+        from django.contrib import admin
+        self.assertEqual(admin.site.site_header, "TAf Local Forms")
+        self.assertEqual(admin.site.site_title, "TAf Admin")
+        self.assertEqual(admin.site.index_title, "Administration formateur")
+        self.assertEqual(admin.site.site_url, "/dashboard/")
+
+    def test_admin_page_uses_custom_template(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TAf Local Forms")
+        self.assertContains(response, "Cockpit formateur")
+        self.assertContains(response, "css/admin.css")
+        self.assertContains(response, "Administration formateur")
+
+
+class NetworkPageDiagnosticsTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(username="trainer", password="secret")
+        self.url = reverse("surveys:dashboard_network")
+        self.client.login(username="trainer", password="secret")
+
+    def test_network_page_shows_diagnostic_scripts(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "taf-lan-diagnose")
+        self.assertContains(response, "taf-lan-show-status")
+        self.assertContains(response, "taf-lan-open-port")
+
+    def test_network_page_shows_wsl_gateway_info(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Passerelle WSL")
+
+    def test_network_page_shows_wsl_environment_info(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Environnement")

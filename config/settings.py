@@ -112,6 +112,11 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Admin customization
+ADMIN_SITE_HEADER = os.getenv("ADMIN_SITE_HEADER", "TAf Local Forms")
+ADMIN_SITE_TITLE = os.getenv("ADMIN_SITE_TITLE", "TAf Admin")
+ADMIN_INDEX_TITLE = os.getenv("ADMIN_INDEX_TITLE", "Administration formateur")
+
 LOGIN_URL = "admin:login"
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"

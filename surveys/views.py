@@ -833,6 +833,7 @@ def dashboard_presence_json(request: HttpRequest) -> JsonResponse:
 @staff_member_required
 @login_required
 def dashboard_settings(request: HttpRequest) -> HttpResponse:
+    from .network import get_network_access_context
     from .settings_config import apply_setting, get_filtered_settings
 
     saved = None
@@ -846,9 +847,13 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
                 saved = msg
             else:
                 error = msg
+    net_ctx = get_network_access_context(request)
     settings = get_filtered_settings()
     context = {
         "settings": settings,
+        "detected_ip_candidates": net_ctx["detected_ip_candidates"],
+        "recommended_host": net_ctx["recommended_host"],
+        "port": net_ctx["port"],
         "saved": saved,
         "error": error,
     }

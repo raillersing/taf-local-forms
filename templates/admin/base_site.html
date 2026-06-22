@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block title %}{{ title }} | {{ site_title }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">{{ site_header }}</a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block footer %}
+<div id="footer">
+    <div class="admin-links-bar">
+        <a href="{% url 'surveys:dashboard_home' %}">&larr; Cockpit formateur</a>
+        <a href="{% url 'surveys:dashboard_network' %}">Accès réseau</a>
+        <a href="{% url 'surveys:dashboard_settings' %}">Configuration</a>
+        <a href="{% url 'surveys:home' %}">Accueil public</a>
+    </div>
+</div>
+{% endblock %}

@@ -35,15 +35,47 @@
             {% for key, value in settings.editable.items %}
             <div class="setting-card">
                 <h3><code>{{ key }}</code></h3>
+                {% if key == "TAF_LAN_HOST" and detected_ip_candidates %}
+                <div class="ip-detect-row" style="margin-bottom:0.5rem">
+                    <span class="muted">IP détectée(s) :</span>
+                    {% for ip in detected_ip_candidates %}
+                    <button class="ip-detect-btn" type="button" data-target="{{ key }}" data-value="{{ ip }}"
+                            style="margin-right:0.3rem;margin-bottom:0.3rem;padding:0.2rem 0.6rem;font-size:0.85rem;cursor:pointer;border:1px solid var(--navy);border-radius:4px;background:#f0f4fa;color:var(--navy)">
+                        {{ ip }}
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if key == "ALLOWED_HOSTS" and detected_ip_candidates %}
+                <div class="ip-detect-row" style="margin-bottom:0.5rem">
+                    <span class="muted">Ajouter l'IP détectée :</span>
+                    {% for ip in detected_ip_candidates %}
+                    <button class="ip-append-btn" type="button" data-target="{{ key }}" data-value="{{ ip }}"
+                            style="margin-right:0.3rem;margin-bottom:0.3rem;padding:0.2rem 0.6rem;font-size:0.85rem;cursor:pointer;border:1px solid var(--navy);border-radius:4px;background:#f0f4fa;color:var(--navy)">
+                        + {{ ip }}
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 <form method="post" style="display:grid;gap:0.5rem">
                     {% csrf_token %}
                     <input type="hidden" name="key" value="{{ key }}">
-                    <input class="setting-input" type="text" name="value" value="{{ value }}" placeholder="{{ key }}">
+                    <input class="setting-input" type="text" name="value" value="{{ value }}"
+                           placeholder="{% if key == 'TAF_HOST_PORT' %}8010{% elif key == 'TAF_LAN_HOST' %}192.168.0.100{% elif key == 'ALLOWED_HOSTS' %}localhost,127.0.0.1,[::1],192.168.0.100{% elif key == 'CSRF_TRUSTED_ORIGINS' %}http://localhost:8010,http://127.0.0.1:8010,http://192.168.0.100:8010{% elif key == 'TIME_ZONE' %}Indian/Antananarivo{% endif %}">
                     <button class="setting-save-btn" type="submit">Enregistrer</button>
                 </form>
+                {% if key == "TAF_HOST_PORT" %}
+                <p class="muted" style="margin-top:0.3rem;font-size:0.85rem">Valeur par défaut : 8010. Port externe du conteneur Docker.</p>
+                {% elif key == "TAF_LAN_HOST" %}
+                <p class="muted" style="margin-top:0.3rem;font-size:0.85rem">IP du laptop sur le réseau local. Laisse vide pour détection automatique.</p>
+                {% elif key == "ALLOWED_HOSTS" %}
+                <p class="muted" style="margin-top:0.3rem;font-size:0.85rem">Hôtes autorisés, séparés par des virgules. <code>*</code> est interdit.</p>
+                {% elif key == "CSRF_TRUSTED_ORIGINS" %}
+                <p class="muted" style="margin-top:0.3rem;font-size:0.85rem">Origines de confiance pour CSRF, séparées par des virgules. Chaque origine doit commencer par <code>http://</code> ou <code>https://</code>.</p>
+                {% elif key == "TIME_ZONE" %}
+                <p class="muted" style="margin-top:0.3rem;font-size:0.85rem">Fuseau horaire du serveur (ex: <code>Indian/Antananarivo</code>, <code>Europe/Paris</code>).</p>
+                {% endif %}
             </div>
-            {% empty %}
-            <p class="muted">Aucun champ modifiable trouvé.</p>
             {% endfor %}
         </div>
     </section>
@@ -61,16 +93,10 @@
                 {% endif %}
             </dd>
             {% endfor %}
-            {% for key, configured in settings.sensitive.items %}
-            <dt class="muted setting-label"><code>{{ key }}</code></dt>
+            <dt class="muted setting-label"><code>SECRET_KEY</code></dt>
             <dd class="setting-value">
-                {% if key == "SECRET_KEY" %}
-                    {% if configured %}Configuré : oui{% else %}Configuré : non{% endif %}
-                {% else %}
-                    {% if configured %}Configuré : oui{% else %}Configuré : non{% endif %}
-                {% endif %}
+                {% if settings.has_secret_key %}Configuré : oui{% else %}Configuré : non{% endif %}
             </dd>
-            {% endfor %}
         </dl>
     </section>
 
@@ -79,4 +105,34 @@
         <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Voir l'accès réseau &rarr;</a>
     </div>
 </main>
+
+<script>
+(function() {
+    document.querySelectorAll('.ip-detect-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var target = this.getAttribute('data-target');
+            var value = this.getAttribute('data-value');
+            var input = this.closest('.setting-card').querySelector('input[name="value"]');
+            if (input) {
+                input.value = value;
+            }
+        });
+    });
+    document.querySelectorAll('.ip-append-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var target = this.getAttribute('data-target');
+            var value = this.getAttribute('data-value');
+            var input = this.closest('.setting-card').querySelector('input[name="value"]');
+            if (input) {
+                var current = input.value.trim();
+                var parts = current.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+                if (parts.indexOf(value) === -1) {
+                    parts.push(value);
+                    input.value = parts.join(',');
+                }
+            }
+        });
+    });
+})();
+</script>
 {% endblock %}

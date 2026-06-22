@@ -1,0 +1,113 @@
+/* TAf Local Forms – Admin styling */
+/* No external dependencies, no CDN */
+
+:root {
+  --taf-navy: #0f2747;
+  --taf-navy-deep: #0a1b32;
+  --taf-sky: #d8ebff;
+  --taf-sky-strong: #89bdf2;
+  --taf-white: #ffffff;
+  --taf-text: #16304d;
+  --taf-muted: #5f7691;
+  --taf-danger: #b42318;
+  --taf-success: #2b8a3e;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#header {
+  background: linear-gradient(135deg, var(--taf-navy) 0%, #1e4c7d 100%);
+  color: var(--taf-white);
+}
+
+#header a:link, #header a:visited {
+  color: var(--taf-sky-strong);
+}
+
+#branding h1 {
+  color: var(--taf-white);
+  font-weight: 700;
+}
+
+#branding h1 a:link, #branding h1 a:visited {
+  color: var(--taf-white);
+}
+
+.module h2, .module caption {
+  background: var(--taf-navy);
+  color: var(--taf-white);
+}
+
+div.breadcrumbs {
+  background: var(--taf-navy-deep);
+  color: var(--taf-sky);
+}
+
+div.breadcrumbs a {
+  color: var(--taf-sky-strong);
+}
+
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+  background: var(--taf-navy);
+  color: var(--taf-white);
+  border-radius: 6px;
+  border: none;
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover {
+  background: #1e4c7d;
+}
+
+.button.default, input[type=submit].default, .submit-row input.default {
+  background: #1e4c7d;
+}
+
+.button.default:hover, input[type=submit].default:hover {
+  background: #295d94;
+}
+
+a:link, a:visited {
+  color: var(--taf-navy);
+}
+
+#user-tools a {
+  color: var(--taf-sky-strong);
+}
+
+#user-tools a:hover {
+  color: var(--taf-white);
+}
+
+#footer {
+  color: var(--taf-muted);
+}
+
+.admin-links-bar {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: #f0f4fa;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.admin-links-bar a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-links-bar a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  #header {
+    padding: 1rem;
+  }
+  #branding h1 {
+    font-size: 1.2rem;
+  }
+}

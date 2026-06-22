@@ -155,6 +155,12 @@ Le dashboard formateur inclut une page d'aide au diagnostic réseau :
 
 `/dashboard/network/`
 
+ainsi que des scripts de diagnostic :
+
+- `bash scripts/dev/taf-lan-diagnose` — diagnostic WSL (lecture seule)
+- `.\scripts\windows\taf-lan-show-status.ps1` — statut réseau Windows (lecture seule)
+- `.\scripts\windows\taf-lan-open-port.ps1` — ouvrir le port 8010 dans le pare-feu Windows (Admin requis)
+
 Cette page affiche :
 
 - l'adresse recommandée pour les élèves ;
@@ -177,9 +183,11 @@ Si les élèves n'arrivent pas à ouvrir la page :
 
 1. vérifiez que Docker Desktop est lancé ;
 2. vérifiez l'adresse IP de l'ordinateur ;
-3. autorisez le port `8000` dans le pare-feu Windows si besoin ;
+3. autorisez le port `8010` dans le pare-feu Windows : exécutez (Admin) `.\scripts\windows\taf-lan-open-port.ps1` ;
 4. vérifiez que les appareils sont bien sur le même réseau ;
 5. vérifiez qu'il n'y a pas d'isolation client / AP isolation sur le Wi-Fi.
+
+Consultez le guide complet : `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md`.
 
 ## Test rapide avant la séance
 
@@ -250,8 +258,9 @@ liens vers chaque dashboard, export CSV, diagnostic réseau, configuration rése
 
 - vérifiez qu'ils utilisent l'IP de l'ordinateur et non `localhost` ;
 - vérifiez que l'ordinateur et les téléphones sont sur le même Wi-Fi ou partage de connexion ;
-- vérifiez le pare-feu Windows ;
-- relancez `docker compose up --build`.
+- vérifiez le pare-feu Windows : ouvrez le port avec `.\scripts\windows\taf-lan-open-port.ps1` (Admin) ;
+- relancez `docker compose up --build` ;
+- consultez le guide complet : `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md`.
 
 ### Mauvaise IP
 

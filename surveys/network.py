@@ -1,6 +1,29 @@
 import os
 import socket
+import subprocess
 from urllib.parse import urlparse
+
+
+def _detect_wsl_gateway():
+    try:
+        out = subprocess.check_output(
+            ["ip", "route", "show"], text=True, stderr=subprocess.DEVNULL, timeout=5
+        )
+        for line in out.splitlines():
+            parts = line.strip().split()
+            if parts and parts[0] == "default":
+                return parts[2]
+    except Exception:
+        pass
+    return ""
+
+
+def _is_wsl():
+    try:
+        with open("/proc/version") as f:
+            return "microsoft" in f.read().lower()
+    except Exception:
+        return False
 
 
 def _get_ip_candidates():
@@ -79,6 +102,10 @@ def get_network_access_context(request):
             "Renseigne TAF_LAN_HOST=<IP_DU_LAPTOP> dans .env."
         )
 
+    # ── LAN diagnostics ────────────────────────────────────
+    under_wsl = _is_wsl()
+    wsl_gateway = _detect_wsl_gateway() if under_wsl else ""
+
     return {
         "current_host": current_host,
         "current_port": current_port,
@@ -102,4 +129,6 @@ def get_network_access_context(request):
         "csv_module_4_url": url_for("/dashboard/export/module-4.csv"),
         "admin_url": url_for("/admin/"),
         "warnings": warnings,
+        "under_wsl": under_wsl,
+        "wsl_gateway": wsl_gateway,
     }
