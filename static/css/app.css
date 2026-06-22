@@ -721,15 +721,31 @@ th {
     border: 1px solid #89bdf2;
 }
 
-/* Toggle button */
+/* Toggle button — mobile-like switch */
 .toggle-btn {
-    padding: 0.4rem 0.85rem;
-    border: 1px solid var(--line);
-    border-radius: 6px;
+    position: relative;
+    padding: 0.5rem 1rem 0.5rem 2.6rem;
+    border: 2px solid var(--line);
+    border-radius: 999px;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.toggle-btn::before {
+    content: "";
+    position: absolute;
+    left: 0.35rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    background: currentColor;
+    transition: left 0.2s, background 0.2s;
 }
 
 .toggle-on {
@@ -738,14 +754,29 @@ th {
     border-color: #a3d9b5;
 }
 
+.toggle-on::before {
+    left: 0.35rem;
+    background: #2b8a3e;
+}
+
 .toggle-off {
-    background: #fff3cd;
-    color: #856404;
-    border-color: #ffc107;
+    background: #fdecec;
+    color: #b42318;
+    border-color: #f5c6c6;
+}
+
+.toggle-off::before {
+    left: 0.35rem;
+    background: #b42318;
 }
 
 .toggle-btn:hover {
-    opacity: 0.85;
+    opacity: 0.9;
+}
+
+.toggle-btn:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 2px;
 }
 
 /* Consultation pill */
@@ -781,4 +812,148 @@ th {
 
 .module-card:hover {
     box-shadow: 0 2px 8px rgba(15,39,71,0.1);
+}
+
+/* Landing page */
+.landing-choice {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.landing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.landing-card {
+    padding: 2rem;
+    border-radius: 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.landing-student {
+    background: linear-gradient(180deg, #e8f5e9, #f1f8e9);
+    border: 1px solid #a5d6a7;
+}
+
+.landing-trainer {
+    background: linear-gradient(180deg, #e3f2fd, #e8eaf6);
+    border: 1px solid #90caf9;
+}
+
+.landing-icon {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.landing-card h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.landing-card p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 32ch;
+}
+
+.landing-button {
+    display: inline-block;
+    padding: 0.85rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    margin-top: 0.5rem;
+}
+
+.landing-button:hover {
+    transform: translateY(-1px);
+}
+
+.landing-button:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 2px;
+}
+
+.landing-button-student {
+    background: #2e7d32;
+    color: #fff;
+}
+
+.landing-button-student:hover {
+    background: #1b5e20;
+}
+
+.landing-button-trainer {
+    background: #1565c0;
+    color: #fff;
+}
+
+.landing-button-trainer:hover {
+    background: #0d47a1;
+}
+
+@media (max-width: 640px) {
+    .landing-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Pedagogy block */
+.pedagogy-block {
+    margin-top: 0.75rem;
+}
+
+.pedagogy-details {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.pedagogy-summary {
+    padding: 0.7rem 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #f7fbff;
+    color: var(--navy);
+    transition: background 0.2s;
+}
+
+.pedagogy-summary:hover {
+    background: var(--sky);
+}
+
+.pedagogy-summary:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: -2px;
+}
+
+.pedagogy-content {
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: 0.5rem;
+}
+
+.pedagogy-content ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+}
+
+.pedagogy-content ul li + li {
+    margin-top: 0.3rem;
+}
+
+.pedagogy-content p {
+    margin: 0;
 }

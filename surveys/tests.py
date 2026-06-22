@@ -237,22 +237,23 @@ class Module2FormViewTests(TestCase):
         response = self.client.get(reverse("surveys:home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Bienvenue")
-        self.assertContains(response, "TAfHSSiM")
+        self.assertContains(response, "Je suis étudiant")
+        self.assertContains(response, "Je suis formateur")
+        self.assertContains(response, "À propos du projet")
 
     def test_home_page_shows_module_2_when_active(self):
-        response = self.client.get(reverse("surveys:home"))
+        response = self.client.get(reverse("surveys:student_modules"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 2 - Comprendre Internet")
-        self.assertContains(response, "Disponible")
+        self.assertContains(response, "Réponses ouvertes")
         self.assertContains(response, "Répondre au questionnaire")
 
     def test_home_page_shows_module_2_unavailable_when_no_active_session(self):
         self.session.is_active = False
         self.session.save()
 
-        response = self.client.get(reverse("surveys:home"))
+        response = self.client.get(reverse("surveys:student_modules"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 2 - Comprendre Internet")
@@ -896,18 +897,18 @@ class Module3HomeAndCockpitTests(TestCase):
         )
 
     def test_home_page_shows_module_3_when_active(self):
-        response = self.client.get(reverse("surveys:home"))
+        response = self.client.get(reverse("surveys:student_modules"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 3 - Recherche efficace")
-        self.assertContains(response, "Disponible")
+        self.assertContains(response, "Réponses ouvertes")
         self.assertContains(response, "Répondre au questionnaire")
 
     def test_home_page_shows_module_3_unavailable_when_no_active_session(self):
         self.session.is_active = False
         self.session.save()
 
-        response = self.client.get(reverse("surveys:home"))
+        response = self.client.get(reverse("surveys:student_modules"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 3 - Recherche efficace")
@@ -1346,16 +1347,16 @@ class Module4HomeAndCockpitTests(TestCase):
         )
 
     def test_home_page_shows_module_4_when_active(self):
-        response = self.client.get(reverse("surveys:home"))
+        response = self.client.get(reverse("surveys:student_modules"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 4 - Sources fiables")
-        self.assertContains(response, "Disponible")
+        self.assertContains(response, "Réponses ouvertes")
         self.assertContains(response, "Répondre au questionnaire")
 
     def test_home_page_shows_module_4_unavailable_when_no_session(self):
         self.session.is_active = False
         self.session.save()
-        response = self.client.get(reverse("surveys:home"))
+        response = self.client.get(reverse("surveys:student_modules"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 4 - Sources fiables")
         self.assertContains(response, "Indisponible")
@@ -1990,7 +1991,7 @@ class F019NavigationUXTests(TestCase):
 
     def test_home_contains_espace_formateur(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, "l'espace formateur")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
     def test_logo_points_to_dashboard(self):
@@ -2000,7 +2001,7 @@ class F019NavigationUXTests(TestCase):
     def test_dashboard_shows_full_nav(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Modules de formation")
-        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, "Dashboard")
         self.assertContains(response, "Accès réseau")
         self.assertContains(response, "Configuration réseau")
         self.assertContains(response, "Admin avancé")

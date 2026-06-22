@@ -1,61 +1,41 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}TAfHSSiM — Modules de formation{% endblock %}
+{% block title %}TAfHSSiM — Accueil{% endblock %}
+{% block hero_title %}TAfHSSiM{% endblock %}
+{% block hero_text %}Technology Access for High School Students in Madagascar{% endblock %}
 
 {% block content %}
 <main class="content-grid">
-    <section class="card intro-card">
-        <h2>Bienvenue</h2>
-        <p>Cette application te permet de répondre aux questionnaires de formation TAfHSSiM.</p>
-        <p>Connecte-toi au Wi-Fi de la classe et choisis ton module ci-dessous.</p>
+    <section class="card landing-choice">
+        <div class="landing-grid">
+            <article class="landing-card landing-student">
+                <div class="landing-icon">🎓</div>
+                <h2>Je suis étudiant</h2>
+                <p>Accède aux modules de formation et réponds aux questionnaires ouverts par le formateur.</p>
+                <a class="landing-button landing-button-student" href="{% url 'surveys:student_modules' %}">
+                    Entrer dans l'espace étudiant
+                </a>
+            </article>
+            <article class="landing-card landing-trainer">
+                <div class="landing-icon">👨‍🏫</div>
+                <h2>Je suis formateur</h2>
+                <p>Accède au cockpit formateur pour suivre les réponses, gérer les modules, configurer le réseau et exporter les résultats.</p>
+                <a class="landing-button landing-button-trainer" href="{% url 'surveys:dashboard_home' %}">
+                    Entrer dans l'espace formateur
+                </a>
+            </article>
+        </div>
     </section>
 
-    {% for item in module_data %}
     <section class="card">
-        <div class="section-row">
-            <h2>{{ item.module.title }}</h2>
-            <div style="display:flex;gap:0.5rem;align-items:center">
-                {% if item.has_active_session %}
-                    {% if item.active_session.accepting_responses %}
-                        <span class="pill" style="margin:0">Disponible</span>
-                    {% else %}
-                        <span class="pill consultation-pill" style="margin:0;background:#fff3cd;color:#856404">Consultation seulement</span>
-                    {% endif %}
-                {% else %}
-                    <span class="pill" style="margin:0;background:#e6eef8;color:var(--muted)">Indisponible</span>
-                {% endif %}
-            </div>
-        </div>
-        <p style="margin-top:0.75rem">{{ item.module.description|default:"Pas de description." }}</p>
-        <div style="margin-top:1.25rem">
-            {% if item.has_active_session %}
-                {% if item.active_session.accepting_responses %}
-                    {% if item.module.code == "MODULE_2" %}
-                        <a class="primary-button" href="{% url 'surveys:module_2' %}">Répondre au questionnaire</a>
-                    {% elif item.module.code == "MODULE_3" %}
-                        <a class="primary-button" href="{% url 'surveys:module_3' %}">Répondre au questionnaire</a>
-                    {% elif item.module.code == "MODULE_4" %}
-                        <a class="primary-button" href="{% url 'surveys:module_4' %}">Répondre au questionnaire</a>
-                    {% endif %}
-                {% else %}
-                    {% if item.module.code == "MODULE_2" %}
-                        <a class="primary-button consult-button" href="{% url 'surveys:module_2' %}">Consulter le questionnaire</a>
-                    {% elif item.module.code == "MODULE_3" %}
-                        <a class="primary-button consult-button" href="{% url 'surveys:module_3' %}">Consulter le questionnaire</a>
-                    {% elif item.module.code == "MODULE_4" %}
-                        <a class="primary-button consult-button" href="{% url 'surveys:module_4' %}">Consulter le questionnaire</a>
-                    {% endif %}
-                {% endif %}
-            {% else %}
-                <p class="muted">Aucune session active pour ce module. Reviens plus tard.</p>
-            {% endif %}
+        <h2>À propos du projet</h2>
+        <div style="margin-top:0.75rem;display:grid;gap:0.75rem">
+            <p><strong>TAfHSSiM</strong> est une application locale de formation au numérique pour les lycéens à Madagascar.</p>
+            <p>Elle fonctionne sur le laptop du formateur. Les élèves se connectent au même Wi-Fi ou hotspot pour répondre aux questionnaires.</p>
+            <p>Toutes les réponses restent stockées localement sur l'ordinateur du formateur — aucune donnée ne quitte la salle de classe.</p>
+            <p>Le projet aide à suivre la progression des élèves pendant les modules : Comprendre Internet, Recherche efficace et Sources fiables.</p>
         </div>
     </section>
-    {% empty %}
-    <section class="card">
-        <p>Aucun module de formation disponible pour le moment.</p>
-    </section>
-    {% endfor %}
 </main>
 {% endblock %}

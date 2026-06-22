@@ -12,6 +12,10 @@ Les élèves connectés au même Wi-Fi ou au même partage de connexion ouvrent 
 
 `http://192.168.1.23:8010/`
 
+La page d'accueil (`/`) propose un choix entre **étudiant** (accès aux modules) et **formateur** (accès au cockpit).
+
+Les élèves cliquent sur **« Je suis étudiant »** pour accéder à l'espace modules : `/modules/`.
+
 Modules disponibles :
 
 - **Module 2** : Comprendre Internet  (`/module-2/`)
@@ -114,8 +118,8 @@ Le dashboard et l'admin demandent une connexion.
 ### Navigation
 
 La barre de navigation en haut de chaque page donne accès à :
-- **Modules de formation** → accueil public
-- **Espace formateur** → tableau de bord
+- **Modules de formation** → `/modules/` (espace étudiant)
+- **Dashboard** → `/dashboard/` (cockpit formateur)
 - **Accès réseau** → diagnostic et adresses (pages formateur uniquement)
 - **Configuration réseau** → paramètres IP (pages formateur uniquement)
 - **Admin avancé** → administration Django (pages formateur uniquement)
@@ -223,8 +227,8 @@ Consultez le guide complet : `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md`.
 
 ## Test rapide avant la séance
 
-1. ouvrez `http://127.0.0.1:8000/` sur l'ordinateur ;
-2. vérifiez que les modules actifs s'affichent ;
+1. ouvrez `http://127.0.0.1:8000/` sur l'ordinateur — la page d'accueil avec le choix étudiant / formateur doit s'afficher ;
+2. cliquez sur « Je suis étudiant » et vérifiez que les modules actifs s'affichent ;
 3. vérifiez que l'IP locale de l'ordinateur est correcte ;
 4. testez l'URL élève sur un téléphone connecté au même réseau ;
 5. connectez-vous à l'admin ou au dashboard.
@@ -235,7 +239,7 @@ Consultez le guide complet : `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md`.
 - `.env` est prêt ;
 - `SECRET_KEY` n'est plus la valeur d'exemple ;
 - l'IP locale de l'ordinateur est connue ;
-- l'accueil élèves `/` s'ouvre sur l'ordinateur ;
+- la page d'accueil `/` s'ouvre avec le choix étudiant / formateur ;
 - un téléphone sur le même réseau ouvre bien `/module-2/`, `/module-3/` et `/module-4/` ;
 - le cockpit formateur `/dashboard/` est accessible.
 
@@ -261,7 +265,8 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 
 ## URLs utiles
 
-- Accueil élèves (liste des modules) : `/`
+- Page d'accueil (choix étudiant / formateur) : `/`
+- Espace modules étudiant (liste des modules) : `/modules/`
 - Formulaire Module 2 : `/module-2/`
 - Formulaire Module 3 : `/module-3/`
 - Formulaire Module 4 : `/module-4/`
