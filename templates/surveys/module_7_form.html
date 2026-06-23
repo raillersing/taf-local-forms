@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Module 7 - Securite en ligne{% endblock %}
+{% block hero_title %}Module 7 - Securite en ligne{% endblock %}
+{% block hero_text %}Apprends a eviter les risques numeriques et a proteger tes informations personnelles.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    {% if not accepting_responses %}
+    <div class="card" style="background:#fff3cd;border-color:#ffc107;">
+        <p style="margin:0;font-weight:600;color:#856404">
+            Les reponses sont fermees pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de reponse.
+        </p>
+    </div>
+    {% endif %}
+
+    <section class="card intro-card">
+        <p class="pill">{{ session.session_code }}</p>
+        <h2>Module 7 — Securite en ligne</h2>
+        {% include "surveys/partials/module_7_pedagogy.html" %}
+        <h2 style="margin-top:1rem">Avant de commencer</h2>
+        <p>{{ module_7_summary }}</p>
+    </section>
+
+    <section class="card">
+        <h2>Objectifs de la seance</h2>
+        <ul style="margin-top:0.75rem;padding-left:1.25rem;display:grid;gap:0.4rem">
+            <li>Je comprends les risques numeriques courants.</li>
+            <li>Je sais creer un mot de passe plus sur.</li>
+            <li>Je sais reconnaitre un message suspect.</li>
+            <li>Je sais quelles informations personnelles proteger.</li>
+        </ul>
+    </section>
+
+    <form method="post" class="card form-card">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <section class="form-section">
+            <h2>Tes informations</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.school_id_number %}
+                {% include "surveys/partials/field.html" with field=form.full_name %}
+                {% include "surveys/partials/field.html" with field=form.class_level %}
+                {% include "surveys/partials/field.html" with field=form.group_name %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Avant la seance</h2>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_password %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_suspect %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_personal_info %}
+        </section>
+
+        <section class="form-section">
+            <h2>Pendant la seance</h2>
+            <div class="checkbox-list">
+                {% include "surveys/partials/field.html" with field=form.todo_identified_weak_password %}
+                {% include "surveys/partials/field.html" with field=form.todo_written_password_rules %}
+                {% include "surveys/partials/field.html" with field=form.todo_understood_no_code_sharing %}
+                {% include "surveys/partials/field.html" with field=form.todo_observed_suspect_message %}
+                {% include "surveys/partials/field.html" with field=form.todo_spotted_danger_signs %}
+                {% include "surveys/partials/field.html" with field=form.todo_applied_stop_method %}
+                {% include "surveys/partials/field.html" with field=form.todo_listed_personal_info %}
+                {% include "surveys/partials/field.html" with field=form.todo_ask_help %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Petit quiz</h2>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q1 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q2 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q3 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q4 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q5_selected %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q6_selected %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q7_selected %}
+        </section>
+
+        <section class="form-section">
+            <h2>Exercice pratique</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.practical_situation %}
+                {% include "surveys/partials/field.html" with field=form.practical_describe %}
+                {% include "surveys/partials/field.html" with field=form.practical_danger_signs %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_protect_selected %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_good_reaction_selected %}
+                {% include "surveys/partials/field.html" with field=form.practical_explain %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Fin de seance</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.feedback_understood_today %}
+                {% include "surveys/partials/field.html" with field=form.feedback_still_difficult %}
+            </div>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.feedback_confidence_security %}
+        </section>
+
+        {% if accepting_responses %}
+        <button type="submit" class="primary-button">Envoyer</button>
+        <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
+        {% include "surveys/partials/presence_heartbeat.html" %}
+        {% else %}
+        <p class="muted" style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:8px">
+            Les reponses sont fermees pour ce module. Tu ne peux pas envoyer de reponse pour le moment.
+        </p>
+        {% endif %}
+    </form>
+</main>
+{% endblock %}

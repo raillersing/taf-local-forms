@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Module3Submission, Module4Submission, Module5Submission, Module6Submission, Student, Submission
+from .models import Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Student, Submission
 
 
 class Module2SubmissionForm(forms.Form):
@@ -729,6 +729,171 @@ class Module6SubmissionForm(forms.Form):
     feedback_confidence_resources = forms.ChoiceField(
         label="Après cette séance, je me sens plus capable d'utiliser des ressources éducatives en ligne.",
         choices=Module6Submission.CONFIDENCE_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    def clean_school_id_number(self):
+        value = self.cleaned_data["school_id_number"].strip()
+        if not value.isdigit() or len(value) != 2:
+            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
+        return value
+
+
+class Module7SubmissionForm(forms.Form):
+    school_id_number = forms.CharField(
+        label="Numéro à l'école",
+        min_length=2,
+        max_length=2,
+        help_text="Exemple : 01, 09, 39",
+        error_messages={
+            "required": "Entre ton numéro.",
+            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
+            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
+        },
+    )
+    full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
+    class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
+    group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
+
+    auto_eval_password = forms.ChoiceField(
+        label="Je sais créer un mot de passe plus sûr.",
+        choices=Module7Submission.AUTO_EVAL_M7_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_suspect = forms.ChoiceField(
+        label="Je sais reconnaître un message suspect.",
+        choices=Module7Submission.AUTO_EVAL_M7_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_personal_info = forms.ChoiceField(
+        label="Je sais quelles informations personnelles je dois protéger.",
+        choices=Module7Submission.AUTO_EVAL_M7_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    todo_identified_weak_password = forms.BooleanField(
+        label="J'ai identifié un mot de passe faible.", required=False,
+    )
+    todo_written_password_rules = forms.BooleanField(
+        label="J'ai écrit les règles d'un mot de passe plus sûr.", required=False,
+    )
+    todo_understood_no_code_sharing = forms.BooleanField(
+        label="J'ai compris pourquoi il ne faut pas partager un code.", required=False,
+    )
+    todo_observed_suspect_message = forms.BooleanField(
+        label="J'ai observé un exemple de message suspect.", required=False,
+    )
+    todo_spotted_danger_signs = forms.BooleanField(
+        label="J'ai repéré au moins deux signes de danger.", required=False,
+    )
+    todo_applied_stop_method = forms.BooleanField(
+        label="J'ai appliqué la méthode STOP avant de cliquer.", required=False,
+    )
+    todo_listed_personal_info = forms.BooleanField(
+        label="J'ai listé des informations personnelles à protéger.", required=False,
+    )
+    todo_ask_help = forms.BooleanField(
+        label="Je sais demander de l'aide si j'ai un doute.", required=False,
+    )
+
+    quiz_q1 = forms.ChoiceField(
+        label="1. C'est une bonne idée de donner son mot de passe à un ami proche.",
+        choices=Module7Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q2 = forms.ChoiceField(
+        label="2. Un mot de passe long et unique protège mieux un compte.",
+        choices=Module7Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q3 = forms.ChoiceField(
+        label="3. La validation en deux étapes ajoute une protection en plus.",
+        choices=Module7Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q4 = forms.ChoiceField(
+        label="4. Si un message demande de cliquer très vite pour gagner un cadeau, que dois-je faire ?",
+        choices=Module7Submission.QUIZ_Q4_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q5_selected = forms.MultipleChoiceField(
+        label="5. Quels signes peuvent montrer qu'un message est suspect ?",
+        choices=[
+            (Module7Submission.QUIZ_Q5_OPTION_MDP, "Il demande mon mot de passe"),
+            (Module7Submission.QUIZ_Q5_OPTION_CADEAU, "Il promet un cadeau incroyable"),
+            (Module7Submission.QUIZ_Q5_OPTION_VITE, "Il demande d'agir très vite"),
+            (Module7Submission.QUIZ_Q5_OPTION_LIEN, "Il contient un lien bizarre"),
+            (Module7Submission.QUIZ_Q5_OPTION_PROF, "Il vient clairement de mon professeur avec une consigne expliquée"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+    )
+    quiz_q6_selected = forms.MultipleChoiceField(
+        label="6. Quelles informations dois-je protéger en ligne ?",
+        choices=[
+            (Module7Submission.QUIZ_Q6_OPTION_MDP, "Mon mot de passe"),
+            (Module7Submission.QUIZ_Q6_OPTION_ADRESSE, "Mon adresse personnelle"),
+            (Module7Submission.QUIZ_Q6_OPTION_TEL, "Mon numéro de téléphone"),
+            (Module7Submission.QUIZ_Q6_OPTION_PHOTOS, "Mes photos privées"),
+            (Module7Submission.QUIZ_Q6_OPTION_LECON, "Une leçon publique partagée par le professeur"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+    )
+    quiz_q7_selected = forms.MultipleChoiceField(
+        label="7. Si j'ai cliqué sur un lien suspect, que puis-je faire ?",
+        choices=[
+            (Module7Submission.QUIZ_Q7_OPTION_PARLER, "En parler rapidement à un adulte ou au formateur"),
+            (Module7Submission.QUIZ_Q7_OPTION_CHANGER, "Changer mon mot de passe si nécessaire"),
+            (Module7Submission.QUIZ_Q7_OPTION_CONSEIL, "Ne plus utiliser le compte sans demander conseil"),
+            (Module7Submission.QUIZ_Q7_OPTION_SECRET, "Garder le problème secret"),
+            (Module7Submission.QUIZ_Q7_OPTION_DONNER, "Donner le code reçu à la personne qui le demande"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    practical_situation = forms.ChoiceField(
+        label="Situation analysée",
+        choices=Module7Submission.SITUATION_CHOICES,
+    )
+    practical_describe = forms.CharField(
+        label="Décris rapidement la situation.",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Exemple : un message me promet un cadeau et demande de cliquer sur un lien.",
+    )
+    practical_danger_signs = forms.CharField(
+        label="Quels signes de danger as-tu repérés ?",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Écris au moins un signe de danger.",
+    )
+    practical_protect_selected = forms.MultipleChoiceField(
+        label="Quelles informations faut-il protéger dans cette situation ?",
+        choices=Module7Submission.PROTECT_INFO_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    practical_good_reaction_selected = forms.MultipleChoiceField(
+        label="Quelle bonne réaction faut-il avoir ?",
+        choices=Module7Submission.REACTION_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    practical_explain = forms.CharField(
+        label="Explique ton choix avec tes propres mots.",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Écris une ou deux phrases simples.",
+    )
+
+    feedback_understood_today = forms.CharField(
+        label="Ce que j'ai compris aujourd'hui :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Écris une ou deux phrases simples.",
+    )
+    feedback_still_difficult = forms.CharField(
+        label="Ce qui reste difficile pour moi :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        required=False,
+        help_text="Écris ce qui n'est pas encore clair.",
+    )
+    feedback_confidence_security = forms.ChoiceField(
+        label="Après cette séance, je me sens plus capable de me protéger en ligne.",
+        choices=Module7Submission.CONFIDENCE_CHOICES,
         widget=forms.RadioSelect,
     )
 
