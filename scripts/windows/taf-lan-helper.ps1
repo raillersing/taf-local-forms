@@ -5,6 +5,7 @@
     Ecoute sur http://127.0.0.1:8019/ et expose des endpoints allowslist
     pour configurer/tester/desactiver l'acces LAN des eleves.
     Necessite d'etre lance en administrateur pour les actions reseau.
+    Ecrit des logs dans logs/windows/taf-lan-helper.log.
 .NOTES
     Auteur: TAf Team
     Necessite: PowerShell 5.1 (Windows), droits admin pour /sync et /disable
@@ -20,7 +21,38 @@ param(
 $ErrorActionPreference = "Stop"
 
 # --------------------------------------------------
-# Helper functions
+# Log / PID setup
+# --------------------------------------------------
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+$logDir = Join-Path $projectRoot "logs\windows"
+if (-not (Test-Path $logDir)) {
+    $null = New-Item -ItemType Directory -Path $logDir -Force
+}
+$logFile = Join-Path $logDir "taf-lan-helper.log"
+$pidFile = Join-Path $logDir "taf-lan-helper.pid"
+$helperVersion = "1.1.0"
+
+function Write-Log {
+    param($Level, $Message)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $line = "[$timestamp] [$Level] $Message"
+    try {
+        Add-Content -Path $logFile -Value $line -ErrorAction SilentlyContinue
+    } catch {}
+    Write-Host $line
+}
+
+# Write PID file immediately
+try {
+    $pid | Out-File -FilePath $pidFile -Encoding ascii -Force
+    Write-Log "INFO" "PID file ecrit: $pidFile (PID: $pid)"
+} catch {
+    Write-Log "WARN" "Impossible d'ecrire le PID file: $($_.Exception.Message)"
+}
+
+# --------------------------------------------------
+# Helper functions (unchanged from F030)
 # --------------------------------------------------
 function Get-ActiveLanIp {
     $candidates = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
@@ -99,6 +131,10 @@ function Get-Status {
 
     return @{
         success     = $true
+        message     = "Helper actif"
+        helper_pid  = $pid
+        timestamp   = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        version     = $helperVersion
         lan_ip      = $lanIp
         student_url = $studentUrl
         local_ok    = $localOk
@@ -172,7 +208,6 @@ function Invoke-Sync {
 }
 
 function Invoke-Disable {
-    # Remove portproxy
     try {
         $existing = netsh interface portproxy show all | Select-String "0.0.0.0.*8011"
         if ($existing) {
@@ -180,7 +215,6 @@ function Invoke-Disable {
         }
     } catch { }
 
-    # Remove firewall rule
     try {
         $ruleName = "TAf Local Forms - Port 8011"
         $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
@@ -237,8 +271,11 @@ function Send-JsonResponse {
     $buffer = [System.Text.Encoding]::UTF8.GetBytes($body)
     $Response.ContentType = "application/json"
     $Response.ContentLength64 = $buffer.Length
-    $Response.OutputStream.Write($buffer, 0, $buffer.Length)
-    $Response.OutputStream.Close()
+    try {
+        $Response.OutputStream.Write($buffer, 0, $buffer.Length)
+    } finally {
+        $Response.OutputStream.Close()
+    }
 }
 
 function Send-Error {
@@ -248,81 +285,119 @@ function Send-Error {
 }
 
 # --------------------------------------------------
-# Server setup
+# Global try/catch — server setup
 # --------------------------------------------------
-$listener = New-Object System.Net.HttpListener
-$prefix = "http://${BindAddress}:${Port}/"
-$listener.Prefixes.Add($prefix)
-$listener.Start()
-
-Write-Host "TAf LAN Helper demarre sur $prefix" -ForegroundColor Green
-Write-Host "  Endpoints:" -ForegroundColor Cyan
-Write-Host "    GET /status" -ForegroundColor Cyan
-Write-Host "    POST /sync" -ForegroundColor Cyan
-Write-Host "    POST /restart-app" -ForegroundColor Cyan
-Write-Host "    POST /test" -ForegroundColor Cyan
-Write-Host "    POST /disable" -ForegroundColor Cyan
-Write-Host "  Ecoute uniquement sur 127.0.0.1 (pas accessible depuis le LAN)" -ForegroundColor Yellow
-Write-Host ""
-
 try {
-    while ($listener.IsListening) {
-        $context = $listener.GetContext()
-        $req = $context.Request
-        $res = $context.Response
+    $listener = New-Object System.Net.HttpListener
+    $prefix = "http://${BindAddress}:${Port}/"
+    $listener.Prefixes.Add($prefix)
+    $listener.Start()
+    Write-Log "INFO" "Helper demarre sur $prefix"
+    Write-Log "INFO" "  Version: $helperVersion"
+    Write-Log "INFO" "  Endpoints: GET /status, POST /sync, POST /restart-app, POST /test, POST /disable"
 
-        $origin = $req.Headers["Origin"]
-        $path = $req.Url.AbsolutePath.TrimEnd("/")
-        $method = $req.HttpMethod
+    try {
+        while ($listener.IsListening) {
+            try {
+                $context = $listener.GetContext()
+                $req = $context.Request
+                $res = $context.Response
 
-        # Add CORS headers to every response
-        Add-CorsHeaders -Response $res -Origin $origin
+                $origin = $req.Headers["Origin"]
+                $path = $req.Url.AbsolutePath.TrimEnd("/")
+                $method = $req.HttpMethod
 
-        # Handle OPTIONS preflight (always return 204, no action)
-        if ($method -eq "OPTIONS") {
-            $res.StatusCode = 204
-            $res.ContentLength64 = 0
-            $res.Close()
-            continue
-        }
+                Write-Log "DEBUG" "Requete: $method $path (Origin: $origin)"
 
-        # Validate Origin header (after OPTIONS which should not be validated)
-        $allowedOrigins = @("http://localhost:8010", "http://127.0.0.1:8010", $null, "")
-        if ($origin -and ($allowedOrigins -notcontains $origin)) {
-            Send-Error $res 403 "Origine non autorisee: $origin"
-            $res.Close()
-            continue
-        }
+                # CORS headers on every response
+                Add-CorsHeaders -Response $res -Origin $origin
 
-        try {
-            if ($path -eq "/status" -and $method -eq "GET") {
-                $data = Get-Status
-                Send-JsonResponse $res $data
-            } elseif ($path -eq "/sync" -and $method -eq "POST") {
-                $data = Invoke-Sync
-                Send-JsonResponse $res $data
-            } elseif ($path -eq "/restart-app" -and $method -eq "POST") {
-                $data = Invoke-RestartApp
-                Send-JsonResponse $res $data
-            } elseif ($path -eq "/test" -and $method -eq "POST") {
-                $data = Invoke-Test
-                Send-JsonResponse $res $data
-            } elseif ($path -eq "/disable" -and $method -eq "POST") {
-                $data = Invoke-Disable
-                Send-JsonResponse $res $data
-            } elseif ($path -eq "" -or $path -eq "/") {
-                Send-JsonResponse $res @{ success = $true; message = "TAf LAN Helper en ecoute." }
-            } else {
-                Send-Error $res 404 "Endpoint non trouve: $method $path"
+                # OPTIONS preflight — immediate 204, no action
+                if ($method -eq "OPTIONS") {
+                    $res.StatusCode = 204
+                    $res.ContentLength64 = 0
+                    $res.Close()
+                    Write-Log "DEBUG" "OPTIONS 204 → $path"
+                    continue
+                }
+
+                # Validate Origin (not for OPTIONS which was already handled)
+                $allowedOrigins = @("http://localhost:8010", "http://127.0.0.1:8010", $null, "")
+                if ($origin -and ($allowedOrigins -notcontains $origin)) {
+                    Send-Error $res 403 "Origine non autorisee: $origin"
+                    $res.Close()
+                    Write-Log "WARN" "403 → $method $path (Origin: $origin)"
+                    continue
+                }
+
+                # Route handling — per-request try/catch ensures response always sent
+                try {
+                    if ($path -eq "/status" -and $method -eq "GET") {
+                        $data = Get-Status
+                        Send-JsonResponse $res $data
+                        Write-Log "DEBUG" "200 GET /status (${method}s)"
+                    } elseif ($path -eq "/sync" -and $method -eq "POST") {
+                        $data = Invoke-Sync
+                        Send-JsonResponse $res $data
+                        Write-Log "INFO" "200 POST /sync"
+                    } elseif ($path -eq "/restart-app" -and $method -eq "POST") {
+                        $data = Invoke-RestartApp
+                        Send-JsonResponse $res $data
+                        Write-Log "INFO" "200 POST /restart-app"
+                    } elseif ($path -eq "/test" -and $method -eq "POST") {
+                        $data = Invoke-Test
+                        Send-JsonResponse $res $data
+                        Write-Log "DEBUG" "200 POST /test"
+                    } elseif ($path -eq "/disable" -and $method -eq "POST") {
+                        $data = Invoke-Disable
+                        Send-JsonResponse $res $data
+                        Write-Log "INFO" "200 POST /disable"
+                    } elseif ($path -eq "" -or $path -eq "/") {
+                        Send-JsonResponse $res @{ success = $true; message = "TAf LAN Helper en ecoute." }
+                        Write-Log "DEBUG" "200 GET /"
+                    } else {
+                        Send-Error $res 404 "Endpoint non trouve: $method $path"
+                        Write-Log "WARN" "404 → $method $path"
+                    }
+                } catch {
+                    Write-Log "ERROR" "Erreur route $method $path: $($_.Exception.Message)"
+                    try {
+                        if ($res -and $res.OutputStream -and $res.OutputStream.CanWrite) {
+                            Send-Error $res 500 "Erreur interne: $($_.Exception.Message)"
+                        }
+                    } catch {
+                        Write-Log "ERROR" "Impossible d'envoyer la reponse d'erreur: $($_.Exception.Message)"
+                    }
+                }
+
+                # Ensure response is closed
+                try {
+                    $res.Close()
+                } catch {
+                    Write-Log "ERROR" "Erreur Close: $($_.Exception.Message)"
+                }
+            } catch {
+                Write-Log "ERROR" "Erreur lors du traitement de la requete: $($_.Exception.Message)"
             }
-        } catch {
-            Send-Error $res 500 "Erreur interne: $($_.Exception.Message)"
         }
-
-        $res.Close()
+    } finally {
+        Write-Log "INFO" "Arret du listener..."
+        try { $listener.Stop() } catch { Write-Log "WARN" "Erreur Stop: $($_.Exception.Message)" }
+        try { $listener.Close() } catch { Write-Log "WARN" "Erreur Close listener: $($_.Exception.Message)" }
+        Write-Log "INFO" "Listener arrete"
     }
+} catch {
+    Write-Log "ERROR" "Erreur fatale au demarrage: $($_.Exception.Message)"
+    exit 1
 } finally {
-    $listener.Stop()
-    $listener.Close()
-    Write-Host "TAf LAN Helper arrete." -ForegroundColor Yellow
+    # Clean up PID file
+    try {
+        if (Test-Path $pidFile) {
+            Remove-Item $pidFile -Force
+            Write-Log "INFO" "PID file supprime: $pidFile"
+        }
+    } catch {
+        Write-Log "WARN" "Impossible de supprimer le PID file: $($_.Exception.Message)"
+    }
+    Write-Log "INFO" "Helper termine (PID: $pid)"
 }
