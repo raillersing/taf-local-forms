@@ -4648,3 +4648,121 @@ class F030NetworkControlTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, "confirm(")
         self.assertContains(response, "Desactiver")
+
+    # ---- F030B: LAN Helper reliability ----
+
+    def test_helper_script_has_output_stream_close(self):
+        """Helper doit fermer OutputStream apres chaque reponse."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("OutputStream.Close()", content)
+        self.assertIn("OutputStream.Close()", content)
+
+    def test_helper_script_has_try_catch(self):
+        """Helper doit avoir une gestion try/catch globale et par requete."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("try {", content)
+        self.assertIn("catch {", content)
+        self.assertIn("finally {", content)
+
+    def test_helper_script_has_logs(self):
+        """Helper doit ecrire des logs dans logs/windows/."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("taf-lan-helper.log", content)
+        self.assertIn("Write-Log", content)
+
+    def test_helper_script_has_pid_file(self):
+        """Helper doit ecrire un fichier PID."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("taf-lan-helper.pid", content)
+        self.assertIn("| Out-File -FilePath", content)
+
+    def test_helper_script_status_returns_required_fields(self):
+        """La fonction Get-Status doit retourner les champs obligatoires."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("helper_pid", content)
+        self.assertIn("timestamp", content)
+        self.assertIn("version", content)
+        self.assertIn("message", content)
+        self.assertIn('"Helper actif"', content)
+
+    def test_helper_script_has_version_variable(self):
+        """Helper doit definir une variable de version."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("helperVersion", content)
+        self.assertIn("1.1.0", content)
+
+    def test_start_script_tests_status(self):
+        """start.ps1 doit tester /status avant d'annoncer le demarrage."""
+        start_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-start.ps1"
+        content = start_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("/status", content)
+        self.assertIn("StatusCode -eq 200", content)
+        self.assertIn("demarre avec succes", content)
+
+    def test_start_script_shows_log_path(self):
+        """start.ps1 doit afficher le chemin du log."""
+        start_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-start.ps1"
+        content = start_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("taf-lan-helper.log", content)
+        self.assertIn("ERREUR", content)
+
+    def test_start_script_kills_on_failure(self):
+        """start.ps1 doit tuer le processus si /status ne repond pas."""
+        start_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-start.ps1"
+        content = start_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("Kill()", content)
+        self.assertIn("exit 1", content)
+
+    def test_stop_script_uses_pid_file(self):
+        """stop.ps1 doit lire le PID file puis tuer le processus."""
+        stop_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-stop.ps1"
+        content = stop_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("taf-lan-helper.pid", content)
+        self.assertIn("Kill()", content)
+        self.assertIn("PID file", content)
+
+    def test_stop_script_fallback_commandline(self):
+        """stop.ps1 doit chercher par CommandLine si pas de PID file."""
+        stop_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-stop.ps1"
+        content = stop_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("CommandLine", content)
+        self.assertIn("taf-lan-helper", content)
+
+    def test_stop_script_checks_port_freed(self):
+        """stop.ps1 doit verifier que le port 8019 est libere."""
+        stop_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-stop.ps1"
+        content = stop_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("8019", content)
+        self.assertIn("libere", content)
+
+    def test_diagnose_script_exists(self):
+        """Le script de diagnostic doit exister."""
+        diag_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-diagnose.ps1"
+        self.assertTrue(diag_path.exists())
+
+    def test_diagnose_script_tests_status(self):
+        """diagnose.ps1 doit tester /status."""
+        diag_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-diagnose.ps1"
+        content = diag_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("/status", content)
+        self.assertIn("Diagnostic", content)
+
+    def test_diagnose_script_shows_log(self):
+        """diagnose.ps1 doit afficher le log."""
+        diag_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-diagnose.ps1"
+        content = diag_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("taf-lan-helper.log", content)
+        self.assertIn("dernieres", content)
+
+    def test_diagnose_script_shows_process(self):
+        """diagnose.ps1 doit afficher les processus helper."""
+        diag_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper-diagnose.ps1"
+        content = diag_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("Processus", content)
+        self.assertIn("Port 8019", content)
