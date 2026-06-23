@@ -158,6 +158,19 @@ Si l'IP configurée (`TAF_LAN_HOST`) diffère de l'IP actuelle de la requête, u
 
 Tous les liens réseau utilisent l'IP recommandée et s'ouvrent dans un nouvel onglet (`target="_blank"`).
 
+## Modules 5 à 8 — Audit et intégration future
+
+Les sources des Modules 5 à 8 ont été auditées (F024) :
+
+- **Module 5** — Email et outils de communication : formulaire avec quiz (7 QCM), exercice pratique email
+- **Module 6** — Ressources éducatives en ligne : formulaire avec quiz (7 QCM+checkbox), activité recherche
+- **Module 7** — Sécurité en ligne : formulaire avec quiz (7 QCM+checkbox), analyse de messages suspects
+- **Module 8** — Synthèse et exercices pratiques : formulaire complet avec synthèse transversale M2-M7
+
+Audit complet : `docs/audits/F024_MODULES_5_8_SOURCE_AUDIT.md`
+
+Les 8 fichiers sources (4 PPTX + 4 GS) sont stockés dans `documents/source/`.
+
 ## Export CSV
 
 Depuis le dashboard, utilisez le lien `Exporter le CSV`.

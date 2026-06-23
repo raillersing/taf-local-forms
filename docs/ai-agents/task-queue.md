@@ -28,6 +28,11 @@
 | F012 | Update field user manual for Modules 2, 3, 4 | done |
 | F022R | Navigation rewire (student/trainer context separation) | done |
 | F023 | Auto-sync LAN IP and network links | done |
+| F024 | Audit sources Modules 5 à 8 | done |
+| F025 | Intégration Module 5 – Email et outils de communication | pending |
+| F026 | Intégration Module 6 – Ressources éducatives en ligne | pending |
+| F027 | Intégration Module 7 – Sécurité en ligne | pending |
+| F028 | Intégration Module 8 – Synthèse et exercices pratiques | pending |
 | F013 | Final validation + v0.2.0 release notes | done |
 | F014 | Safe network config panel + live presence | done |
 | F015 | Update v0.2.0 release notes after F014 | done |
