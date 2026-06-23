@@ -13,12 +13,13 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm, Module5SubmissionForm
+from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm, Module5SubmissionForm, Module6SubmissionForm
 from .models import (
     FormPresence,
     Module3Submission,
     Module4Submission,
     Module5Submission,
+    Module6Submission,
     Student,
     Submission,
     TrainingModule,
@@ -65,6 +66,7 @@ def student_modules(request: HttpRequest) -> HttpResponse:
         "MODULE_3": "surveys:student_module_3_detail",
         "MODULE_4": "surveys:student_module_4_detail",
         "MODULE_5": "surveys:student_module_5_detail",
+        "MODULE_6": "surveys:student_module_6_detail",
     }
     modules = TrainingModule.objects.all().order_by("code")
     module_data = []
@@ -90,6 +92,7 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
         "MODULE_3": MODULE_3_SUMMARY,
         "MODULE_4": MODULE_4_SUMMARY,
         "MODULE_5": MODULE_5_SUMMARY,
+        "MODULE_6": MODULE_6_SUMMARY,
     }
     summary = summary_map.get(module_code, "")
 
@@ -205,13 +208,15 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
         + Module3Submission.objects.count()
         + Module4Submission.objects.count()
         + Module5Submission.objects.count()
+        + Module6Submission.objects.count()
     )
     total_students = Student.objects.count()
     avg_score_m2 = Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
     avg_score_m3 = Module3Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
     avg_score_m4 = Module4Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
     avg_score_m5 = Module5Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4 + avg_score_m5) / 4
+    avg_score_m6 = Module6Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4 + avg_score_m5 + avg_score_m6) / 5
     modules = TrainingModule.objects.all().order_by("code")
     module_list = []
     modules_open = 0
@@ -248,6 +253,12 @@ MODULE_5_SUMMARY = (
     "une université ou une organisation. Un bon email contient : un destinataire, "
     "un objet clair, une salutation, un message court, une formule de politesse, "
     "une signature et parfois une pièce jointe. Règle simple : clair, poli, complet, relu."
+)
+
+MODULE_6_SUMMARY = (
+    "Une ressource éducative en ligne est un contenu qui aide à apprendre : cours, vidéo, "
+    "exercice, PDF, dictionnaire, schéma ou quiz. Une bonne ressource est utile, claire, "
+    "adaptée à ton niveau et reliée à une matière scolaire. Règle simple : chercher, choisir, tester, noter."
 )
 
 
@@ -476,6 +487,237 @@ def export_module_5_csv(request: HttpRequest) -> HttpResponse:
                 sanitize_csv_cell(submission.feedback_understood_today),
                 sanitize_csv_cell(submission.feedback_still_difficult),
                 submission.get_feedback_confidence_email_display(),
+                submission.computed_score,
+            ]
+        )
+    return response
+
+
+def module_6_form(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_6", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+
+    if session is None:
+        return render(request, "surveys/module_6_unavailable.html", status=503)
+
+    accepting = session.accepting_responses
+
+    if request.method == "POST":
+        if not accepting:
+            form = Module6SubmissionForm()
+            return render(
+                request,
+                "surveys/module_6_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_6_summary": MODULE_6_SUMMARY,
+                    "accepting_responses": False,
+                    "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
+                },
+                status=403,
+            )
+        form = Module6SubmissionForm(request.POST)
+        if form.is_valid():
+            school_id_number = form.cleaned_data["school_id_number"]
+            duplicate_exists = Module6Submission.objects.filter(
+                session=session,
+                school_id_number_snapshot=school_id_number,
+            ).exists()
+            if duplicate_exists:
+                form.add_error(
+                    "school_id_number",
+                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
+                    "Demande au formateur si tu dois modifier ta réponse.",
+                )
+            else:
+                student = Student.objects.create(
+                    school_id_number=school_id_number,
+                    full_name=form.cleaned_data["full_name"],
+                    class_level=form.cleaned_data["class_level"],
+                    group_name=form.cleaned_data["group_name"],
+                )
+                submission_data = {
+                    key: value
+                    for key, value in form.cleaned_data.items()
+                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                }
+                try:
+                    submission = Module6Submission.objects.create(
+                        student=student,
+                        session=session,
+                        school_id_number_snapshot=school_id_number,
+                        **submission_data,
+                    )
+                except IntegrityError:
+                    student.delete()
+                    form.add_error(
+                        "school_id_number",
+                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
+                        "Demande au formateur si tu dois modifier ta réponse.",
+                    )
+                else:
+                    request.session["last_module6_submission_id"] = submission.pk
+                    _mark_presence_submitted(request, "MODULE_6", session)
+                    return redirect("surveys:module_6_success", submission_id=submission.pk)
+    else:
+        form = Module6SubmissionForm()
+
+    return render(
+        request,
+        "surveys/module_6_form.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "module_6_summary": MODULE_6_SUMMARY,
+            "accepting_responses": accepting,
+        },
+    )
+
+
+def module_6_success(request: HttpRequest, submission_id: int) -> HttpResponse:
+    if request.session.get("last_module6_submission_id") != submission_id:
+        return redirect("surveys:module_6")
+    submission = get_object_or_404(
+        Module6Submission.objects.select_related("session", "student"), pk=submission_id
+    )
+    return render(request, "surveys/module_6_success.html", {"submission": submission})
+
+
+@login_required
+def dashboard_module_6(request: HttpRequest) -> HttpResponse:
+    submissions = (
+        Module6Submission.objects.select_related("student", "session", "session__module")
+        .filter(session__module__code="MODULE_6")
+        .order_by("-created_at")
+    )
+    class_level = request.GET.get("class_level", "").strip()
+    group_name = request.GET.get("group_name", "").strip()
+    if class_level:
+        submissions = submissions.filter(student__class_level=class_level)
+    if group_name:
+        submissions = submissions.filter(student__group_name__iexact=group_name)
+
+    todo_fields = [
+        ("todo_chose_subject", "Matière choisie"),
+        ("todo_searched_resource", "Ressource cherchée"),
+        ("todo_opened_video_pdf_exercise", "Vidéo/PDF/exercice ouvert"),
+        ("todo_checked_level", "Niveau vérifié"),
+        ("todo_noted_resource_title", "Titre noté"),
+        ("todo_noted_link_or_site", "Lien noté"),
+        ("todo_written_what_learned", "Apprentissage écrit"),
+        ("todo_kept_for_later", "Gardé pour réviser"),
+    ]
+    total_submissions = submissions.count()
+    todo_completion = []
+    for field_name, label in todo_fields:
+        completed = submissions.filter(**{field_name: True}).count()
+        rate = round((completed / total_submissions) * 100, 1) if total_submissions else 0
+        todo_completion.append({"label": label, "rate": rate})
+
+    context = {
+        "submissions": submissions,
+        "total_submissions": total_submissions,
+        "total_students": submissions.values("student_id").distinct().count(),
+        "average_score": submissions.aggregate(avg=Avg("computed_score"))["avg"] or 0,
+        "todo_completion": todo_completion,
+        "class_level_choices": Student.CLASS_LEVEL_CHOICES,
+        "selected_class_level": class_level,
+        "selected_group_name": group_name,
+    }
+    return render(request, "surveys/dashboard_module_6.html", context)
+
+
+@login_required
+def export_module_6_csv(request: HttpRequest) -> HttpResponse:
+    submissions = (
+        Module6Submission.objects.select_related("student", "session")
+        .filter(session__module__code="MODULE_6")
+        .order_by("created_at")
+    )
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="module-6.csv"'
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "timestamp",
+            "session_code",
+            "school_id_number",
+            "full_name",
+            "class_level",
+            "group_name",
+            "auto_eval_find_resource",
+            "auto_eval_choose_resource",
+            "auto_eval_keep_link",
+            "todo_chose_subject",
+            "todo_searched_resource",
+            "todo_opened_video_pdf_exercise",
+            "todo_checked_level",
+            "todo_noted_resource_title",
+            "todo_noted_link_or_site",
+            "todo_written_what_learned",
+            "todo_kept_for_later",
+            "quiz_q1",
+            "quiz_q2",
+            "quiz_q3",
+            "quiz_q4",
+            "quiz_q5",
+            "quiz_q6_selected",
+            "quiz_q7_selected",
+            "practical_subject",
+            "practical_what_to_revise",
+            "practical_resource_type",
+            "practical_resource_name_or_link",
+            "practical_adapted_level",
+            "practical_what_learned",
+            "feedback_understood_today",
+            "feedback_still_difficult",
+            "feedback_confidence_resources",
+            "computed_score",
+        ]
+    )
+    for submission in submissions:
+        writer.writerow(
+            [
+                submission.created_at.isoformat(),
+                submission.session.session_code,
+                submission.school_id_number_snapshot,
+                sanitize_csv_cell(submission.student.full_name),
+                submission.student.get_class_level_display(),
+                sanitize_csv_cell(submission.student.group_name),
+                submission.get_auto_eval_find_resource_display(),
+                submission.get_auto_eval_choose_resource_display(),
+                submission.get_auto_eval_keep_link_display(),
+                submission.todo_chose_subject,
+                submission.todo_searched_resource,
+                submission.todo_opened_video_pdf_exercise,
+                submission.todo_checked_level,
+                submission.todo_noted_resource_title,
+                submission.todo_noted_link_or_site,
+                submission.todo_written_what_learned,
+                submission.todo_kept_for_later,
+                submission.get_quiz_q1_display(),
+                submission.get_quiz_q2_display(),
+                submission.get_quiz_q3_display(),
+                submission.get_quiz_q4_display(),
+                submission.quiz_q5,
+                sanitize_csv_cell("|".join(submission.quiz_q6_selected)),
+                sanitize_csv_cell("|".join(submission.quiz_q7_selected)),
+                submission.get_practical_subject_display(),
+                sanitize_csv_cell(submission.practical_what_to_revise),
+                submission.practical_resource_type,
+                sanitize_csv_cell(submission.practical_resource_name_or_link),
+                submission.get_practical_adapted_level_display(),
+                sanitize_csv_cell(submission.practical_what_learned),
+                sanitize_csv_cell(submission.feedback_understood_today),
+                sanitize_csv_cell(submission.feedback_still_difficult),
+                submission.get_feedback_confidence_resources_display(),
                 submission.computed_score,
             ]
         )

@@ -108,6 +108,16 @@
                                         {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
                                     </button>
                                 </form>
+                            {% elif item.module.code == "MODULE_6" %}
+                                <a class="text-link" href="{% url 'surveys:dashboard_module_6' %}">Dashboard</a>
+                                <a class="text-link" href="{% url 'surveys:module_6' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
+                                <a class="text-link" href="{% url 'surveys:export_module_6_csv' %}">Export CSV</a>
+                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_6' %}" style="display:inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
+                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
+                                    </button>
+                                </form>
                             {% endif %}
                         {% else %}
                             <span class="muted" style="font-size:0.9rem">Aucune session active</span>
@@ -144,6 +154,11 @@
                 <span class="presence-dot"></span>
                 <span>Module 5 : </span>
                 <span class="presence-count" id="presence-module-5">…</span>
+            </div>
+            <div class="presence-counter">
+                <span class="presence-dot"></span>
+                <span>Module 6 : </span>
+                <span class="presence-count" id="presence-module-6">…</span>
             </div>
             <div class="presence-counter" style="font-weight:800">
                 <span>Total : </span>
@@ -210,6 +225,11 @@
                     <a class="network-link" href="{{ network.module_5_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_5_url }}</a>
                 </dd>
 
+                <dt class="muted setting-label" style="margin-top:0.75rem">Module 6 — Ressources educatives en ligne</dt>
+                <dd style="margin:0">
+                    <a class="network-link" href="{{ network.module_6_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_6_url }}</a>
+                </dd>
+
                 <dt class="muted setting-label" style="margin-top:0.75rem">Adresse formateur (cockpit)</dt>
                 <dd style="margin:0">
                     <a class="network-link" href="{{ network.cockpit_url }}" target="_blank" rel="noopener noreferrer">{{ network.cockpit_url }}</a>
@@ -232,6 +252,7 @@
             <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 3</a>
             <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 4</a>
             <a class="text-link" href="{% url 'surveys:export_module_5_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 5</a>
+            <a class="text-link" href="{% url 'surveys:export_module_6_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 6</a>
         </div>
     </section>
 
@@ -273,6 +294,7 @@
                     document.getElementById('presence-module-3').textContent = (data.by_module.MODULE_3 || 0) + ' en cours';
                     document.getElementById('presence-module-4').textContent = (data.by_module.MODULE_4 || 0) + ' en cours';
                     document.getElementById('presence-module-5').textContent = (data.by_module.MODULE_5 || 0) + ' en cours';
+                    document.getElementById('presence-module-6').textContent = (data.by_module.MODULE_6 || 0) + ' en cours';
                     document.getElementById('presence-total').textContent = data.total + ' total';
                 } catch(e) {}
             }
