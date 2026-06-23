@@ -13,13 +13,14 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm, Module5SubmissionForm, Module6SubmissionForm
+from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm, Module5SubmissionForm, Module6SubmissionForm, Module7SubmissionForm
 from .models import (
     FormPresence,
     Module3Submission,
     Module4Submission,
     Module5Submission,
     Module6Submission,
+    Module7Submission,
     Student,
     Submission,
     TrainingModule,
@@ -67,6 +68,7 @@ def student_modules(request: HttpRequest) -> HttpResponse:
         "MODULE_4": "surveys:student_module_4_detail",
         "MODULE_5": "surveys:student_module_5_detail",
         "MODULE_6": "surveys:student_module_6_detail",
+        "MODULE_7": "surveys:student_module_7_detail",
     }
     modules = TrainingModule.objects.all().order_by("code")
     module_data = []
@@ -93,6 +95,7 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
         "MODULE_4": MODULE_4_SUMMARY,
         "MODULE_5": MODULE_5_SUMMARY,
         "MODULE_6": MODULE_6_SUMMARY,
+        "MODULE_7": MODULE_7_SUMMARY,
     }
     summary = summary_map.get(module_code, "")
 
@@ -209,6 +212,7 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
         + Module4Submission.objects.count()
         + Module5Submission.objects.count()
         + Module6Submission.objects.count()
+        + Module7Submission.objects.count()
     )
     total_students = Student.objects.count()
     avg_score_m2 = Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
@@ -216,7 +220,8 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
     avg_score_m4 = Module4Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
     avg_score_m5 = Module5Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
     avg_score_m6 = Module6Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4 + avg_score_m5 + avg_score_m6) / 5
+    avg_score_m7 = Module7Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4 + avg_score_m5 + avg_score_m6 + avg_score_m7) / 6
     modules = TrainingModule.objects.all().order_by("code")
     module_list = []
     modules_open = 0
@@ -259,6 +264,13 @@ MODULE_6_SUMMARY = (
     "Une ressource éducative en ligne est un contenu qui aide à apprendre : cours, vidéo, "
     "exercice, PDF, dictionnaire, schéma ou quiz. Une bonne ressource est utile, claire, "
     "adaptée à ton niveau et reliée à une matière scolaire. Règle simple : chercher, choisir, tester, noter."
+)
+
+MODULE_7_SUMMARY = (
+    "La sécurité en ligne, ce sont les bons gestes pour protéger tes comptes, tes fichiers, "
+    "tes photos et tes informations. Les risques les plus courants sont : mot de passe volé, "
+    "lien suspect, faux message, arnaque, cyberharcèlement et partage trop rapide. "
+    "Règle simple : protéger, vérifier, demander de l'aide."
 )
 
 
@@ -1342,6 +1354,237 @@ def export_module_4_csv(request: HttpRequest) -> HttpResponse:
                 sanitize_csv_cell(submission.feedback_understood_today),
                 sanitize_csv_cell(submission.feedback_still_difficult),
                 submission.get_feedback_confidence_verify_display(),
+                submission.computed_score,
+            ]
+        )
+    return response
+
+
+def module_7_form(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_7", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+
+    if session is None:
+        return render(request, "surveys/module_7_unavailable.html", status=503)
+
+    accepting = session.accepting_responses
+
+    if request.method == "POST":
+        if not accepting:
+            form = Module7SubmissionForm()
+            return render(
+                request,
+                "surveys/module_7_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_7_summary": MODULE_7_SUMMARY,
+                    "accepting_responses": False,
+                    "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
+                },
+                status=403,
+            )
+        form = Module7SubmissionForm(request.POST)
+        if form.is_valid():
+            school_id_number = form.cleaned_data["school_id_number"]
+            duplicate_exists = Module7Submission.objects.filter(
+                session=session,
+                school_id_number_snapshot=school_id_number,
+            ).exists()
+            if duplicate_exists:
+                form.add_error(
+                    "school_id_number",
+                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
+                    "Demande au formateur si tu dois modifier ta réponse.",
+                )
+            else:
+                student = Student.objects.create(
+                    school_id_number=school_id_number,
+                    full_name=form.cleaned_data["full_name"],
+                    class_level=form.cleaned_data["class_level"],
+                    group_name=form.cleaned_data["group_name"],
+                )
+                submission_data = {
+                    key: value
+                    for key, value in form.cleaned_data.items()
+                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                }
+                try:
+                    submission = Module7Submission.objects.create(
+                        student=student,
+                        session=session,
+                        school_id_number_snapshot=school_id_number,
+                        **submission_data,
+                    )
+                except IntegrityError:
+                    student.delete()
+                    form.add_error(
+                        "school_id_number",
+                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
+                        "Demande au formateur si tu dois modifier ta réponse.",
+                    )
+                else:
+                    request.session["last_module7_submission_id"] = submission.pk
+                    _mark_presence_submitted(request, "MODULE_7", session)
+                    return redirect("surveys:module_7_success", submission_id=submission.pk)
+    else:
+        form = Module7SubmissionForm()
+
+    return render(
+        request,
+        "surveys/module_7_form.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "module_7_summary": MODULE_7_SUMMARY,
+            "accepting_responses": accepting,
+        },
+    )
+
+
+def module_7_success(request: HttpRequest, submission_id: int) -> HttpResponse:
+    if request.session.get("last_module7_submission_id") != submission_id:
+        return redirect("surveys:module_7")
+    submission = get_object_or_404(
+        Module7Submission.objects.select_related("session", "student"), pk=submission_id
+    )
+    return render(request, "surveys/module_7_success.html", {"submission": submission})
+
+
+@login_required
+def dashboard_module_7(request: HttpRequest) -> HttpResponse:
+    submissions = (
+        Module7Submission.objects.select_related("student", "session", "session__module")
+        .filter(session__module__code="MODULE_7")
+        .order_by("-created_at")
+    )
+    class_level = request.GET.get("class_level", "").strip()
+    group_name = request.GET.get("group_name", "").strip()
+    if class_level:
+        submissions = submissions.filter(student__class_level=class_level)
+    if group_name:
+        submissions = submissions.filter(student__group_name__iexact=group_name)
+
+    todo_fields = [
+        ("todo_identified_weak_password", "Mot de passe faible identifié"),
+        ("todo_written_password_rules", "Règles mot de passe écrites"),
+        ("todo_understood_no_code_sharing", "Non-partage de code compris"),
+        ("todo_observed_suspect_message", "Message suspect observé"),
+        ("todo_spotted_danger_signs", "Signes de danger repérés"),
+        ("todo_applied_stop_method", "Méthode STOP appliquée"),
+        ("todo_listed_personal_info", "Infos personnelles listées"),
+        ("todo_ask_help", "Demander de l'aide"),
+    ]
+    total_submissions = submissions.count()
+    todo_completion = []
+    for field_name, label in todo_fields:
+        completed = submissions.filter(**{field_name: True}).count()
+        rate = round((completed / total_submissions) * 100, 1) if total_submissions else 0
+        todo_completion.append({"label": label, "rate": rate})
+
+    context = {
+        "submissions": submissions,
+        "total_submissions": total_submissions,
+        "total_students": submissions.values("student_id").distinct().count(),
+        "average_score": submissions.aggregate(avg=Avg("computed_score"))["avg"] or 0,
+        "todo_completion": todo_completion,
+        "class_level_choices": Student.CLASS_LEVEL_CHOICES,
+        "selected_class_level": class_level,
+        "selected_group_name": group_name,
+    }
+    return render(request, "surveys/dashboard_module_7.html", context)
+
+
+@login_required
+def export_module_7_csv(request: HttpRequest) -> HttpResponse:
+    submissions = (
+        Module7Submission.objects.select_related("student", "session")
+        .filter(session__module__code="MODULE_7")
+        .order_by("created_at")
+    )
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="module-7.csv"'
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "timestamp",
+            "session_code",
+            "school_id_number",
+            "full_name",
+            "class_level",
+            "group_name",
+            "auto_eval_password",
+            "auto_eval_suspect",
+            "auto_eval_personal_info",
+            "todo_identified_weak_password",
+            "todo_written_password_rules",
+            "todo_understood_no_code_sharing",
+            "todo_observed_suspect_message",
+            "todo_spotted_danger_signs",
+            "todo_applied_stop_method",
+            "todo_listed_personal_info",
+            "todo_ask_help",
+            "quiz_q1",
+            "quiz_q2",
+            "quiz_q3",
+            "quiz_q4",
+            "quiz_q5_selected",
+            "quiz_q6_selected",
+            "quiz_q7_selected",
+            "practical_situation",
+            "practical_describe",
+            "practical_danger_signs",
+            "practical_protect_selected",
+            "practical_good_reaction_selected",
+            "practical_explain",
+            "feedback_understood_today",
+            "feedback_still_difficult",
+            "feedback_confidence_security",
+            "computed_score",
+        ]
+    )
+    for submission in submissions:
+        writer.writerow(
+            [
+                submission.created_at.isoformat(),
+                submission.session.session_code,
+                submission.school_id_number_snapshot,
+                sanitize_csv_cell(submission.student.full_name),
+                submission.student.get_class_level_display(),
+                sanitize_csv_cell(submission.student.group_name),
+                submission.get_auto_eval_password_display(),
+                submission.get_auto_eval_suspect_display(),
+                submission.get_auto_eval_personal_info_display(),
+                submission.todo_identified_weak_password,
+                submission.todo_written_password_rules,
+                submission.todo_understood_no_code_sharing,
+                submission.todo_observed_suspect_message,
+                submission.todo_spotted_danger_signs,
+                submission.todo_applied_stop_method,
+                submission.todo_listed_personal_info,
+                submission.todo_ask_help,
+                submission.get_quiz_q1_display(),
+                submission.get_quiz_q2_display(),
+                submission.get_quiz_q3_display(),
+                submission.get_quiz_q4_display(),
+                sanitize_csv_cell("|".join(submission.quiz_q5_selected)),
+                sanitize_csv_cell("|".join(submission.quiz_q6_selected)),
+                sanitize_csv_cell("|".join(submission.quiz_q7_selected)),
+                submission.practical_situation,
+                sanitize_csv_cell(submission.practical_describe),
+                sanitize_csv_cell(submission.practical_danger_signs),
+                sanitize_csv_cell("|".join(submission.practical_protect_selected)),
+                sanitize_csv_cell("|".join(submission.practical_good_reaction_selected)),
+                sanitize_csv_cell(submission.practical_explain),
+                sanitize_csv_cell(submission.feedback_understood_today),
+                sanitize_csv_cell(submission.feedback_still_difficult),
+                submission.get_feedback_confidence_security_display(),
                 submission.computed_score,
             ]
         )
