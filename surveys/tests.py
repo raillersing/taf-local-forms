@@ -4560,3 +4560,91 @@ class F030NetworkControlTests(TestCase):
             self.assertNotIn(".env", content, f"{ps1.name} ne doit pas contenir .env")
             self.assertNotIn("docker compose down -v", content, f"{ps1.name} ne doit pas contenir down -v")
             self.assertNotIn("docker system prune", content, f"{ps1.name} ne doit pas contenir prune")
+
+    def test_helper_script_has_cors_headers(self):
+        """Helper doit envoyer des en-tetes CORS."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("Access-Control-Allow-Origin", content)
+        self.assertIn("Access-Control-Allow-Methods", content)
+        self.assertIn("Access-Control-Allow-Headers", content)
+        self.assertIn("Add-CorsHeaders", content)
+
+    def test_helper_script_has_options_handler(self):
+        """Helper doit gerer les requetes OPTIONS avec un 204."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("OPTIONS", content)
+        self.assertIn("204", content)
+
+    def test_helper_script_has_cors_allowlist(self):
+        """Helper ne doit autoriser que localhost:8010 et 127.0.0.1:8010."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("http://localhost:8010", content)
+        self.assertIn("http://127.0.0.1:8010", content)
+
+    def test_helper_script_no_wildcard_cors(self):
+        """Helper ne doit pas utiliser le wildcard '*' pour CORS."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        cors_lines = [l for l in content.splitlines() if "Access-Control" in l or "CORS" in l]
+        for line in cors_lines:
+            self.assertNotIn("*", line, f"Wildcard CORS interdit: {line.strip()}")
+
+    def test_helper_script_has_vary_origin(self):
+        """Helper doit inclure Vary: Origin."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("Vary", content)
+        self.assertIn("Origin", content)
+
+    def test_helper_script_no_forbidden_docker_commands(self):
+        """Helper ne doit pas contenir de commandes destructives Docker."""
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertNotIn("down -v", content)
+        self.assertNotIn("prune --volumes", content)
+        self.assertNotIn("system prune", content)
+
+    def test_page_shows_helper_not_found_on_load(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "Helper LAN non disponible")
+        self.assertContains(response, "taf-lan-helper-start.ps1")
+
+    def test_page_has_abort_controller_in_js(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "AbortController")
+        self.assertContains(response, "abort")
+
+    def test_page_has_timeout_in_js(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "8000")
+
+    def test_page_buttons_have_click_handlers(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "addEventListener('click'")
+        for btn_id in ("btn-check-status", "btn-sync", "btn-restart", "btn-test", "btn-copy-url", "btn-disable"):
+            self.assertContains(response, btn_id)
+
+    def test_page_buttons_set_loading_state(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "setButtonLoading")
+        self.assertContains(response, "En cours...")
+
+    def test_page_copies_student_url(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "navigator.clipboard")
+        self.assertContains(response, "execCommand('copy')")
+
+    def test_page_disable_has_confirm(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "confirm(")
+        self.assertContains(response, "Desactiver")
