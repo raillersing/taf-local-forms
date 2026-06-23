@@ -32,7 +32,7 @@ Chaque module actif est présenté avec :
 
 Chaque page détail affiche :
 
-- un **bloc pédagogique** contenant le contenu réel des présentations PowerPoint (Modules 2, 3, 4) — résumé, objectifs, notions clés, méthode, activités, erreurs fréquentes, à retenir
+- un **bloc pédagogique** contenant le contenu réel des présentations PowerPoint (Modules 2, 3, 4, 5) — résumé, objectifs, notions clés, méthode, activités, erreurs fréquentes, à retenir
 - un bouton CTA **« Commencer le questionnaire »** si les réponses sont ouvertes
 - un bouton **« Consulter le questionnaire »** si les réponses sont fermées
 - un lien **« Retour aux modules »** pour revenir à la liste
@@ -40,6 +40,7 @@ Chaque page détail affiche :
 ### Adresses principales
 | Module 3 – Recherche efficace | `http://127.0.0.1:8010/module-3/` |
 | Module 4 – Sources fiables | `http://127.0.0.1:8010/module-4/` |
+| Module 5 – Email et outils de communication | `http://127.0.0.1:8010/module-5/` |
 | Panel formateur | `http://127.0.0.1:8010/dashboard/` |
 | Accès réseau | `http://127.0.0.1:8010/dashboard/network/` |
 | Configuration réseau (interface) | `http://127.0.0.1:8010/dashboard/settings/` |

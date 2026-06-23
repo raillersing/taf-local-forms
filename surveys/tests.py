@@ -12,7 +12,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import FormPresence, Module3Submission, Module4Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -2860,3 +2860,516 @@ class F023SecretSafetyTests(TestCase):
     def test_secret_key_not_in_dashboard_network(self):
         response = self.client.get(reverse("surveys:dashboard_network"))
         self.assertNotContains(response, "SECRET_KEY")
+
+
+class SeedModule5CommandTests(TestCase):
+    def test_seed_module5_creates_expected_module_and_active_session(self):
+        call_command("seed_module5")
+        module = TrainingModule.objects.get(code="MODULE_5")
+        session = TrainingSession.objects.get(session_code="M5-ANDO-001")
+        self.assertEqual(module.title, "Module 5 - Email et outils de communication")
+        self.assertEqual(session.module, module)
+        self.assertEqual(session.location, "Lycee Andohalo Antananarivo")
+        self.assertEqual(session.trainer_name, "Formateur TAfHSSiM")
+        self.assertTrue(session.is_active)
+
+    def test_seed_module5_is_idempotent(self):
+        call_command("seed_module5")
+        call_command("seed_module5")
+        self.assertEqual(TrainingModule.objects.filter(code="MODULE_5").count(), 1)
+        self.assertEqual(TrainingSession.objects.filter(session_code="M5-ANDO-001").count(), 1)
+
+    def test_seed_module5_does_not_overwrite_existing_session_details(self):
+        call_command("seed_module5")
+        session = TrainingSession.objects.get(session_code="M5-ANDO-001")
+        session.location = "Autre lieu"
+        session.trainer_name = "Autre formateur"
+        session.is_active = False
+        session.save()
+        call_command("seed_module5")
+        session.refresh_from_db()
+        self.assertEqual(session.location, "Autre lieu")
+        self.assertEqual(session.trainer_name, "Autre formateur")
+        self.assertFalse(session.is_active)
+
+    def test_seed_module5_creates_accepting_responses_true(self):
+        call_command("seed_module5")
+        session = TrainingSession.objects.get(session_code="M5-ANDO-001")
+        self.assertTrue(session.accepting_responses)
+
+
+class Module5SubmissionConstraintTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_5",
+            title="Module 5 - Email et outils de communication",
+            description="Comprendre les usages academiques de l'email.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M5-ANDO-001",
+            is_active=True,
+        )
+        self.student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rakoto Aina",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+            group_name="Salle A",
+        )
+        self.other_student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rabe Hery",
+            class_level=Student.CLASS_LEVEL_PREMIERE,
+            group_name="Salle B",
+        )
+
+    def make_submission(self, student):
+        return Module5Submission.objects.create(
+            student=student,
+            session=self.session,
+            school_id_number_snapshot=student.school_id_number,
+            auto_eval_email_purpose="bien",
+            auto_eval_write_email="un_peu",
+            auto_eval_attach_file="tres_bien",
+            todo_spotted_recipient=True,
+            todo_written_clear_subject=True,
+            todo_started_greeting=True,
+            todo_written_short_message=True,
+            todo_added_politeness=True,
+            todo_signed_name=True,
+            todo_checked_attachment=True,
+            todo_reread_before_sending=True,
+            quiz_q1="vrai",
+            quiz_q2="vrai",
+            quiz_q3="faux",
+            quiz_q4="faux",
+            quiz_q5="demande_information_devoir_mathematiques",
+            quiz_q6="bonjour_monsieur_madame",
+            quiz_q7_selected=list(Module5Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            practical_who_writing_to="Professeur de mathematiques",
+            practical_email_subject="Demande d'information sur le devoir",
+            practical_email_message="Bonjour Monsieur, je voudrais des informations sur le devoir.",
+            practical_needs_attachment="oui",
+            practical_attachment_file="devoir.pdf",
+            practical_best_tool="email",
+            feedback_understood_today="J'ai compris comment ecrire un email.",
+            feedback_still_difficult="",
+            feedback_confidence_email="oui",
+        )
+
+    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
+        self.make_submission(self.student)
+        with self.assertRaises(IntegrityError):
+            self.make_submission(self.other_student)
+
+    def test_score_is_computed_on_save(self):
+        submission = self.make_submission(self.student)
+        self.assertEqual(submission.computed_score, 7)
+
+    def test_score_zero_for_wrong_answers(self):
+        submission = Module5Submission.objects.create(
+            student=Student.objects.create(school_id_number="02", full_name="Test", class_level=Student.CLASS_LEVEL_SECONDE),
+            session=self.session,
+            school_id_number_snapshot="02",
+            auto_eval_email_purpose="pas_encore",
+            auto_eval_write_email="pas_encore",
+            auto_eval_attach_file="pas_encore",
+            quiz_q1="faux",
+            quiz_q2="faux",
+            quiz_q3="vrai",
+            quiz_q4="vrai",
+            quiz_q5="salut",
+            quiz_q6="yo_prof",
+            quiz_q7_selected=["mot_de_passe_compte"],
+            practical_who_writing_to="Test",
+            practical_email_subject="Test",
+            practical_email_message="Test",
+            practical_needs_attachment="non",
+            practical_best_tool="tiktok",
+            feedback_understood_today="Test",
+            feedback_confidence_email="pas_encore",
+        )
+        self.assertEqual(submission.computed_score, 0)
+
+
+class Module5FormViewTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_5",
+            title="Module 5 - Email et outils de communication",
+            description="Comprendre les usages academiques de l'email.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M5-ANDO-001",
+            is_active=True,
+        )
+        self.module2 = TrainingModule.objects.create(code="MODULE_2", title="Module 2", description="Test")
+        TrainingSession.objects.create(
+            module=self.module2, date=date(2026, 6, 18),
+            location="Lycee Andohalo", trainer_name="Formateur",
+            session_code="M2-ANDO-001", is_active=True,
+        )
+        self.module3 = TrainingModule.objects.create(code="MODULE_3", title="Module 3", description="Test")
+        TrainingSession.objects.create(
+            module=self.module3, date=date(2026, 6, 18),
+            location="Lycee Andohalo", trainer_name="Formateur",
+            session_code="M3-ANDO-001", is_active=True,
+        )
+        self.module4 = TrainingModule.objects.create(code="MODULE_4", title="Module 4", description="Test")
+        TrainingSession.objects.create(
+            module=self.module4, date=date(2026, 6, 18),
+            location="Lycee Andohalo", trainer_name="Formateur",
+            session_code="M4-ANDO-001", is_active=True,
+        )
+
+    def valid_payload(self):
+        return {
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_email_purpose": "bien",
+            "auto_eval_write_email": "un_peu",
+            "auto_eval_attach_file": "tres_bien",
+            "todo_spotted_recipient": "on",
+            "todo_written_clear_subject": "on",
+            "todo_started_greeting": "on",
+            "todo_written_short_message": "on",
+            "todo_added_politeness": "on",
+            "todo_signed_name": "on",
+            "todo_checked_attachment": "on",
+            "todo_reread_before_sending": "on",
+            "quiz_q1": "vrai",
+            "quiz_q2": "vrai",
+            "quiz_q3": "faux",
+            "quiz_q4": "faux",
+            "quiz_q5": "demande_information_devoir_mathematiques",
+            "quiz_q6": "bonjour_monsieur_madame",
+            "quiz_q7_selected": list(Module5Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_who_writing_to": "Professeur de mathematiques",
+            "practical_email_subject": "Demande d'information sur le devoir",
+            "practical_email_message": "Bonjour Monsieur, je voudrais des informations.",
+            "practical_needs_attachment": "oui",
+            "practical_attachment_file": "devoir.pdf",
+            "practical_best_tool": "email",
+            "feedback_understood_today": "J'ai compris comment ecrire un email.",
+            "feedback_still_difficult": "",
+            "feedback_confidence_email": "oui",
+        }
+
+    def test_module_5_form_get(self):
+        response = self.client.get(reverse("surveys:module_5"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 5 - Email et outils de communication")
+        self.assertContains(response, "Envoyer")
+
+    def test_valid_submission_creates_student_and_submission(self):
+        response = self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.count(), 1)
+        self.assertEqual(Module5Submission.objects.count(), 1)
+        submission = Module5Submission.objects.get()
+        self.assertEqual(submission.school_id_number_snapshot, "01")
+        self.assertEqual(submission.computed_score, 7)
+
+    def test_invalid_school_id_is_rejected(self):
+        payload = self.valid_payload()
+        payload["school_id_number"] = "1"
+        response = self.client.post(reverse("surveys:module_5"), data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Entre exactement 2 chiffres")
+        self.assertEqual(Student.objects.count(), 0)
+        self.assertEqual(Module5Submission.objects.count(), 0)
+
+    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
+        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
+        payload = self.valid_payload()
+        payload["full_name"] = "Autre eleve"
+        response = self.client.post(reverse("surveys:module_5"), data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
+        self.assertEqual(Module5Submission.objects.count(), 1)
+
+    def test_same_school_id_can_submit_all_modules_separately(self):
+        m2_payload = {
+            "school_id_number": "01", "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "auto_eval_internet_explained": "un_peu", "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui", "quiz_q1": "faux", "quiz_q2": "vrai",
+            "quiz_q3": "vrai", "quiz_q4_selected": ["chercher_une_explication"],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "test", "practical_site_text": "",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "test", "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+        self.assertEqual(self.client.post(reverse("surveys:module_2"), data=m2_payload).status_code, 302)
+        self.assertEqual(self.client.post(reverse("surveys:module_5"), data=self.valid_payload()).status_code, 302)
+        self.assertEqual(Submission.objects.count(), 1)
+        self.assertEqual(Module5Submission.objects.count(), 1)
+
+    def test_success_page_requires_matching_session_submission_id(self):
+        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
+        submission = Module5Submission.objects.get()
+        other_client = self.client_class()
+        response = other_client.get(reverse("surveys:module_5_success", args=[submission.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("surveys:module_5"))
+
+    def test_module_5_form_returns_503_when_no_active_session_exists(self):
+        self.session.is_active = False
+        self.session.save()
+        response = self.client.get(reverse("surveys:module_5"))
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+
+    def test_practical_email_message_saved(self):
+        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
+        submission = Module5Submission.objects.get()
+        self.assertEqual(submission.practical_email_message, "Bonjour Monsieur, je voudrais des informations.")
+
+    def test_todo_8_items(self):
+        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
+        submission = Module5Submission.objects.get()
+        self.assertTrue(submission.todo_spotted_recipient)
+        self.assertTrue(submission.todo_written_clear_subject)
+        self.assertTrue(submission.todo_started_greeting)
+        self.assertTrue(submission.todo_written_short_message)
+        self.assertTrue(submission.todo_added_politeness)
+        self.assertTrue(submission.todo_signed_name)
+        self.assertTrue(submission.todo_checked_attachment)
+        self.assertTrue(submission.todo_reread_before_sending)
+
+    def test_quiz_score_max_7(self):
+        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
+        submission = Module5Submission.objects.get()
+        self.assertEqual(submission.computed_score, 7)
+
+
+class Module5PedagogyContentTests(TestCase):
+    def setUp(self):
+        call_command("seed_module5")
+
+    def test_student_modules_shows_module_5(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 5 - Email et outils de communication")
+
+    def test_student_module_5_detail_status_200(self):
+        response = self.client.get(reverse("surveys:student_module_5_detail"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_module_5_detail_contains_email_content(self):
+        response = self.client.get(reverse("surveys:student_module_5_detail"))
+        self.assertContains(response, "Email")
+        self.assertContains(response, "Objet")
+        self.assertContains(response, "Pièce jointe")
+
+    def test_student_module_5_detail_contains_5_lines_method(self):
+        response = self.client.get(reverse("surveys:student_module_5_detail"))
+        self.assertContains(response, "méthode en 5 lignes")
+
+    def test_student_module_5_detail_contains_security(self):
+        response = self.client.get(reverse("surveys:student_module_5_detail"))
+        self.assertContains(response, "mot de passe")
+
+
+class Module5DashboardAndCockpitTests(TestCase):
+    def setUp(self):
+        call_command("seed_module5")
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(
+            username="formateur", password="motdepasse-solide-123",
+        )
+
+    def test_module_5_form_200(self):
+        response = self.client.get(reverse("surveys:module_5"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_dashboard_module_5_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_module_5"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_csv_export_module_5_requires_login(self):
+        response = self.client.get(reverse("surveys:export_module_5_csv"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_module_5_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_module_5"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Score moyen")
+        self.assertContains(response, "Module 5")
+
+    def test_csv_export_module_5_contains_submission_data(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:export_module_5_csv"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("computed_score", response.content.decode())
+
+    def test_csv_export_sanitizes_formula_like_cells(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        submission = Module5Submission.objects.create(
+            student=Student.objects.create(
+                school_id_number="99", full_name="=cmd", class_level="seconde",
+            ),
+            session=TrainingSession.objects.get(session_code="M5-ANDO-001"),
+            school_id_number_snapshot="99",
+            auto_eval_email_purpose="bien", auto_eval_write_email="bien",
+            auto_eval_attach_file="bien",
+            quiz_q1="vrai", quiz_q2="vrai", quiz_q3="faux", quiz_q4="faux",
+            quiz_q5="demande_information_devoir_mathematiques",
+            quiz_q6="bonjour_monsieur_madame",
+            quiz_q7_selected=list(Module5Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            practical_who_writing_to="Test", practical_email_subject="Test",
+            practical_email_message="Test", practical_needs_attachment="non",
+            practical_best_tool="email",
+            feedback_understood_today="Test", feedback_confidence_email="oui",
+        )
+        response = self.client.get(reverse("surveys:export_module_5_csv"))
+        content = response.content.decode()
+        self.assertIn("'=cmd", content)
+
+    def test_cockpit_shows_module_5_when_logged_in(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 5 - Email et outils de communication")
+        self.assertContains(response, "Export CSV")
+
+
+class Module5ClosedSubmissionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module5")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        session = TrainingSession.objects.get(module__code="MODULE_5", is_active=True)
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+
+    def test_module_5_get_200_when_closed(self):
+        response = self.client.get(reverse("surveys:module_5"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "fermées")
+
+    def test_module_5_post_rejected_when_closed(self):
+        response = self.client.post(
+            reverse("surveys:module_5"),
+            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+        )
+        self.assertNotEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
+
+    def test_module_5_reopened_accepts_submission(self):
+        session = TrainingSession.objects.get(module__code="MODULE_5", is_active=True)
+        session.accepting_responses = True
+        session.save(update_fields=["accepting_responses"])
+        payload = {
+            "school_id_number": "99", "full_name": "Test Student",
+            "class_level": "seconde", "group_name": "",
+            "auto_eval_email_purpose": "bien", "auto_eval_write_email": "bien",
+            "auto_eval_attach_file": "bien",
+            "quiz_q1": "vrai", "quiz_q2": "vrai", "quiz_q3": "faux", "quiz_q4": "faux",
+            "quiz_q5": "demande_information_devoir_mathematiques",
+            "quiz_q6": "bonjour_monsieur_madame",
+            "quiz_q7_selected": list(Module5Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_who_writing_to": "Prof", "practical_email_subject": "Info",
+            "practical_email_message": "Test", "practical_needs_attachment": "non",
+            "practical_best_tool": "email",
+            "feedback_understood_today": "Ok", "feedback_confidence_email": "oui",
+        }
+        response = self.client.post(reverse("surveys:module_5"), data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Module5Submission.objects.filter(school_id_number_snapshot="99").exists())
+
+
+class Module5ToggleResponsesTests(TestCase):
+    def setUp(self):
+        call_command("seed_module5")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        self.url = reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_5"})
+
+    def test_toggle_requires_login(self):
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_toggle_requires_staff(self):
+        user = get_user_model().objects.create_user(username="regular", password="test")
+        self.client.login(username="regular", password="test")
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, (302, 403))
+
+    def test_toggle_closes_module_5(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_5", is_active=True)
+        self.assertFalse(session.accepting_responses)
+
+    def test_toggle_reopens_module_5(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url)
+        self.client.post(self.url, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_5", is_active=True)
+        self.assertTrue(session.accepting_responses)
+
+
+class Module5AdminTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.superuser = User.objects.create_superuser(
+            username="super", password="super", email="super@example.com",
+        )
+        self.client.login(username="super", password="super")
+
+    def test_admin_module5submission_accessible(self):
+        response = self.client.get(reverse("admin:surveys_module5submission_changelist"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_no_secret_exposed(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertNotContains(response, "SECRET_KEY")
+
+
+class Module5RegressionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+        call_command("seed_module5")
+
+    def test_module_2_still_200(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_3_still_200(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_4_still_200(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_modules_no_trainer_links(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response, "Cockpit formateur")
+        self.assertNotContains(response, "Export CSV")
+        self.assertNotContains(response, "/admin/")
+
+    def test_dashboard_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertIn(response.status_code, (302, 401, 403))
