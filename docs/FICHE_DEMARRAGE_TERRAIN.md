@@ -45,6 +45,7 @@ Chaque page détail affiche :
 | Module 7 – Sécurité en ligne | `http://127.0.0.1:8010/module-7/` |
 | Panel formateur | `http://127.0.0.1:8010/dashboard/` |
 | Accès réseau | `http://127.0.0.1:8010/dashboard/network/` |
+| Contrôle réseau local | `http://127.0.0.1:8010/dashboard/network-control/` |
 | Configuration réseau (interface) | `http://127.0.0.1:8010/dashboard/settings/` |
 | Admin Django | `http://127.0.0.1:8010/admin/` |
 
@@ -131,12 +132,34 @@ Depuis F023, l'application peut détecter automatiquement l'adresse LAN :
 3. **Script Windows** : `.\scripts\windows\taf-lan-sync.ps1` (PowerShell Admin) détecte l'IP Wi-Fi, configure le portproxy `8011→8010`, le pare-feu, et synchronise l'application.
 4. **Tâche planifiée** : `.\scripts\windows\taf-lan-install-auto-sync.ps1` installe une synchronisation automatique au logon.
 
+### TAf LAN Helper (nouveau)
+
+Un helper PowerShell (`taf-lan-helper.ps1`) expose une API HTTP locale pour
+contrôler l'accès réseau depuis l'interface web :
+
+| Endpoint | Action |
+|----------|--------|
+| `GET /status` | État du réseau (portproxy, pare-feu, IP Wi-Fi) |
+| `POST /sync` | Configurer portproxy `8011→8010`, pare-feu, sync Django |
+| `POST /restart-app` | Redémarrer le conteneur web |
+| `POST /test` | Tester l'accessibilité des élèves |
+| `POST /disable` | Supprimer portproxy et règle pare-feu |
+
+Lancer depuis **PowerShell Admin** :
+
+```powershell
+.\scripts\windows\taf-lan-helper-start.ps1
+```
+
+Le helper écoute uniquement sur `127.0.0.1:8019` (pas accessible depuis le LAN).
+
 ### Ports utilisés
 
 | Côté | Port | Usage |
 |------|------|-------|
 | Docker local | `8010` | `http://localhost:8010/` – PC formateur uniquement |
-| LAN élèves | `8011` | `http://192.168.x.x:8011/` – téléphones des élèves (via portproxy Windows)
+| LAN élèves | `8011` | `http://192.168.x.x:8011/` – téléphones des élèves (via portproxy Windows) |
+| Helper LAN | `8019` | `http://127.0.0.1:8019/` – API du helper (localhost uniquement) |
 
 ---
 
@@ -327,6 +350,7 @@ La barre en haut de chaque page donne accès à :
 - **Modules de formation** → accueil public des élèves
 - **Espace formateur** → tableau de bord cockpit
 - **Accès réseau** → diagnostic et adresses (visible uniquement pages formateur)
+- **Contrôle LAN** → helper et boutons de contrôle (visible uniquement pages formateur)
 - **Configuration réseau** → paramètres IP (visible uniquement pages formateur)
 - **Admin avancé** → administration Django (visible uniquement pages formateur)
 

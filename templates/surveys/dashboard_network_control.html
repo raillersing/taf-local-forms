@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Controle reseau local — Dashboard{% endblock %}
+{% block hero_title %}Controle reseau local{% endblock %}
+{% block hero_text %}Configure, test et desactive l'acces des eleves depuis l'interface.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+
+    {% if not is_localhost %}
+    <div class="alert" style="margin-bottom:1rem">
+        <strong>Attention :</strong> Tu accedes a cette page depuis l'URL LAN (<code>{{ net_ctx.current_request_host }}</code>).
+        Le helper n'ecoute que sur <code>127.0.0.1</code>. Ouvre
+        <a href="http://localhost:8010/dashboard/network-control/"><code>http://localhost:8010/dashboard/network-control/</code></a>
+        pour utiliser les boutons de controle.
+    </div>
+    {% endif %}
+
+    <section id="helper-status" class="card">
+        <h2>Statut du helper LAN</h2>
+        <div id="helper-status-content">
+            <p class="muted">Verification en cours...</p>
+        </div>
+    </section>
+
+    <section id="network-status" class="card">
+        <h2>Etat du reseau</h2>
+        <dl class="setting-list" id="network-status-content">
+            <dt class="muted setting-label">Application locale (port {{ docker_port }})</dt>
+            <dd id="status-local-app"><span class="muted">En attente...</span></dd>
+
+            <dt class="muted setting-label">IP Wi-Fi detectee</dt>
+            <dd id="status-lan-ip"><span class="muted">En attente...</span></dd>
+
+            <dt class="muted setting-label">Portproxy ({{ lan_port }} &rarr; {{ docker_port }})</dt>
+            <dd id="status-portproxy"><span class="muted">En attente...</span></dd>
+
+            <dt class="muted setting-label">Pare-feu (port {{ lan_port }})</dt>
+            <dd id="status-firewall"><span class="muted">En attente...</span></dd>
+
+            <dt class="muted setting-label">URL eleves</dt>
+            <dd id="status-student-url"><span class="muted">En attente...</span></dd>
+
+            <dt class="muted setting-label">Test URL eleves</dt>
+            <dd id="status-lan-test"><span class="muted">En attente...</span></dd>
+        </dl>
+    </section>
+
+    <section id="helper-actions" class="card">
+        <h2>Actions</h2>
+        <p class="muted" style="margin-top:0.25rem">
+            Les actions suivantes communiquent avec le helper LAN sur <code>{{ helper_url }}</code>.
+        </p>
+        <div class="tools-grid" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem">
+
+            <button id="btn-check-status" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f0f7ff;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
+                <strong>Verifier l'etat</strong>
+                <span class="muted" style="font-size:0.85rem;display:block">Rafraichir le statut du reseau</span>
+            </button>
+
+            <button id="btn-sync" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#d9f2e3;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
+                <strong>Configurer / Demarrer l'acces eleves</strong>
+                <span class="muted" style="font-size:0.85rem;display:block">Portproxy + pare-feu + synchronisation</span>
+            </button>
+
+            <button id="btn-restart" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#fff3cd;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
+                <strong>Redemarrer l'application</strong>
+                <span class="muted" style="font-size:0.85rem;display:block">docker compose restart web</span>
+            </button>
+
+            <button id="btn-test" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f0f7ff;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
+                <strong>Tester l'URL eleves</strong>
+                <span class="muted" style="font-size:0.85rem;display:block">Verifier l'accessibilite depuis le LAN</span>
+            </button>
+
+            <button id="btn-copy-url" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f0f7ff;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
+                <strong>Copier l'URL eleves</strong>
+                <span class="muted" style="font-size:0.85rem;display:block">Copier dans le presse-papier</span>
+            </button>
+
+            <button id="btn-disable" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f8d7da;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
+                <strong>Desactiver l'acces LAN</strong>
+                <span class="muted" style="font-size:0.85rem;display:block">Supprimer portproxy + regle pare-feu</span>
+            </button>
+
+        </div>
+
+        <div id="helper-message" style="margin-top:1rem"></div>
+    </section>
+
+    <section id="helper-not-found" class="card" style="display:none">
+        <h2>Helper LAN non disponible</h2>
+        <div class="alert" style="margin-top:0.5rem">
+            <strong>Le TAf LAN Helper n'est pas en cours d'execution.</strong>
+        </div>
+        <p style="margin-top:0.75rem">
+            Tu peux utiliser les scripts PowerShell manuellement :
+        </p>
+        <pre class="code-block" style="margin-top:0.5rem">
+.\scripts\windows\taf-lan-sync.ps1          # Configurer l'acces LAN
+.\scripts\windows\taf-lan-show-status.ps1    # Afficher l'etat
+.\scripts\windows\taf-lan-helper-start.ps1   # Demarrer le helper
+        </pre>
+        <p style="margin-top:0.75rem">
+            <strong>Installation du helper (une seule fois, PowerShell Admin) :</strong>
+        </p>
+        <pre class="code-block" style="margin-top:0.5rem">
+# Depuis le dossier du projet :
+.\scripts\windows\taf-lan-helper-start.ps1
+        </pre>
+        <p class="muted" style="margin-top:0.5rem">
+            Le helper ecoute uniquement sur <code>127.0.0.1:{{ helper_port }}</code> et n'est pas accessible depuis le LAN.
+        </p>
+    </section>
+
+    <section id="helper-result" class="card" style="display:none">
+        <h2>Resultat</h2>
+        <pre id="helper-result-content" class="code-block" style="margin-top:0.5rem;max-height:300px;overflow:auto"></pre>
+    </section>
+
+    <section class="card">
+        <h2>Scripts disponibles</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.75rem">
+            <a class="text-link" href="/dashboard/network/">Diagnostic reseau complet &rarr;</a>
+            <a class="text-link" href="/dashboard/settings/">Configuration reseau &rarr;</a>
+        </div>
+    </section>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var helperUrl = '{{ helper_url|escapejs }}';
+    var isLocalhost = {{ is_localhost|lower }};
+    var statusInterval = null;
+
+    function showError(msg) {
+        var el = document.getElementById('helper-message');
+        el.innerHTML = '<div class="alert"><strong>Erreur :</strong> ' + msg + '</div>';
+    }
+
+    function clearMessage() {
+        document.getElementById('helper-message').innerHTML = '';
+    }
+
+    function showResult(data) {
+        var section = document.getElementById('helper-result');
+        var content = document.getElementById('helper-result-content');
+        section.style.display = 'block';
+        content.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function callHelper(endpoint, method, label) {
+        clearMessage();
+        if (!isLocalhost) {
+            showError('Le helper n\'est accessible que depuis localhost:8010.');
+            return;
+        }
+        var url = helperUrl + '/' + endpoint;
+        var opts = { method: method, headers: { 'Origin': window.location.origin } };
+        if (method === 'POST') {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = '{}';
+        }
+        fetch(url, opts)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                showResult(data);
+                if (data.message) {
+                    document.getElementById('helper-message').innerHTML =
+                        '<div class="alert" style="background:#d9f2e3">' + data.message + '</div>';
+                }
+                if (endpoint === 'status' || endpoint === 'sync' || endpoint === 'test') {
+                    updateStatusDisplay(data);
+                }
+            })
+            .catch(function(err) {
+                showError('Impossible de contacter le helper (' + helperUrl + '). Verifie que le helper est lance (voir section ci-dessous).');
+                document.getElementById('helper-not-found').style.display = 'block';
+                document.getElementById('helper-status-content').innerHTML =
+                    '<div class="alert"><strong>Helper non contacte.</strong> Lance taf-lan-helper-start.ps1 en tant qu\'administrateur.</div>';
+            });
+    }
+
+    function updateStatusDisplay(data) {
+        var statusEl = document.getElementById('helper-status-content');
+        if (data.success) {
+            statusEl.innerHTML = '<div class="alert" style="background:#d9f2e3"><strong>Helper actif</strong> sur ' + helperUrl + '</div>';
+            document.getElementById('helper-not-found').style.display = 'none';
+        } else {
+            statusEl.innerHTML = '<div class="alert"><strong>Helper repond mais signale une erreur.</strong></div>';
+        }
+
+        if (data.lan_ip) {
+            setStatus('status-lan-ip', data.lan_ip, true);
+        } else {
+            setStatus('status-lan-ip', 'Non detectee', false);
+        }
+
+        if (data.local_ok !== undefined) {
+            setStatus('status-local-app', data.local_ok ? 'Accessible' : 'Inaccessible', data.local_ok);
+        }
+        if (data.portproxy !== undefined) {
+            setStatus('status-portproxy', data.portproxy ? 'Configure' : 'Non configure', data.portproxy);
+        }
+        if (data.firewall !== undefined) {
+            setStatus('status-firewall', data.firewall ? 'Configure' : 'Non configure', data.firewall);
+        }
+        if (data.lan_ok !== undefined) {
+            setStatus('status-lan-test', data.lan_ok ? 'Accessible' : 'Inaccessible', data.lan_ok);
+        }
+        if (data.student_url) {
+            setStatus('status-student-url', data.student_url, true);
+        }
+    }
+
+    function setStatus(id, text, ok) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = ok
+                ? '<span style="color:#155724">' + text + '</span>'
+                : '<span style="color:#856404">' + text + '</span>';
+        }
+    }
+
+    function copyStudentUrl() {
+        var urlEl = document.getElementById('status-student-url');
+        if (!urlEl) return;
+        var url = urlEl.textContent.trim();
+        if (url === 'En attente...' || url === 'Non disponible') {
+            showError('Aucune URL eleves disponible. Configure d\'abord l\'acces LAN.');
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+                document.getElementById('helper-message').innerHTML =
+                    '<div class="alert" style="background:#d9f2e3">URL copiee : ' + url + '</div>';
+            });
+        } else {
+            // Fallback for older browsers
+            var ta = document.createElement('textarea');
+            ta.value = url;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            document.getElementById('helper-message').innerHTML =
+                '<div class="alert" style="background:#d9f2e3">URL copiee : ' + url + '</div>';
+        }
+    }
+
+    // Wire up buttons
+    document.getElementById('btn-check-status').addEventListener('click', function() {
+        callHelper('status', 'GET', 'Verification');
+    });
+    document.getElementById('btn-sync').addEventListener('click', function() {
+        callHelper('sync', 'POST', 'Configuration');
+    });
+    document.getElementById('btn-restart').addEventListener('click', function() {
+        callHelper('restart-app', 'POST', 'Redemarrage');
+    });
+    document.getElementById('btn-test').addEventListener('click', function() {
+        callHelper('test', 'POST', 'Test');
+    });
+    document.getElementById('btn-copy-url').addEventListener('click', copyStudentUrl);
+    document.getElementById('btn-disable').addEventListener('click', function() {
+        if (confirm('Desactiver l\'acces LAN ? Les eleves en cours perdront la connexion.')) {
+            callHelper('disable', 'POST', 'Desactivation');
+        }
+    });
+
+    // Auto-check on load
+    if (isLocalhost) {
+        setTimeout(function() { callHelper('status', 'GET', 'Verification initiale'); }, 500);
+    } else {
+        document.getElementById('helper-status-content').innerHTML =
+            '<div class="alert"><strong>Helper non accessible</strong> depuis l\'URL LAN. Ouvre localhost:8010.</div>';
+        document.getElementById('helper-not-found').style.display = 'block';
+    }
+})();
+</script>
+{% endblock %}

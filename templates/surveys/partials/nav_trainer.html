@@ -3,6 +3,7 @@
         <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
         <li><a href="{% url 'surveys:dashboard_home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_home' %} class="nav-active"{% endif %}>Cockpit</a></li>
         <li><a href="{% url 'surveys:dashboard_network' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' %} class="nav-active"{% endif %}>Réseau</a></li>
+        <li><a href="{% url 'surveys:dashboard_network_control' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network_control' %} class="nav-active"{% endif %}>Contrôle LAN</a></li>
         <li><a href="{% url 'surveys:dashboard_settings' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_settings' %} class="nav-active"{% endif %}>Configuration</a></li>
         <li><a href="{% url 'admin:index' %}">Admin avancé</a></li>
     </ul>

@@ -142,6 +142,7 @@ Rappel : ne donnez pas `localhost`.
 
 - Cockpit formateur (tableau de bord centralisé) : `http://192.168.1.23:8000/dashboard/`
 - Admin avancé : `http://192.168.1.23:8000/admin/`
+- Contrôle réseau local (boutons helper) : `/dashboard/network-control/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - Configuration réseau : `/dashboard/settings/`
 - Dashboard Module 2 : `http://192.168.1.23:8000/dashboard/module-2/`
@@ -155,10 +156,30 @@ La barre de navigation en haut de chaque page donne accès à :
 - **Modules de formation** → `/modules/` (espace étudiant)
 - **Dashboard** → `/dashboard/` (cockpit formateur)
 - **Accès réseau** → diagnostic et adresses (pages formateur uniquement)
+- **Contrôle LAN** → helper et boutons de contrôle (pages formateur uniquement)
 - **Configuration réseau** → paramètres IP (pages formateur uniquement)
 - **Admin avancé** → administration Django (pages formateur uniquement)
 
 Le logo Internet Society / TAfHSSiM redirige vers le cockpit formateur.
+
+### Contrôle réseau local (F030)
+
+Une page dédiée `/dashboard/network-control/` permet au formateur de contrôler
+l'accès réseau des élèves depuis l'interface web :
+
+- **Vérifier l'état** : statut du helper LAN, portproxy, pare-feu, IP Wi-Fi
+- **Configurer l'accès** : portproxy `8011→8010`, pare-feu, synchronisation
+- **Redémarrer l'application** : `docker compose restart web`
+- **Tester l'URL élèves** : vérifier l'accessibilité depuis le LAN
+- **Copier l'URL** dans le presse-papier
+- **Désactiver l'accès LAN** : supprimer portproxy et règle pare-feu
+
+Ces actions sont exécutées par le **TAf LAN Helper** (PowerShell) qui écoute
+sur `http://127.0.0.1:8019`. Lancer depuis PowerShell Admin :
+
+```powershell
+.\scripts\windows\taf-lan-helper-start.ps1
+```
 
 ### Sous-navigation du dashboard
 
@@ -362,6 +383,7 @@ Utile pour valider les performances avant une séance avec de nombreux élèves.
 - Dashboard Module 5 : `/dashboard/module-5/`
 - Dashboard Module 6 : `/dashboard/module-6/`
 - Dashboard Module 7 : `/dashboard/module-7/`
+- Contrôle réseau local (boutons helper) : `/dashboard/network-control/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - CSV Module 2 : `/dashboard/export/module-2.csv`
 - CSV Module 3 : `/dashboard/export/module-3.csv`

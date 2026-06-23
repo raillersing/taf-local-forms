@@ -4475,3 +4475,88 @@ class InfrastructureConfigTests(TestCase):
         for ps1 in scripts_dir.glob("*.ps1"):
             content = ps1.read_text(encoding="utf-8", errors="replace")
             self.assertNotIn("down -v", content, f"{ps1.name} ne doit pas contenir down -v")
+
+
+class F030NetworkControlTests(TestCase):
+    """Tests for the LAN Control Center (F030)."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(username="ctrlstaff", password="secret", is_staff=True)
+        self.non_staff = User.objects.create_user(username="ctrluser", password="secret")
+        self.url = reverse("surveys:dashboard_network_control")
+
+    def test_page_requires_login(self):
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_page_requires_staff(self):
+        self.client.login(username="ctrluser", password="secret")
+        response = self.client.get(self.url)
+        self.assertIn(response.status_code, (302, 403))
+
+    def test_page_renders_for_staff(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Controle reseau local")
+        self.assertContains(response, "127.0.0.1:8019")
+        self.assertContains(response, "Verifier l'etat")
+        self.assertContains(response, "Configurer / Demarrer")
+        self.assertContains(response, "Redemarrer l'application")
+        self.assertContains(response, "Tester l'URL eleves")
+        self.assertContains(response, "Copier l'URL eleves")
+        self.assertContains(response, "Desactiver l'acces LAN")
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_shows_helper_not_found_when_not_localhost(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url, HTTP_HOST="192.168.0.100")
+        self.assertContains(response, "helper n'ecoute que sur")
+        self.assertContains(response, "127.0.0.1")
+
+    def test_shows_helper_endpoint_in_page(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "http://127.0.0.1:8019")
+        self.assertContains(response, "taf-lan-helper-start.ps1")
+        self.assertContains(response, "taf-lan-sync.ps1")
+        self.assertContains(response, "taf-lan-show-status.ps1")
+
+    def test_no_helper_link_in_student_space(self):
+        self.client.logout()
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response, "Controle reseau local")
+        self.assertNotContains(response, "network-control")
+
+    def test_helper_scripts_exist(self):
+        scripts_dir = Path(__file__).resolve().parent.parent / "scripts" / "windows"
+        self.assertTrue((scripts_dir / "taf-lan-helper.ps1").exists())
+        self.assertTrue((scripts_dir / "taf-lan-helper-start.ps1").exists())
+        self.assertTrue((scripts_dir / "taf-lan-helper-stop.ps1").exists())
+
+    def test_helper_script_listens_on_127_0_0_1(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("127.0.0.1", content)
+
+    def test_helper_script_does_not_listen_on_0_0_0_0(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertNotIn("0.0.0.0:8019", content)
+
+    def test_helper_script_has_allowed_endpoints(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        for endpoint in ("/status", "/sync", "/restart-app", "/test", "/disable"):
+            self.assertIn(endpoint, content, f"Endpoint manquant : {endpoint}")
+
+    def test_helper_scripts_no_secrets(self):
+        scripts_dir = Path(__file__).resolve().parent.parent / "scripts" / "windows"
+        for ps1 in scripts_dir.glob("taf-lan-helper*"):
+            content = ps1.read_text(encoding="utf-8", errors="replace")
+            self.assertNotIn("SECRET_KEY", content, f"{ps1.name} ne doit pas contenir SECRET_KEY")
+            self.assertNotIn(".env", content, f"{ps1.name} ne doit pas contenir .env")
+            self.assertNotIn("docker compose down -v", content, f"{ps1.name} ne doit pas contenir down -v")
+            self.assertNotIn("docker system prune", content, f"{ps1.name} ne doit pas contenir prune")
