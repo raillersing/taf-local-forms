@@ -35,6 +35,7 @@
 | F028 | Intégration Module 8 – Synthèse et exercices pratiques | pending |
 | F029 | PostgreSQL + 100-user LAN hardening | done |
 | F030 | LAN Control Center (helper PowerShell, page Django, tests) | done |
+| F030A | Make LAN Control Center browser-driven (CORS, OPTIONS, AbortController, button states, template fix) | done |
 | F013 | Final validation + v0.2.0 release notes | done |
 | F014 | Safe network config panel + live presence | done |
 | F015 | Update v0.2.0 release notes after F014 | done |

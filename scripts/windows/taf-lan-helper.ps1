@@ -220,6 +220,17 @@ function Invoke-RestartApp {
     }
 }
 
+function Add-CorsHeaders {
+    param($Response, $Origin)
+    $allowedOrigins = @("http://localhost:8010", "http://127.0.0.1:8010")
+    if ($allowedOrigins -contains $Origin) {
+        $Response.Headers.Add("Access-Control-Allow-Origin", $Origin)
+        $Response.Headers.Add("Vary", "Origin")
+    }
+    $Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    $Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")
+}
+
 function Send-JsonResponse {
     param($Response, $Data)
     $body = ($Data | ConvertTo-Json -Compress)
@@ -260,16 +271,28 @@ try {
         $req = $context.Request
         $res = $context.Response
 
-        # Validate Origin header
         $origin = $req.Headers["Origin"]
-        $allowedOrigins = @("http://localhost:8010", "http://127.0.0.1:8010", $null, "")
-        if ($origin -and ($allowedOrigins -notcontains $origin)) {
-            Send-Error $res 403 "Origine non autorisee: $origin"
+        $path = $req.Url.AbsolutePath.TrimEnd("/")
+        $method = $req.HttpMethod
+
+        # Add CORS headers to every response
+        Add-CorsHeaders -Response $res -Origin $origin
+
+        # Handle OPTIONS preflight (always return 204, no action)
+        if ($method -eq "OPTIONS") {
+            $res.StatusCode = 204
+            $res.ContentLength64 = 0
+            $res.Close()
             continue
         }
 
-        $path = $req.Url.AbsolutePath.TrimEnd("/")
-        $method = $req.HttpMethod
+        # Validate Origin header (after OPTIONS which should not be validated)
+        $allowedOrigins = @("http://localhost:8010", "http://127.0.0.1:8010", $null, "")
+        if ($origin -and ($allowedOrigins -notcontains $origin)) {
+            Send-Error $res 403 "Origine non autorisee: $origin"
+            $res.Close()
+            continue
+        }
 
         try {
             if ($path -eq "/status" -and $method -eq "GET") {

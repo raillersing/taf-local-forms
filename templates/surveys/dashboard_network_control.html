@@ -139,53 +139,123 @@
 (function() {
     var helperUrl = '{{ helper_url|escapejs }}';
     var isLocalhost = {{ is_localhost|lower }};
-    var statusInterval = null;
+    var lastStudentUrl = '';
+    var activeController = null;
+
+    var BUTTON_IDS = ['btn-check-status', 'btn-sync', 'btn-restart', 'btn-test', 'btn-copy-url', 'btn-disable'];
 
     function showError(msg) {
         var el = document.getElementById('helper-message');
         el.innerHTML = '<div class="alert"><strong>Erreur :</strong> ' + msg + '</div>';
     }
 
+    function showSuccess(msg) {
+        document.getElementById('helper-message').innerHTML =
+            '<div class="alert" style="background:#d9f2e3">' + msg + '</div>';
+    }
+
     function clearMessage() {
         document.getElementById('helper-message').innerHTML = '';
     }
 
-    function showResult(data) {
+    function showRawResult(data) {
         var section = document.getElementById('helper-result');
         var content = document.getElementById('helper-result-content');
         section.style.display = 'block';
         content.textContent = JSON.stringify(data, null, 2);
     }
 
-    function callHelper(endpoint, method, label) {
+    function setButtonLoading(btnId, loading) {
+        var btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.disabled = loading;
+        var strong = btn.querySelector('strong');
+        if (!strong) return;
+        var original = btn.getAttribute('data-original-label');
+        if (loading) {
+            if (!original) btn.setAttribute('data-original-label', strong.textContent);
+            strong.textContent = 'En cours...';
+        } else {
+            strong.textContent = original || strong.textContent;
+        }
+    }
+
+    function resetAllButtons() {
+        BUTTON_IDS.forEach(function(id) { setButtonLoading(id, false); });
+    }
+
+    function callHelper(endpoint, method, label, btnId) {
         clearMessage();
         if (!isLocalhost) {
             showError('Le helper n\'est accessible que depuis localhost:8010.');
             return;
         }
+
+        // Abort previous request if any
+        if (activeController) {
+            activeController.abort();
+        }
+        activeController = new AbortController();
+        var signal = activeController.signal;
+
+        if (btnId) setButtonLoading(btnId, true);
+
         var url = helperUrl + '/' + endpoint;
-        var opts = { method: method, headers: { 'Origin': window.location.origin } };
+        var opts = {
+            method: method,
+            headers: { 'Origin': window.location.origin },
+            signal: signal
+        };
         if (method === 'POST') {
             opts.headers['Content-Type'] = 'application/json';
             opts.body = '{}';
         }
+
+        // Timeout: 8 seconds
+        var timer = setTimeout(function() {
+            activeController.abort();
+            activeController = null;
+        }, 8000);
+
         fetch(url, opts)
-            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                clearTimeout(timer);
+                if (!r.ok) {
+                    return r.json().catch(function() {
+                        return { success: false, message: 'Erreur HTTP ' + r.status };
+                    }).then(function(errData) {
+                        showRawResult(errData);
+                        showError(errData.message || 'Erreur ' + r.status);
+                        if (btnId) setButtonLoading(btnId, false);
+                        return null;
+                    });
+                }
+                return r.json();
+            })
             .then(function(data) {
-                showResult(data);
+                if (!data) return;
+                showRawResult(data);
                 if (data.message) {
-                    document.getElementById('helper-message').innerHTML =
-                        '<div class="alert" style="background:#d9f2e3">' + data.message + '</div>';
+                    showSuccess(data.message);
                 }
                 if (endpoint === 'status' || endpoint === 'sync' || endpoint === 'test') {
                     updateStatusDisplay(data);
                 }
+                if (btnId) setButtonLoading(btnId, false);
+                if (data.student_url) lastStudentUrl = data.student_url;
             })
             .catch(function(err) {
-                showError('Impossible de contacter le helper (' + helperUrl + '). Verifie que le helper est lance (voir section ci-dessous).');
+                clearTimeout(timer);
+                if (err.name === 'AbortError') {
+                    showError('Le helper ne repond pas (timeout 8s). Verifie qu\'il est lance (voir ci-dessous).');
+                } else {
+                    showError('Impossible de contacter le helper (' + helperUrl + '). Verifie qu\'il est lance (voir ci-dessous).');
+                }
                 document.getElementById('helper-not-found').style.display = 'block';
                 document.getElementById('helper-status-content').innerHTML =
                     '<div class="alert"><strong>Helper non contacte.</strong> Lance taf-lan-helper-start.ps1 en tant qu\'administrateur.</div>';
+                if (btnId) setButtonLoading(btnId, false);
+                activeController = null;
             });
     }
 
@@ -217,6 +287,7 @@
             setStatus('status-lan-test', data.lan_ok ? 'Accessible' : 'Inaccessible', data.lan_ok);
         }
         if (data.student_url) {
+            lastStudentUrl = data.student_url;
             setStatus('status-student-url', data.student_url, true);
         }
     }
@@ -231,56 +302,60 @@
     }
 
     function copyStudentUrl() {
-        var urlEl = document.getElementById('status-student-url');
-        if (!urlEl) return;
-        var url = urlEl.textContent.trim();
-        if (url === 'En attente...' || url === 'Non disponible') {
+        var url = lastStudentUrl;
+        if (!url) {
             showError('Aucune URL eleves disponible. Configure d\'abord l\'acces LAN.');
             return;
         }
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(function() {
-                document.getElementById('helper-message').innerHTML =
-                    '<div class="alert" style="background:#d9f2e3">URL copiee : ' + url + '</div>';
+                showSuccess('URL copiee : ' + url);
+            }).catch(function() {
+                fallbackCopy(url);
             });
         } else {
-            // Fallback for older browsers
-            var ta = document.createElement('textarea');
-            ta.value = url;
-            ta.style.position = 'fixed';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            document.getElementById('helper-message').innerHTML =
-                '<div class="alert" style="background:#d9f2e3">URL copiee : ' + url + '</div>';
+            fallbackCopy(url);
         }
+    }
+
+    function fallbackCopy(url) {
+        var ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showSuccess('URL copiee : ' + url);
     }
 
     // Wire up buttons
     document.getElementById('btn-check-status').addEventListener('click', function() {
-        callHelper('status', 'GET', 'Verification');
+        callHelper('status', 'GET', 'Verification', 'btn-check-status');
     });
     document.getElementById('btn-sync').addEventListener('click', function() {
-        callHelper('sync', 'POST', 'Configuration');
+        callHelper('sync', 'POST', 'Configuration', 'btn-sync');
     });
     document.getElementById('btn-restart').addEventListener('click', function() {
-        callHelper('restart-app', 'POST', 'Redemarrage');
+        callHelper('restart-app', 'POST', 'Redemarrage', 'btn-restart');
     });
     document.getElementById('btn-test').addEventListener('click', function() {
-        callHelper('test', 'POST', 'Test');
+        callHelper('test', 'POST', 'Test', 'btn-test');
     });
     document.getElementById('btn-copy-url').addEventListener('click', copyStudentUrl);
     document.getElementById('btn-disable').addEventListener('click', function() {
         if (confirm('Desactiver l\'acces LAN ? Les eleves en cours perdront la connexion.')) {
-            callHelper('disable', 'POST', 'Desactivation');
+            callHelper('disable', 'POST', 'Desactivation', 'btn-disable');
         }
     });
 
+    // Show helper-not-found section initially
+    document.getElementById('helper-not-found').style.display = 'block';
+
     // Auto-check on load
     if (isLocalhost) {
-        setTimeout(function() { callHelper('status', 'GET', 'Verification initiale'); }, 500);
+        setTimeout(function() { callHelper('status', 'GET', 'Verification initiale', 'btn-check-status'); }, 500);
     } else {
         document.getElementById('helper-status-content').innerHTML =
             '<div class="alert"><strong>Helper non accessible</strong> depuis l\'URL LAN. Ouvre localhost:8010.</div>';
