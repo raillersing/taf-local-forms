@@ -33,7 +33,8 @@
 | F026 | Intégration Module 6 – Ressources éducatives en ligne | done |
 | F027 | Intégration Module 7 – Sécurité en ligne | done |
 | F028 | Intégration Module 8 – Synthèse et exercices pratiques | pending |
-| F029 | PostgreSQL + 100-user LAN hardening | in_progress |
+| F029 | PostgreSQL + 100-user LAN hardening | done |
+| F030 | LAN Control Center (helper PowerShell, page Django, tests) | done |
 | F013 | Final validation + v0.2.0 release notes | done |
 | F014 | Safe network config panel + live presence | done |
 | F015 | Update v0.2.0 release notes after F014 | done |

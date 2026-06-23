@@ -146,6 +146,7 @@ La barre de navigation en haut de chaque page donne accès à :
 - **Modules de formation** → `/modules/` (espace étudiant)
 - **Dashboard** → `/dashboard/` (cockpit formateur)
 - **Accès réseau** → diagnostic et adresses (pages formateur uniquement)
+- **Contrôle LAN** → helper et boutons de contrôle (pages formateur uniquement)
 - **Configuration réseau** → paramètres IP (pages formateur uniquement)
 - **Admin avancé** → administration Django (pages formateur uniquement)
 

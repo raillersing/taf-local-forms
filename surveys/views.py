@@ -1737,3 +1737,25 @@ def toggle_module_responses(request: HttpRequest, module_code: str) -> HttpRespo
     status = "ouvertes" if session.accepting_responses else "fermées"
     messages.success(request, f"Réponses {status} pour {session.module.title}.")
     return redirect("surveys:dashboard_home")
+
+
+@staff_member_required
+@login_required
+def network_control(request: HttpRequest) -> HttpResponse:
+    from .network import get_network_access_context
+
+    net_ctx = get_network_access_context(request)
+    current_host = net_ctx.get("current_request_host", "")
+    is_localhost = current_host in ("localhost", "127.0.0.1", "[::1]")
+    helper_port = 8019
+    helper_url = f"http://127.0.0.1:{helper_port}"
+
+    context = {
+        "net_ctx": net_ctx,
+        "is_localhost": is_localhost,
+        "helper_url": helper_url,
+        "helper_port": helper_port,
+        "lan_port": 8011,
+        "docker_port": 8010,
+    }
+    return render(request, "surveys/dashboard_network_control.html", context)

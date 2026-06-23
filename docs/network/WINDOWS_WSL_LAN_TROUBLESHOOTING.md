@@ -195,6 +195,9 @@ Ou via l'interface web :
 | `taf-lan-open-port.ps1` | `scripts/windows/` | Ouvrir le pare-feu Windows (Admin requis) |
 | `taf-lan-sync.ps1` | `scripts/windows/` | Synchronisation complète — détecte IP Wi-Fi, portproxy `8011→8010`, pare-feu `8011`, sync Django (Admin requis) |
 | `taf-lan-install-auto-sync.ps1` | `scripts/windows/` | Installe une tâche planifiée Windows pour synchronisation automatique au logon (Admin requis) |
+| `taf-lan-helper.ps1` | `scripts/windows/` | Helper HTTP qui expose une API REST pour contrôler l'accès LAN depuis `/dashboard/network-control/` |
+| `taf-lan-helper-start.ps1` | `scripts/windows/` | Démarre le helper en arrière-plan (Admin requis, écoute `127.0.0.1:8019`) |
+| `taf-lan-helper-stop.ps1` | `scripts/windows/` | Arrête le helper proprement |
 
 ---
 
@@ -211,3 +214,35 @@ http://<IP_DU_LAPTOP>:8011/
 ```
 
 La page d'accueil publique doit s'afficher.
+
+---
+
+## 6. TAf LAN Helper (interface web, F030)
+
+Une page web `/dashboard/network-control/` permet de contrôler l'accès réseau
+depuis le navigateur via le **TAf LAN Helper** (PowerShell, écoute `127.0.0.1:8019`).
+
+### Démarrage
+
+```powershell
+.\scripts\windows\taf-lan-helper-start.ps1
+```
+
+### Fonctionnalités disponibles dans l'interface
+
+| Bouton | Action |
+|--------|--------|
+| Vérifier l'état | Rafraîchir le statut du réseau |
+| Configurer / Démarrer | Portproxy `8011→8010`, pare-feu, sync Django |
+| Redémarrer l'application | `docker compose restart web` |
+| Tester l'URL élèves | Vérifier l'accessibilité depuis le LAN |
+| Copier l'URL élèves | Copier `http://<IP>:8011/` dans le presse-papier |
+| Désactiver l'accès LAN | Supprimer portproxy et règle pare-feu |
+
+### Arrêt
+
+```powershell
+.\scripts\windows\taf-lan-helper-stop.ps1
+```
+
+> **Sécurité :** Le helper n'écoute que sur `127.0.0.1` et n'est pas accessible depuis le LAN.
