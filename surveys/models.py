@@ -609,6 +609,166 @@ class Module5Submission(models.Model):
         super().save(*args, **kwargs)
 
 
+
+class Module6Submission(models.Model):
+    SELF_EVAL_CHOICES = [
+        ("pas_encore", "Pas encore"),
+        ("un_peu", "Un peu"),
+        ("bien", "Bien"),
+        ("tres_bien", "Très bien"),
+    ]
+    TRUE_FALSE_UNKNOWN_CHOICES = [
+        ("vrai", "Vrai"),
+        ("faux", "Faux"),
+        ("je_ne_sais_pas", "Je ne sais pas"),
+    ]
+    QUIZ_Q4_CHOICES = [
+        ("exercice_corrige", "Un exercice corrigé"),
+        ("publicite", "Une publicité"),
+        ("rumeur", "Une rumeur"),
+        ("mot_de_passe", "Un mot de passe"),
+    ]
+    QUIZ_Q5_CHOICES = [
+        ("svt", "svt"),
+        ("photosynthese_cours_lycee_pdf", "photosynthèse cours lycée PDF"),
+        ("video_drole", "vidéo drôle"),
+        ("internet", "internet"),
+    ]
+    QUIZ_Q6_OPTION_EXPLIQUE = "explique_clement_la_lecon"
+    QUIZ_Q6_OPTION_EXERCICES = "propose_exercices"
+    QUIZ_Q6_OPTION_NIVEAU = "correspond_niveau"
+    QUIZ_Q6_OPTION_MATIERE = "liee_matiere_scolaire"
+    QUIZ_Q6_OPTION_PASSWORD = "demande_mot_de_passe"
+    QUIZ_Q6_CORRECT_ANSWERS = {
+        QUIZ_Q6_OPTION_EXPLIQUE,
+        QUIZ_Q6_OPTION_EXERCICES,
+        QUIZ_Q6_OPTION_NIVEAU,
+        QUIZ_Q6_OPTION_MATIERE,
+    }
+    QUIZ_Q7_OPTION_LIEN = "noter_lien"
+    QUIZ_Q7_OPTION_COMPRIS = "ecrire_compris"
+    QUIZ_Q7_OPTION_REVISER = "utiliser_reviser"
+    QUIZ_Q7_OPTION_GARDER = "garder_dossier"
+    QUIZ_Q7_OPTION_PASSWORD = "partager_mot_de_passe"
+    QUIZ_Q7_CORRECT_ANSWERS = {
+        QUIZ_Q7_OPTION_LIEN,
+        QUIZ_Q7_OPTION_COMPRIS,
+        QUIZ_Q7_OPTION_REVISER,
+        QUIZ_Q7_OPTION_GARDER,
+    }
+    RESOURCE_TYPE_CHOICES = [
+        ("video", "Vidéo"),
+        ("pdf_fiche", "PDF / fiche"),
+        ("exercice_corrige", "Exercice corrigé"),
+        ("dictionnaire", "Dictionnaire / traduction"),
+        ("schema_image", "Schéma / image"),
+        ("quiz", "Quiz"),
+        ("autre", "Autre"),
+    ]
+    YES_SOMEWHAT_NO_UNKNOWN_CHOICES = [
+        ("oui", "Oui"),
+        ("un_peu", "Un peu"),
+        ("non", "Non"),
+        ("je_ne_sais_pas", "Je ne sais pas"),
+    ]
+    PRACTICAL_SUBJECT_CHOICES = [
+        ("francais", "Français"),
+        ("mathematiques", "Mathématiques"),
+        ("sciences_physiques", "Sciences physiques"),
+        ("sciences_naturelles", "Sciences naturelles"),
+        ("anglais", "Anglais"),
+        ("histoire_geographie", "Histoire-Géographie"),
+        ("informatique", "Informatique"),
+        ("autre", "Autre"),
+    ]
+    CONFIDENCE_CHOICES = [
+        ("pas_encore", "Pas encore"),
+        ("un_peu", "Un peu"),
+        ("oui", "Oui"),
+        ("oui_beaucoup", "Oui, beaucoup"),
+    ]
+
+    student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module6_submissions")
+    session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module6_submissions")
+    school_id_number_snapshot = models.CharField(
+        max_length=2,
+        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    auto_eval_find_resource = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+    auto_eval_choose_resource = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+    auto_eval_keep_link = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+
+    todo_chose_subject = models.BooleanField(default=False)
+    todo_searched_resource = models.BooleanField(default=False)
+    todo_opened_video_pdf_exercise = models.BooleanField(default=False)
+    todo_checked_level = models.BooleanField(default=False)
+    todo_noted_resource_title = models.BooleanField(default=False)
+    todo_noted_link_or_site = models.BooleanField(default=False)
+    todo_written_what_learned = models.BooleanField(default=False)
+    todo_kept_for_later = models.BooleanField(default=False)
+
+    quiz_q1 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q2 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q3 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q4 = models.CharField(max_length=40, choices=QUIZ_Q4_CHOICES)
+    quiz_q5 = models.CharField(max_length=50, choices=QUIZ_Q5_CHOICES)
+    quiz_q6_selected = models.JSONField(default=list)
+    quiz_q7_selected = models.JSONField(default=list)
+
+    practical_subject = models.CharField(max_length=40, choices=PRACTICAL_SUBJECT_CHOICES)
+    practical_what_to_revise = models.CharField(max_length=255)
+    practical_resource_type = models.CharField(max_length=40, choices=RESOURCE_TYPE_CHOICES)
+    practical_resource_name_or_link = models.CharField(max_length=255)
+    practical_adapted_level = models.CharField(max_length=20, choices=YES_SOMEWHAT_NO_UNKNOWN_CHOICES)
+    practical_what_learned = models.TextField()
+
+    feedback_understood_today = models.TextField()
+    feedback_still_difficult = models.TextField(blank=True)
+    feedback_confidence_resources = models.CharField(max_length=20, choices=CONFIDENCE_CHOICES)
+
+    computed_score = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "school_id_number_snapshot"],
+                name="unique_module6_submission_per_session_school_id",
+            )
+        ]
+        verbose_name = "Module 6 submission"
+        verbose_name_plural = "Module 6 submissions"
+
+    def __str__(self) -> str:
+        return f"M6-{self.school_id_number_snapshot} - {self.session.session_code}"
+
+    def calculate_score(self) -> int:
+        score = 0
+        if self.quiz_q1 == "vrai":
+            score += 1
+        if self.quiz_q2 == "vrai":
+            score += 1
+        if self.quiz_q3 == "faux":
+            score += 1
+        if self.quiz_q4 == "exercice_corrige":
+            score += 1
+        if self.quiz_q5 == "photosynthese_cours_lycee_pdf":
+            score += 1
+        if set(self.quiz_q6_selected) == self.QUIZ_Q6_CORRECT_ANSWERS:
+            score += 1
+        if set(self.quiz_q7_selected) == self.QUIZ_Q7_CORRECT_ANSWERS:
+            score += 1
+        return score
+
+    def save(self, *args, **kwargs):
+        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
+        self.computed_score = self.calculate_score()
+        super().save(*args, **kwargs)
+
+
 class FormPresence(models.Model):
     STATUS_ACTIVE = "active"
     STATUS_SUBMITTED = "submitted"

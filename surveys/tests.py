@@ -12,7 +12,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -3362,6 +3362,495 @@ class Module5RegressionTests(TestCase):
 
     def test_module_4_still_200(self):
         response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_modules_no_trainer_links(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response, "Cockpit formateur")
+        self.assertNotContains(response, "Export CSV")
+        self.assertNotContains(response, "/admin/")
+
+    def test_dashboard_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertIn(response.status_code, (302, 401, 403))
+
+
+class SeedModule6CommandTests(TestCase):
+    def test_seed_module6_creates_expected_module_and_active_session(self):
+        call_command("seed_module6")
+        module = TrainingModule.objects.get(code="MODULE_6")
+        session = TrainingSession.objects.get(session_code="M6-ANDO-001")
+        self.assertEqual(module.title, "Module 6 - Ressources educatives en ligne")
+        self.assertEqual(session.module, module)
+        self.assertEqual(session.location, "Lycee Andohalo Antananarivo")
+        self.assertEqual(session.trainer_name, "Formateur TAfHSSiM")
+        self.assertTrue(session.is_active)
+
+    def test_seed_module6_is_idempotent(self):
+        call_command("seed_module6")
+        call_command("seed_module6")
+        self.assertEqual(TrainingModule.objects.filter(code="MODULE_6").count(), 1)
+        self.assertEqual(TrainingSession.objects.filter(session_code="M6-ANDO-001").count(), 1)
+
+    def test_seed_module6_does_not_overwrite_existing_session_details(self):
+        call_command("seed_module6")
+        session = TrainingSession.objects.get(session_code="M6-ANDO-001")
+        session.location = "Autre lieu"
+        session.trainer_name = "Autre formateur"
+        session.is_active = False
+        session.save()
+        call_command("seed_module6")
+        session.refresh_from_db()
+        self.assertEqual(session.location, "Autre lieu")
+        self.assertEqual(session.trainer_name, "Autre formateur")
+        self.assertFalse(session.is_active)
+
+    def test_seed_module6_creates_accepting_responses_true(self):
+        call_command("seed_module6")
+        session = TrainingSession.objects.get(session_code="M6-ANDO-001")
+        self.assertTrue(session.accepting_responses)
+
+
+class Module6SubmissionConstraintTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_6",
+            title="Module 6 - Ressources éducatives en ligne",
+            description="Savoir trouver, choisir et utiliser des ressources éducatives en ligne.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 23),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M6-ANDO-001",
+            is_active=True,
+        )
+        self.student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rakoto Aina",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+            group_name="Salle A",
+        )
+        self.other_student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rabe Hery",
+            class_level=Student.CLASS_LEVEL_PREMIERE,
+            group_name="Salle B",
+        )
+
+    def make_submission(self, student):
+        return Module6Submission.objects.create(
+            student=student,
+            session=self.session,
+            school_id_number_snapshot=student.school_id_number,
+            auto_eval_find_resource="bien",
+            auto_eval_choose_resource="tres_bien",
+            auto_eval_keep_link="un_peu",
+            todo_chose_subject=True,
+            todo_searched_resource=True,
+            todo_opened_video_pdf_exercise=True,
+            todo_checked_level=True,
+            todo_noted_resource_title=True,
+            todo_noted_link_or_site=True,
+            todo_written_what_learned=True,
+            todo_kept_for_later=True,
+            quiz_q1="vrai",
+            quiz_q2="vrai",
+            quiz_q3="faux",
+            quiz_q4="exercice_corrige",
+            quiz_q5="photosynthese_cours_lycee_pdf",
+            quiz_q6_selected=list(Module6Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            quiz_q7_selected=list(Module6Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            practical_subject="mathematiques",
+            practical_what_to_revise="Équations du second degré",
+            practical_resource_type="video",
+            practical_resource_name_or_link="YouTube - Maths et Tiques",
+            practical_adapted_level="oui",
+            practical_what_learned="J'ai compris comment résoudre des équations.",
+            feedback_understood_today="J'ai compris comment trouver des ressources en ligne.",
+            feedback_still_difficult="",
+            feedback_confidence_resources="oui",
+        )
+
+    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
+        self.make_submission(self.student)
+        with self.assertRaises(IntegrityError):
+            self.make_submission(self.other_student)
+
+    def test_score_is_computed_on_save(self):
+        submission = self.make_submission(self.student)
+        self.assertEqual(submission.computed_score, 7)
+
+    def test_score_zero_for_wrong_answers(self):
+        submission = Module6Submission.objects.create(
+            student=Student.objects.create(school_id_number="02", full_name="Test", class_level=Student.CLASS_LEVEL_SECONDE),
+            session=self.session,
+            school_id_number_snapshot="02",
+            auto_eval_find_resource="pas_encore",
+            auto_eval_choose_resource="pas_encore",
+            auto_eval_keep_link="pas_encore",
+            quiz_q1="faux",
+            quiz_q2="faux",
+            quiz_q3="vrai",
+            quiz_q4="publicite",
+            quiz_q5="video_drole",
+            quiz_q6_selected=["demande_mot_de_passe"],
+            quiz_q7_selected=["partager_mot_de_passe"],
+            practical_subject="francais",
+            practical_what_to_revise="Test",
+            practical_resource_type="autre",
+            practical_resource_name_or_link="Test",
+            practical_adapted_level="non",
+            practical_what_learned="Test",
+            feedback_understood_today="Test",
+            feedback_confidence_resources="pas_encore",
+        )
+        self.assertEqual(submission.computed_score, 0)
+
+
+class Module6FormViewTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_6",
+            title="Module 6 - Ressources éducatives en ligne",
+            description="Savoir trouver, choisir et utiliser des ressources éducatives en ligne.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 23),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M6-ANDO-001",
+            is_active=True,
+        )
+
+    def valid_payload(self):
+        return {
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_find_resource": "bien",
+            "auto_eval_choose_resource": "tres_bien",
+            "auto_eval_keep_link": "un_peu",
+            "todo_chose_subject": "on",
+            "todo_searched_resource": "on",
+            "todo_opened_video_pdf_exercise": "on",
+            "todo_checked_level": "on",
+            "todo_noted_resource_title": "on",
+            "todo_noted_link_or_site": "on",
+            "todo_written_what_learned": "on",
+            "todo_kept_for_later": "on",
+            "quiz_q1": "vrai",
+            "quiz_q2": "vrai",
+            "quiz_q3": "faux",
+            "quiz_q4": "exercice_corrige",
+            "quiz_q5": "photosynthese_cours_lycee_pdf",
+            "quiz_q6_selected": list(Module6Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            "quiz_q7_selected": list(Module6Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_subject": "mathematiques",
+            "practical_what_to_revise": "Équations du second degré",
+            "practical_resource_type": "video",
+            "practical_resource_name_or_link": "YouTube - Maths et Tiques",
+            "practical_adapted_level": "oui",
+            "practical_what_learned": "J'ai compris comment résoudre des équations.",
+            "feedback_understood_today": "J'ai compris comment trouver des ressources en ligne.",
+            "feedback_still_difficult": "",
+            "feedback_confidence_resources": "oui",
+        }
+
+    def test_module_6_form_get(self):
+        response = self.client.get(reverse("surveys:module_6"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 6 - Ressources educatives en ligne")
+        self.assertContains(response, "Envoyer")
+
+    def test_valid_submission_creates_student_and_submission(self):
+        response = self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.count(), 1)
+        self.assertEqual(Module6Submission.objects.count(), 1)
+        submission = Module6Submission.objects.get()
+        self.assertEqual(submission.school_id_number_snapshot, "01")
+        self.assertEqual(submission.computed_score, 7)
+
+    def test_invalid_school_id_is_rejected(self):
+        payload = self.valid_payload()
+        payload["school_id_number"] = "1"
+        response = self.client.post(reverse("surveys:module_6"), data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Entre exactement 2 chiffres")
+        self.assertEqual(Student.objects.count(), 0)
+        self.assertEqual(Module6Submission.objects.count(), 0)
+
+    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
+        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
+        payload = self.valid_payload()
+        payload["full_name"] = "Autre eleve"
+        response = self.client.post(reverse("surveys:module_6"), data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
+        self.assertEqual(Module6Submission.objects.count(), 1)
+
+    def test_success_page_requires_matching_session_submission_id(self):
+        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
+        submission = Module6Submission.objects.get()
+        other_client = self.client_class()
+        response = other_client.get(reverse("surveys:module_6_success", args=[submission.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("surveys:module_6"))
+
+    def test_module_6_form_returns_503_when_no_active_session_exists(self):
+        self.session.is_active = False
+        self.session.save()
+        response = self.client.get(reverse("surveys:module_6"))
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+
+    def test_practical_what_learned_saved(self):
+        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
+        submission = Module6Submission.objects.get()
+        self.assertEqual(submission.practical_what_learned, "J'ai compris comment résoudre des équations.")
+
+    def test_todo_8_items(self):
+        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
+        submission = Module6Submission.objects.get()
+        self.assertTrue(submission.todo_chose_subject)
+        self.assertTrue(submission.todo_searched_resource)
+        self.assertTrue(submission.todo_opened_video_pdf_exercise)
+        self.assertTrue(submission.todo_checked_level)
+        self.assertTrue(submission.todo_noted_resource_title)
+        self.assertTrue(submission.todo_noted_link_or_site)
+        self.assertTrue(submission.todo_written_what_learned)
+        self.assertTrue(submission.todo_kept_for_later)
+
+    def test_quiz_score_max_7(self):
+        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
+        submission = Module6Submission.objects.get()
+        self.assertEqual(submission.computed_score, 7)
+
+
+class Module6PedagogyContentTests(TestCase):
+    def setUp(self):
+        call_command("seed_module6")
+
+    def test_student_modules_shows_module_6(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 6 - Ressources educatives en ligne")
+
+    def test_student_module_6_detail_status_200(self):
+        response = self.client.get(reverse("surveys:student_module_6_detail"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_module_6_detail_contains_resource_content(self):
+        response = self.client.get(reverse("surveys:student_module_6_detail"))
+        self.assertContains(response, "ressource educative")
+        self.assertContains(response, "niveau")
+        self.assertContains(response, "lien")
+
+    def test_student_module_6_detail_contains_6_steps_method(self):
+        response = self.client.get(reverse("surveys:student_module_6_detail"))
+        self.assertContains(response, "etapes")
+
+
+class Module6DashboardAndCockpitTests(TestCase):
+    def setUp(self):
+        call_command("seed_module6")
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(
+            username="formateur", password="motdepasse-solide-123",
+        )
+
+    def test_module_6_form_200(self):
+        response = self.client.get(reverse("surveys:module_6"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_dashboard_module_6_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_module_6"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_csv_export_module_6_requires_login(self):
+        response = self.client.get(reverse("surveys:export_module_6_csv"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_module_6_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_module_6"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Score moyen")
+        self.assertContains(response, "Module 6")
+
+    def test_csv_export_module_6_contains_submission_data(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:export_module_6_csv"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("computed_score", response.content.decode())
+
+    def test_csv_export_sanitizes_formula_like_cells(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        submission = Module6Submission.objects.create(
+            student=Student.objects.create(
+                school_id_number="99", full_name="=cmd", class_level="seconde",
+            ),
+            session=TrainingSession.objects.get(session_code="M6-ANDO-001"),
+            school_id_number_snapshot="99",
+            auto_eval_find_resource="bien",
+            auto_eval_choose_resource="bien",
+            auto_eval_keep_link="bien",
+            quiz_q1="vrai", quiz_q2="vrai", quiz_q3="faux",
+            quiz_q4="exercice_corrige", quiz_q5="photosynthese_cours_lycee_pdf",
+            quiz_q6_selected=list(Module6Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            quiz_q7_selected=list(Module6Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            practical_subject="mathematiques",
+            practical_what_to_revise="Test",
+            practical_resource_type="video",
+            practical_resource_name_or_link="Test",
+            practical_adapted_level="oui",
+            practical_what_learned="Test",
+            feedback_understood_today="Test",
+            feedback_confidence_resources="oui",
+        )
+        response = self.client.get(reverse("surveys:export_module_6_csv"))
+        content = response.content.decode()
+        self.assertIn("'=cmd", content)
+
+    def test_cockpit_shows_module_6_when_logged_in(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 6 - Ressources educatives en ligne")
+        self.assertContains(response, "Export CSV")
+
+
+class Module6ClosedSubmissionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module6")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        session = TrainingSession.objects.get(module__code="MODULE_6", is_active=True)
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+
+    def test_module_6_get_200_when_closed(self):
+        response = self.client.get(reverse("surveys:module_6"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "fermees")
+
+    def test_module_6_post_rejected_when_closed(self):
+        response = self.client.post(
+            reverse("surveys:module_6"),
+            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+        )
+        self.assertNotEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
+
+    def test_module_6_reopened_accepts_submission(self):
+        session = TrainingSession.objects.get(module__code="MODULE_6", is_active=True)
+        session.accepting_responses = True
+        session.save(update_fields=["accepting_responses"])
+        payload = {
+            "school_id_number": "99", "full_name": "Test Student",
+            "class_level": "seconde", "group_name": "",
+            "auto_eval_find_resource": "bien",
+            "auto_eval_choose_resource": "bien",
+            "auto_eval_keep_link": "bien",
+            "quiz_q1": "vrai", "quiz_q2": "vrai", "quiz_q3": "faux",
+            "quiz_q4": "exercice_corrige", "quiz_q5": "photosynthese_cours_lycee_pdf",
+            "quiz_q6_selected": list(Module6Submission.QUIZ_Q6_CORRECT_ANSWERS),
+            "quiz_q7_selected": list(Module6Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_subject": "mathematiques",
+            "practical_what_to_revise": "Test",
+            "practical_resource_type": "video",
+            "practical_resource_name_or_link": "Test",
+            "practical_adapted_level": "oui",
+            "practical_what_learned": "Test",
+            "feedback_understood_today": "Test",
+            "feedback_confidence_resources": "oui",
+        }
+        response = self.client.post(reverse("surveys:module_6"), data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Module6Submission.objects.filter(school_id_number_snapshot="99").exists())
+
+
+class Module6ToggleResponsesTests(TestCase):
+    def setUp(self):
+        call_command("seed_module6")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        self.url = reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_6"})
+
+    def test_toggle_requires_login(self):
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_toggle_requires_staff(self):
+        user = get_user_model().objects.create_user(username="regular", password="test")
+        self.client.login(username="regular", password="test")
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, (302, 403))
+
+    def test_toggle_closes_module_6(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_6", is_active=True)
+        self.assertFalse(session.accepting_responses)
+
+    def test_toggle_reopens_module_6(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url)
+        self.client.post(self.url, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_6", is_active=True)
+        self.assertTrue(session.accepting_responses)
+
+
+class Module6AdminTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.superuser = User.objects.create_superuser(
+            username="super", password="super", email="super@example.com",
+        )
+        self.client.login(username="super", password="super")
+
+    def test_admin_module6submission_accessible(self):
+        response = self.client.get(reverse("admin:surveys_module6submission_changelist"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_no_secret_exposed(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertNotContains(response, "SECRET_KEY")
+
+
+class Module6RegressionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+        call_command("seed_module5")
+        call_command("seed_module6")
+
+    def test_module_2_still_200(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_3_still_200(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_4_still_200(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_5_still_200(self):
+        response = self.client.get(reverse("surveys:module_5"))
         self.assertEqual(response.status_code, 200)
 
     def test_student_modules_no_trainer_links(self):

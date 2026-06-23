@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Module 6{% endblock %}
+{% block hero_title %}Dashboard Module 6{% endblock %}
+{% block hero_text %}Vue formateur pour suivre les reponses, le score moyen et l'avancement des activites.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    <section class="card stats-grid">
+        <article class="stat-card">
+            <p class="stat-label">Reponses</p>
+            <p class="stat-value">{{ total_submissions }}</p>
+        </article>
+        <article class="stat-card">
+            <p class="stat-label">Eleves</p>
+            <p class="stat-value">{{ total_students }}</p>
+        </article>
+        <article class="stat-card">
+            <p class="stat-label">Score moyen</p>
+            <p class="stat-value">{{ average_score|floatformat:1 }}/7</p>
+        </article>
+    </section>
+
+    <section class="card">
+        <h2>Filtres</h2>
+        <form method="get" class="filter-grid">
+            <div class="field">
+                <label for="class_level">Classe / niveau</label>
+                <select name="class_level" id="class_level">
+                    <option value="">Toutes</option>
+                    {% for value, label in class_level_choices %}
+                        <option value="{{ value }}"{% if selected_class_level == value %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="group_name">Groupe</label>
+                <input type="text" name="group_name" id="group_name" value="{{ selected_group_name }}">
+            </div>
+            <button type="submit" class="primary-button">Filtrer</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <div class="section-row">
+            <h2>Progression des activites</h2>
+            <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+                <a class="text-link" href="{% url 'surveys:export_module_6_csv' %}">Exporter le CSV</a>
+            </div>
+        </div>
+        <div class="progress-list">
+            {% for item in todo_completion %}
+                <div class="progress-item">
+                    <div class="progress-head">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.rate }}%</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <span style="width: {{ item.rate }}%;"></span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Liste des reponses</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Numero</th>
+                        <th>Nom</th>
+                        <th>Classe</th>
+                        <th>Groupe</th>
+                        <th>Session</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for submission in submissions %}
+                        <tr>
+                            <td>{{ submission.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>{{ submission.school_id_number_snapshot }}</td>
+                            <td>{{ submission.student.full_name }}</td>
+                            <td>{{ submission.student.get_class_level_display }}</td>
+                            <td>{{ submission.student.group_name|default:"-" }}</td>
+                            <td>{{ submission.session.session_code }}</td>
+                            <td>{{ submission.computed_score }}/7</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7">Aucune reponse pour le moment.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

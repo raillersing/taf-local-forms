@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Merci{% endblock %}
+{% block hero_title %}Merci{% endblock %}
+{% block hero_text %}Ta reponse a bien ete enregistree.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    <section class="card success-card">
+        <h2>Merci. Ta reponse a bien ete enregistree.</h2>
+        <p>Une bonne ressource t aide a comprendre, pratiquer et reviser avec methode.</p>
+    </section>
+</main>
+{% endblock %}
