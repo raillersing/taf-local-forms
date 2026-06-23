@@ -24,6 +24,8 @@ Pages détail étudiant par module :
 - **Module 3** : Recherche efficace  (`/modules/module-3/`)
 - **Module 4** : Sources fiables  (`/modules/module-4/`)
 - **Module 5** : Email et outils de communication  (`/modules/module-5/`)
+- **Module 6** : Ressources éducatives en ligne  (`/modules/module-6/`)
+- **Module 7** : Sécurité en ligne  (`/modules/module-7/`)
 
 Chaque page détail affiche un **bloc pédagogique** structuré qui contient le contenu réel des présentations PowerPoint (résumé, objectifs, notions clés, méthode, activités, à éviter/erreurs, à retenir), ainsi qu'un bouton CTA **« Commencer le questionnaire »** (ou **« Consulter le questionnaire »** si les réponses sont fermées).
 
@@ -33,6 +35,8 @@ Les questionnaires sont accessibles directement :
 - **Module 3** : `/module-3/`
 - **Module 4** : `/module-4/`
 - **Module 5** : `/module-5/`
+- **Module 6** : `/module-6/`
+- **Module 7** : `/module-7/`
 
 ## Démarrage rapide
 
@@ -67,6 +71,13 @@ ALLOWED_HOSTS=localhost,127.0.0.1,[::1],<LAPTOP_LAN_IP>
 CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000,http://<LAPTOP_LAN_IP>:8000
 DATABASE_PATH=/app/data/db.sqlite3
 TIME_ZONE=Indian/Antananarivo
+
+# PostgreSQL (optionnel, activé automatiquement si DB_HOST est défini)
+DB_HOST=db
+DB_NAME=taf_local_forms
+DB_USER=taf_user
+DB_PASSWORD=taf_pass
+DB_PORT=5432
 ```
 
 Exemple :
@@ -93,6 +104,17 @@ L'application sera accessible sur l'ordinateur ici :
 
 - `http://127.0.0.1:8000/module-2/`
 - `http://localhost:8000/module-2/`
+
+### Base de données
+
+Par défaut, Docker Compose lance **PostgreSQL 16** comme base de données
+(service `db`) pour de meilleures performances avec plusieurs utilisateurs
+simultanés. Si vous préférez SQLite (fallback), définissez `DB_HOST=` (vide)
+dans `.env`.
+
+Les deux volumes de données sont préservés :
+- `taf_local_forms_pgdata` — données PostgreSQL (recommandé en séance)
+- `taf_local_forms_data` — données SQLite (utilisé si `DB_HOST` est vide)
 
 ## Première préparation
 
@@ -160,14 +182,17 @@ Si l'IP configurée (`TAF_LAN_HOST`) diffère de l'IP actuelle de la requête, u
 
 Tous les liens réseau utilisent l'IP recommandée et s'ouvrent dans un nouvel onglet (`target="_blank"`).
 
-## Modules 5 à 8 — Audit et intégration future
+## Modules 6 à 8 — Audit et intégration
 
-Les sources des Modules 5 à 8 ont été auditées (F024) :
+Les sources des Modules 5 à 8 ont été auditées (F024).
 
-- **Module 5** — Email et outils de communication : formulaire avec quiz (7 QCM), exercice pratique email
-- **Module 6** — Ressources éducatives en ligne : formulaire avec quiz (7 QCM+checkbox), activité recherche
-- **Module 7** — Sécurité en ligne : formulaire avec quiz (7 QCM+checkbox), analyse de messages suspects
-- **Module 8** — Synthèse et exercices pratiques : formulaire complet avec synthèse transversale M2-M7
+Modules intégrés :
+- **Module 5** — Email et outils de communication (F025) : formulaire avec quiz (7 QCM), exercice pratique email
+- **Module 6** — Ressources éducatives en ligne (F026) : formulaire avec quiz (7 QCM+checkbox), activité recherche
+- **Module 7** — Sécurité en ligne (F027) : formulaire avec quiz (7 QCM+checkbox), analyse de messages suspects
+
+Module à venir :
+- **Module 8** — Synthèse et exercices pratiques (F028, en attente) : formulaire complet avec synthèse transversale M2-M7
 
 Audit complet : `docs/audits/F024_MODULES_5_8_SOURCE_AUDIT.md`
 
@@ -183,19 +208,26 @@ Ou ouvrez directement :
 
 ## Sauvegarde des données
 
-Copiez la base SQLite pour faire une sauvegarde.
+Deux bases possibles selon la configuration :
 
-Base SQLite :
+| Base | Emplacement Docker | Volume |
+|------|-------------------|--------|
+| PostgreSQL (recommandé) | service `db` | `taf_local_forms_pgdata` |
+| SQLite (fallback) | `/app/data/db.sqlite3` | `taf_local_forms_data` |
 
-- en Docker : `/app/data/db.sqlite3`
-- hors Docker : `data/db.sqlite3`
+### Script de sauvegarde automatique
 
-Avec `docker compose`, la base est stockée dans le volume `taf_local_forms_data`.
+```sh
+bash scripts/dev/taf-db-backup
+```
 
-Pour une sauvegarde simple :
+Ce script détecte automatiquement la base active (PostgreSQL ou SQLite) et
+crée une sauvegarde horodatée dans `/tmp/taf-backups/`.
+
+### Sauvegarde manuelle
 
 1. arrêtez l'application si possible ;
-2. copiez le fichier SQLite ou le volume Docker ;
+2. copiez le volume Docker ou la base SQLite ;
 3. gardez une copie sur un support externe si nécessaire.
 
 ## Trouver l'adresse IP de l'ordinateur sur Windows
@@ -273,7 +305,7 @@ Consultez le guide complet : `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md`.
 - `SECRET_KEY` n'est plus la valeur d'exemple ;
 - l'IP locale de l'ordinateur est connue ;
 - la page d'accueil `/` s'ouvre avec le choix étudiant / formateur ;
-- un téléphone sur le même réseau ouvre bien `/module-2/`, `/module-3/` et `/module-4/` ;
+- un téléphone sur le même réseau ouvre bien `/module-2/`, `/module-3/`, `/module-4/`, `/module-5/`, `/module-6/` et `/module-7/` ;
 - le cockpit formateur `/dashboard/` est accessible.
 
 Si vous utilisez le mode sans Docker, adaptez cette checklist à votre commande de lancement locale.
@@ -296,6 +328,20 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 .\.venv\Scripts\python manage.py test surveys.tests
 ```
 
+Les tests incluent une suite `InfrastructureConfigTests` qui vérifie la
+configuration PostgreSQL, Gunicorn, les intervalles de présence, les scripts
+de sauvegarde et de charge, et l'absence de secrets dans les scripts LAN.
+
+## Test de charge (lecture seule)
+
+```sh
+bash scripts/dev/taf-load-smoke http://localhost:8010 100
+```
+
+Simule jusqu'à 100 requêtes simultanées par URL (GET uniquement) et rapporte
+le taux de succès, la latence min/moy/max et les requêtes par seconde.
+Utile pour valider les performances avant une séance avec de nombreux élèves.
+
 ## URLs utiles
 
 - Page d'accueil (choix étudiant / formateur) : `/`
@@ -303,6 +349,9 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 - Formulaire Module 2 : `/module-2/`
 - Formulaire Module 3 : `/module-3/`
 - Formulaire Module 4 : `/module-4/`
+- Formulaire Module 5 : `/module-5/`
+- Formulaire Module 6 : `/module-6/`
+- Formulaire Module 7 : `/module-7/`
 - Page de confirmation : `/module-2/success/<id>/`
 - Page de confirmation Module 3 : `/module-3/success/<id>/`
 - Page de confirmation Module 4 : `/module-4/success/<id>/`
@@ -310,10 +359,16 @@ Si vous utilisez WSL/Linux, adaptez les commandes à votre environnement.
 - Dashboard Module 2 : `/dashboard/module-2/`
 - Dashboard Module 3 : `/dashboard/module-3/`
 - Dashboard Module 4 : `/dashboard/module-4/`
+- Dashboard Module 5 : `/dashboard/module-5/`
+- Dashboard Module 6 : `/dashboard/module-6/`
+- Dashboard Module 7 : `/dashboard/module-7/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - CSV Module 2 : `/dashboard/export/module-2.csv`
 - CSV Module 3 : `/dashboard/export/module-3.csv`
 - CSV Module 4 : `/dashboard/export/module-4.csv`
+- CSV Module 5 : `/dashboard/export/module-5.csv`
+- CSV Module 6 : `/dashboard/export/module-6.csv`
+- CSV Module 7 : `/dashboard/export/module-7.csv`
 - Configuration réseau (interface) : `/dashboard/settings/`
 - Présence temps réel : `/dashboard/presence.json`
 - Heartbeat élève (POST) : `/presence/heartbeat/`

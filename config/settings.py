@@ -78,14 +78,32 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASE_PATH = Path(os.getenv("DATABASE_PATH", BASE_DIR / "data" / "db.sqlite3"))
-DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+DB_HOST = os.getenv("DB_HOST", "").strip()
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": DATABASE_PATH,
+if DB_HOST:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "taf_local_forms"),
+            "USER": os.getenv("DB_USER", "taf"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "HOST": DB_HOST,
+            "PORT": os.getenv("DB_PORT", "5432"),
+            "CONN_MAX_AGE": int(os.getenv("CONN_MAX_AGE", "60")),
+            "CONN_HEALTH_CHECKS": True,
+            "OPTIONS": {
+                "connect_timeout": 5,
+            },
+        }
     }
-}
+else:
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": DATABASE_PATH,
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {

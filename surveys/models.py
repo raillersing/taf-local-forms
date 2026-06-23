@@ -950,7 +950,8 @@ class FormPresence(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["module_code", "training_session", "status"]),
-            models.Index(fields=["last_seen_at"]),
+            models.Index(fields=["status", "last_seen_at"]),
+            models.Index(fields=["client_id", "module_code", "training_session"]),
         ]
         verbose_name = "Présence formulaire"
         verbose_name_plural = "Présences formulaires"

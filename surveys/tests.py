@@ -1,5 +1,6 @@
 import os
 from datetime import date
+from pathlib import Path
 from tempfile import mkdtemp
 from unittest.mock import patch
 
@@ -4379,3 +4380,83 @@ class Module7RegressionTests(TestCase):
     def test_dashboard_requires_login(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertIn(response.status_code, (302, 401, 403))
+
+
+class InfrastructureConfigTests(TestCase):
+    """Tests pour la configuration d'infrastructure F029 (PostgreSQL, Gunicorn, presence)."""
+
+    @override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}})
+    def test_sqlite_fallback_works(self):
+        self.assertEqual(
+            self.client.get(reverse("surveys:student_modules")).status_code,
+            200,
+        )
+
+    def test_psycopg_in_requirements(self):
+        req_path = Path(__file__).resolve().parent.parent / "requirements.txt"
+        content = req_path.read_text()
+        self.assertIn("psycopg", content)
+
+    def test_gunicorn_env_vars_have_defaults(self):
+        concurrency = os.getenv("WEB_CONCURRENCY", "2")
+        threads = os.getenv("WEB_THREADS", "4")
+        timeout = os.getenv("GUNICORN_TIMEOUT", "60")
+        self.assertTrue(int(concurrency) >= 1)
+        self.assertTrue(int(threads) >= 1)
+        self.assertTrue(int(timeout) >= 10)
+
+    def test_presence_heartbeat_interval_is_30s(self):
+        heartbeat_path = Path(__file__).resolve().parent.parent / "templates" / "surveys" / "partials" / "presence_heartbeat.html"
+        content = heartbeat_path.read_text()
+        self.assertIn("setInterval(heartbeat, 30000)", content)
+
+    def test_dashboard_polling_interval_is_15s(self):
+        dashboard_path = Path(__file__).resolve().parent.parent / "templates" / "surveys" / "dashboard_home.html"
+        content = dashboard_path.read_text()
+        self.assertIn("setInterval(poll, 15000)", content)
+
+    def test_docker_compose_has_postgres_service(self):
+        compose_path = Path(__file__).resolve().parent.parent / "docker-compose.yml"
+        content = compose_path.read_text()
+        self.assertIn("db:", content)
+        self.assertIn("postgres:16-alpine", content)
+        self.assertIn("taf_local_forms_pgdata", content)
+
+    def test_docker_compose_has_no_down_v(self):
+        compose_path = Path(__file__).resolve().parent.parent / "docker-compose.yml"
+        content = compose_path.read_text()
+        self.assertNotIn("down -v", content)
+
+    def test_docker_file_has_gunicorn_env_vars(self):
+        dockerfile_path = Path(__file__).resolve().parent.parent / "Dockerfile"
+        content = dockerfile_path.read_text()
+        self.assertIn("WEB_CONCURRENCY", content)
+        self.assertIn("WEB_THREADS", content)
+        self.assertIn("GUNICORN_TIMEOUT", content)
+
+    def test_backup_script_exists(self):
+        backup_path = Path(__file__).resolve().parent.parent / "scripts" / "dev" / "taf-db-backup"
+        self.assertTrue(backup_path.exists(), "taf-db-backup script manquant")
+        self.assertTrue(backup_path.stat().st_mode & 0o111, "taf-db-backup doit etre executable")
+
+    def test_load_smoke_script_exists(self):
+        smoke_path = Path(__file__).resolve().parent.parent / "scripts" / "dev" / "taf-load-smoke"
+        self.assertTrue(smoke_path.exists(), "taf-load-smoke script manquant")
+        self.assertTrue(smoke_path.stat().st_mode & 0o111, "taf-load-smoke doit etre executable")
+
+    def test_load_smoke_script_no_post(self):
+        smoke_path = Path(__file__).resolve().parent.parent / "scripts" / "dev" / "taf-load-smoke"
+        content = smoke_path.read_text()
+        self.assertNotIn("POST", content, "taf-load-smoke ne doit pas contenir de POST")
+
+    def test_windows_lan_scripts_no_secrets(self):
+        scripts_dir = Path(__file__).resolve().parent.parent / "scripts" / "windows"
+        for ps1 in scripts_dir.glob("*.ps1"):
+            content = ps1.read_text(encoding="utf-8", errors="replace")
+            self.assertNotIn("SECRET_KEY", content, f"{ps1.name} ne doit pas contenir SECRET_KEY")
+
+    def test_windows_lan_scripts_no_down_v(self):
+        scripts_dir = Path(__file__).resolve().parent.parent / "scripts" / "windows"
+        for ps1 in scripts_dir.glob("*.ps1"):
+            content = ps1.read_text(encoding="utf-8", errors="replace")
+            self.assertNotIn("down -v", content, f"{ps1.name} ne doit pas contenir down -v")

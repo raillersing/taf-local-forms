@@ -1,0 +1,33 @@
+#!/bin/bash
+# TAf Local Forms — base de donnees backup
+# Usage: scripts/dev/taf-db-backup [output_dir]
+# Utilisation: sauvegarde la base active (SQLite ou PostgreSQL) dans un fichier date.
+# Ne supprime jamais les donnees source.
+
+set -euo pipefail
+
+cd "$(dirname "$0")/../.."
+
+OUTPUT_DIR="${1:-./data/backups}"
+mkdir -p "$OUTPUT_DIR"
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# Detecter le type de base
+if [ -n "${DB_HOST:-}" ]; then
+    echo "[backup] PostgreSQL detecte via DB_HOST=$DB_HOST"
+    DB_NAME="${DB_NAME:-taf_local_forms}"
+    DB_USER="${DB_USER:-taf}"
+    PGPASSWORD="${DB_PASSWORD:-}" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -F c -f "$OUTPUT_DIR/taf_pg_$TIMESTAMP.dump"
+    echo "[backup] PostgreSQL backup -> $OUTPUT_DIR/taf_pg_$TIMESTAMP.dump"
+elif [ -f "${DATABASE_PATH:-./data/db.sqlite3}" ]; then
+    DB_PATH="${DATABASE_PATH:-./data/db.sqlite3}"
+    echo "[backup] SQLite detectee: $DB_PATH"
+    cp "$DB_PATH" "$OUTPUT_DIR/taf_sqlite_$TIMESTAMP.db"
+    echo "[backup] SQLite backup -> $OUTPUT_DIR/taf_sqlite_$TIMESTAMP.db"
+else
+    echo "[backup] Aucune base detectee. Rien a sauvegarder."
+    exit 0
+fi
+
+echo "[backup] Termine."

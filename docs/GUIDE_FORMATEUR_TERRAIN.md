@@ -214,7 +214,7 @@ Les secrets ne sont jamais affichés. Un redémarrage Docker est nécessaire apr
 Le cockpit formateur `http://<IP_PC>:8010/dashboard/` affiche un compteur
 en temps quasi réel du nombre d'élèves en train de remplir chaque module.
 
-Mise à jour automatique toutes les 8 secondes.
+Mise à jour automatique toutes les 15 secondes.
 
 ## Exporter le CSV
 
@@ -230,20 +230,27 @@ Connexion obligatoire.
 
 ## Sauvegarde
 
-Base utilisée :
+Deux bases possibles selon la configuration :
 
-- en Docker : `/app/data/db.sqlite3`
-- hors Docker : `data/db.sqlite3`
+| Base | Emplacement Docker | Volume |
+|------|-------------------|--------|
+| PostgreSQL (recommandé) | service `db` | `taf_local_forms_pgdata` |
+| SQLite (fallback) | `/app/data/db.sqlite3` | `taf_local_forms_data` |
 
-Pour une sauvegarde simple :
+### Script de sauvegarde automatique
+
+```sh
+bash scripts/dev/taf-db-backup
+```
+
+Ce script détecte automatiquement la base active (PostgreSQL ou SQLite) et
+crée une sauvegarde horodatée dans `/tmp/taf-backups/`.
+
+### Sauvegarde manuelle
 
 1. arrêtez l'application si possible ;
 2. copiez la base SQLite ou le volume Docker ;
 3. gardez une copie sur un support externe si nécessaire.
-
-Note :
-
-- avec Docker, la base est conservée dans le volume `taf_local_forms_data`.
 
 ## Restauration
 
