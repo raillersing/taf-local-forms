@@ -33,7 +33,7 @@
         xhr.send(JSON.stringify(data));
     };
     heartbeat();
-    setInterval(heartbeat, 15000);
+    setInterval(heartbeat, 30000);
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'hidden') {
             heartbeat();

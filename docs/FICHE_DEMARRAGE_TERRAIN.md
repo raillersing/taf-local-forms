@@ -41,6 +41,8 @@ Chaque page détail affiche :
 | Module 3 – Recherche efficace | `http://127.0.0.1:8010/module-3/` |
 | Module 4 – Sources fiables | `http://127.0.0.1:8010/module-4/` |
 | Module 5 – Email et outils de communication | `http://127.0.0.1:8010/module-5/` |
+| Module 6 – Ressources éducatives en ligne | `http://127.0.0.1:8010/module-6/` |
+| Module 7 – Sécurité en ligne | `http://127.0.0.1:8010/module-7/` |
 | Panel formateur | `http://127.0.0.1:8010/dashboard/` |
 | Accès réseau | `http://127.0.0.1:8010/dashboard/network/` |
 | Configuration réseau (interface) | `http://127.0.0.1:8010/dashboard/settings/` |
@@ -277,7 +279,8 @@ Affiche en plus un résumé des décisions (fiable / douteuse / pas encore).
 | Module 4 | `/dashboard/export/module-4.csv` |
 
 > **Conseil** : après la séance, exportez les CSV et sauvegardez-les dans un dossier sécurisé.
-> Les données de la base SQLite sont dans un volume Docker.
+> Un script de sauvegarde est disponible : `bash scripts/dev/taf-db-backup` (détecte
+> automatiquement PostgreSQL ou SQLite et crée une sauvegarde horodatée).
 
 ---
 
@@ -307,8 +310,8 @@ Le cockpit formateur affiche en temps quasi réel le nombre d'élèves en train
 de remplir chaque module (Module 2, 3, 4).
 
 Fonctionnement :
-- un petit script sur la page de chaque module envoie un signal toutes les 15 secondes
-- le dashboard interroge les présences toutes les 8 secondes
+- un petit script sur la page de chaque module envoie un signal toutes les 30 secondes
+- le dashboard interroge les présences toutes les 15 secondes
 - un élève qui ferme brutalement le navigateur disparaît après environ 60 secondes
 
 > **Limite** : le compteur est indicatif. Si un élève ferme l'onglet sans prévenir,

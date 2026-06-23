@@ -30,9 +30,10 @@
 | F023 | Auto-sync LAN IP and network links | done |
 | F024 | Audit sources Modules 5 à 8 | done |
 | F025 | Intégration Module 5 – Email et outils de communication | done |
-| F026 | Intégration Module 6 – Ressources éducatives en ligne | pending |
-| F027 | Intégration Module 7 – Sécurité en ligne | pending |
+| F026 | Intégration Module 6 – Ressources éducatives en ligne | done |
+| F027 | Intégration Module 7 – Sécurité en ligne | done |
 | F028 | Intégration Module 8 – Synthèse et exercices pratiques | pending |
+| F029 | PostgreSQL + 100-user LAN hardening | in_progress |
 | F013 | Final validation + v0.2.0 release notes | done |
 | F014 | Safe network config panel + live presence | done |
 | F015 | Update v0.2.0 release notes after F014 | done |
