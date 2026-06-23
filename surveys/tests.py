@@ -2056,7 +2056,9 @@ class F019NavigationUXTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertNotContains(response, "IP_DU_LAPTOP")
 
-    def test_dashboard_shows_ip_alert_when_not_configured(self):
+    @patch.dict(os.environ, {"TAF_LAN_HOST": "", "PUBLIC_LAN_HOST": "", "TAF_HOST_PORT": ""})
+    @patch("surveys.network._get_ip_candidates", return_value=[])
+    def test_dashboard_shows_ip_alert_when_not_configured(self, mock_get_ip):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "IP locale non configurée")
 
@@ -2065,7 +2067,9 @@ class F019NavigationUXTests(TestCase):
         self.assertContains(response, 'target="_blank"')
         self.assertContains(response, 'rel="noopener noreferrer"')
 
-    def test_network_page_shows_ip_alert(self):
+    @patch.dict(os.environ, {"TAF_LAN_HOST": "", "PUBLIC_LAN_HOST": "", "TAF_HOST_PORT": ""})
+    @patch("surveys.network._get_ip_candidates", return_value=[])
+    def test_network_page_shows_ip_alert(self, mock_get_ip):
         response = self.client.get(reverse("surveys:dashboard_network"))
         self.assertContains(response, "IP locale non configurée")
 
@@ -2094,12 +2098,20 @@ class F019NetworkIPTests(TestCase):
     @override_settings(TAF_LAN_HOST="192.168.0.100")
     def test_dashboard_links_use_configured_ip(self):
         import os
+        old_lan = os.environ.get("TAF_LAN_HOST")
+        old_port = os.environ.get("TAF_HOST_PORT")
         os.environ["TAF_LAN_HOST"] = "192.168.0.100"
+        os.environ.pop("TAF_HOST_PORT", None)
         try:
             response = self.client.get(reverse("surveys:dashboard_home"))
             self.assertContains(response, "http://192.168.0.100:8000/")
         finally:
-            os.environ.pop("TAF_LAN_HOST", None)
+            if old_lan:
+                os.environ["TAF_LAN_HOST"] = old_lan
+            else:
+                os.environ.pop("TAF_LAN_HOST", None)
+            if old_port:
+                os.environ["TAF_HOST_PORT"] = old_port
 
     def test_dashboard_shows_config_link_when_no_ip(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2824,16 +2836,20 @@ class F023ScriptExistenceTests(TestCase):
         path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "windows", "taf-lan-sync.ps1")
         self.assertTrue(os.path.exists(path), f"Missing: {path}")
 
+    def _read_script(self, name):
+        import os
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "windows", name)
+        with open(path) as f:
+            return f.read()
+
     def test_taf_lan_sync_uses_8011(self):
-        with open("/home/raillersing/projects/taf-local-forms/scripts/windows/taf-lan-sync.ps1") as f:
-            content = f.read()
+        content = self._read_script("taf-lan-sync.ps1")
         self.assertIn("8011", content)
         self.assertIn("127.0.0.1", content)
         self.assertNotIn("SECRET_KEY", content)
 
     def test_taf_lan_sync_no_secrets(self):
-        with open("/home/raillersing/projects/taf-local-forms/scripts/windows/taf-lan-sync.ps1") as f:
-            content = f.read()
+        content = self._read_script("taf-lan-sync.ps1")
         self.assertNotIn("SECRET_KEY", content)
         self.assertNotIn(".env", content)
 
@@ -2843,8 +2859,7 @@ class F023ScriptExistenceTests(TestCase):
         self.assertTrue(os.path.exists(path), f"Missing: {path}")
 
     def test_taf_lan_install_mentions_scheduled_task(self):
-        with open("/home/raillersing/projects/taf-local-forms/scripts/windows/taf-lan-install-auto-sync.ps1") as f:
-            content = f.read()
+        content = self._read_script("taf-lan-install-auto-sync.ps1")
         self.assertIn("Register-ScheduledTask", content) or self.assertIn("New-ScheduledTask", content)
 
 
