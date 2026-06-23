@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Module 5 - Email et outils de communication{% endblock %}
+{% block hero_title %}Module 5 - Email et outils de communication{% endblock %}
+{% block hero_text %}Apprends à utiliser l'email pour communiquer clairement et poliment.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="content-grid">
+    {% if not accepting_responses %}
+    <div class="card" style="background:#fff3cd;border-color:#ffc107;">
+        <p style="margin:0;font-weight:600;color:#856404">
+            Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.
+        </p>
+    </div>
+    {% endif %}
+
+    <section class="card intro-card">
+        <p class="pill">{{ session.session_code }}</p>
+        <h2>Module 5 — Email et outils de communication</h2>
+        {% include "surveys/partials/module_5_pedagogy.html" %}
+        <h2 style="margin-top:1rem">Avant de commencer</h2>
+        <p>{{ module_5_summary }}</p>
+    </section>
+
+    <section class="card">
+        <h2>Objectifs de la séance</h2>
+        <ul style="margin-top:0.75rem;padding-left:1.25rem;display:grid;gap:0.4rem">
+            <li>Je comprends à quoi sert une adresse email.</li>
+            <li>Je sais écrire un email simple et poli.</li>
+            <li>Je sais joindre un fichier à un message.</li>
+            <li>Je connais les bonnes pratiques de communication.</li>
+            <li>Je sais organiser ma messagerie.</li>
+            <li>Je connais les règles de sécurité email.</li>
+        </ul>
+    </section>
+
+    <form method="post" class="card form-card">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <section class="form-section">
+            <h2>Tes informations</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.school_id_number %}
+                {% include "surveys/partials/field.html" with field=form.full_name %}
+                {% include "surveys/partials/field.html" with field=form.class_level %}
+                {% include "surveys/partials/field.html" with field=form.group_name %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Avant la séance</h2>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_email_purpose %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_write_email %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_attach_file %}
+        </section>
+
+        <section class="form-section">
+            <h2>Pendant la séance</h2>
+            <div class="checkbox-list">
+                {% include "surveys/partials/field.html" with field=form.todo_spotted_recipient %}
+                {% include "surveys/partials/field.html" with field=form.todo_written_clear_subject %}
+                {% include "surveys/partials/field.html" with field=form.todo_started_greeting %}
+                {% include "surveys/partials/field.html" with field=form.todo_written_short_message %}
+                {% include "surveys/partials/field.html" with field=form.todo_added_politeness %}
+                {% include "surveys/partials/field.html" with field=form.todo_signed_name %}
+                {% include "surveys/partials/field.html" with field=form.todo_checked_attachment %}
+                {% include "surveys/partials/field.html" with field=form.todo_reread_before_sending %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Petit quiz</h2>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q1 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q2 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q3 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q4 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q5 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q6 %}
+            {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q7_selected %}
+        </section>
+
+        <section class="form-section">
+            <h2>Activité pratique</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.practical_who_writing_to %}
+                {% include "surveys/partials/field.html" with field=form.practical_email_subject %}
+                {% include "surveys/partials/field.html" with field=form.practical_email_message %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_needs_attachment %}
+                {% include "surveys/partials/field.html" with field=form.practical_attachment_file %}
+                {% include "surveys/partials/choice_fieldset.html" with field=form.practical_best_tool %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Fin de séance</h2>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.feedback_understood_today %}
+                {% include "surveys/partials/field.html" with field=form.feedback_still_difficult %}
+            </div>
+            {% include "surveys/partials/choice_fieldset.html" with field=form.feedback_confidence_email %}
+        </section>
+
+        {% if accepting_responses %}
+        <button type="submit" class="primary-button">Envoyer</button>
+        <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
+        {% include "surveys/partials/presence_heartbeat.html" %}
+        {% else %}
+        <p class="muted" style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:8px">
+            Les réponses sont fermées pour ce module. Tu ne peux pas envoyer de réponse pour le moment.
+        </p>
+        {% endif %}
+    </form>
+</main>
+{% endblock %}

@@ -23,6 +23,7 @@ Pages détail étudiant par module :
 - **Module 2** : Comprendre Internet  (`/modules/module-2/`)
 - **Module 3** : Recherche efficace  (`/modules/module-3/`)
 - **Module 4** : Sources fiables  (`/modules/module-4/`)
+- **Module 5** : Email et outils de communication  (`/modules/module-5/`)
 
 Chaque page détail affiche un **bloc pédagogique** structuré qui contient le contenu réel des présentations PowerPoint (résumé, objectifs, notions clés, méthode, activités, à éviter/erreurs, à retenir), ainsi qu'un bouton CTA **« Commencer le questionnaire »** (ou **« Consulter le questionnaire »** si les réponses sont fermées).
 
@@ -31,6 +32,7 @@ Les questionnaires sont accessibles directement :
 - **Module 2** : `/module-2/`
 - **Module 3** : `/module-3/`
 - **Module 4** : `/module-4/`
+- **Module 5** : `/module-5/`
 
 ## Démarrage rapide
 
@@ -38,7 +40,7 @@ Les questionnaires sont accessibles directement :
 2. Configurez le fichier `.env`.
 3. Lancez l'application.
 4. Créez le compte admin.
-5. Chargez les données Module 2.
+5. Chargez les données Module 2, 3, 4, 5.
 6. Donnez l'adresse aux élèves.
 
 Guides pour la séance :

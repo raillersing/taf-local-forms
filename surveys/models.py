@@ -475,6 +475,140 @@ class Module4Submission(models.Model):
         super().save(*args, **kwargs)
 
 
+class Module5Submission(models.Model):
+    SELF_EVAL_CHOICES = [
+        ("pas_encore", "Pas encore"),
+        ("un_peu", "Un peu"),
+        ("bien", "Bien"),
+        ("tres_bien", "Très bien"),
+    ]
+    YES_NO_UNKNOWN_CHOICES = [
+        ("oui", "Oui"),
+        ("non", "Non"),
+        ("je_ne_sais_pas", "Je ne sais pas"),
+    ]
+    TRUE_FALSE_UNKNOWN_CHOICES = [
+        ("vrai", "Vrai"),
+        ("faux", "Faux"),
+        ("je_ne_sais_pas", "Je ne sais pas"),
+    ]
+    QUIZ_Q5_CHOICES = [
+        ("salut", "Salut"),
+        ("question", "Question"),
+        ("demande_information_devoir_mathematiques", "Demande d'information sur le devoir de mathématiques"),
+        ("important", "Important !!!"),
+    ]
+    QUIZ_Q6_CHOICES = [
+        ("yo_prof", "Yo prof"),
+        ("bonjour_monsieur_madame", "Bonjour Monsieur / Madame,"),
+        ("eh", "Eh"),
+        ("reponds_vite", "Réponds vite"),
+    ]
+    QUIZ_Q7_OPTION_DESTINATAIRE = "bon_destinataire"
+    QUIZ_Q7_OPTION_OBJET = "objet_message"
+    QUIZ_Q7_OPTION_POLITESSE = "politesse_message"
+    QUIZ_Q7_OPTION_PJ = "piece_jointe_annoncee"
+    QUIZ_Q7_OPTION_PASSWORD = "mot_de_passe_compte"
+    QUIZ_Q7_CORRECT_ANSWERS = {
+        QUIZ_Q7_OPTION_DESTINATAIRE,
+        QUIZ_Q7_OPTION_OBJET,
+        QUIZ_Q7_OPTION_POLITESSE,
+        QUIZ_Q7_OPTION_PJ,
+    }
+    BEST_TOOL_CHOICES = [
+        ("email", "Email"),
+        ("facebook_public", "Commentaire public sur Facebook"),
+        ("message_sans_nom", "Message sans nom"),
+        ("tiktok", "Publication TikTok"),
+    ]
+    CONFIDENCE_CHOICES = [
+        ("pas_encore", "Pas encore"),
+        ("un_peu", "Un peu"),
+        ("oui", "Oui"),
+        ("oui_beaucoup", "Oui, beaucoup"),
+    ]
+
+    student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module5_submissions")
+    session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module5_submissions")
+    school_id_number_snapshot = models.CharField(
+        max_length=2,
+        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    auto_eval_email_purpose = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+    auto_eval_write_email = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+    auto_eval_attach_file = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+
+    todo_spotted_recipient = models.BooleanField(default=False)
+    todo_written_clear_subject = models.BooleanField(default=False)
+    todo_started_greeting = models.BooleanField(default=False)
+    todo_written_short_message = models.BooleanField(default=False)
+    todo_added_politeness = models.BooleanField(default=False)
+    todo_signed_name = models.BooleanField(default=False)
+    todo_checked_attachment = models.BooleanField(default=False)
+    todo_reread_before_sending = models.BooleanField(default=False)
+
+    quiz_q1 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q2 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q3 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q4 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q5 = models.CharField(max_length=50, choices=QUIZ_Q5_CHOICES)
+    quiz_q6 = models.CharField(max_length=50, choices=QUIZ_Q6_CHOICES)
+    quiz_q7_selected = models.JSONField(default=list)
+
+    practical_who_writing_to = models.CharField(max_length=255)
+    practical_email_subject = models.CharField(max_length=255)
+    practical_email_message = models.TextField()
+    practical_needs_attachment = models.CharField(max_length=20, choices=YES_NO_UNKNOWN_CHOICES)
+    practical_attachment_file = models.CharField(max_length=255, blank=True)
+    practical_best_tool = models.CharField(max_length=40, choices=BEST_TOOL_CHOICES)
+
+    feedback_understood_today = models.TextField()
+    feedback_still_difficult = models.TextField(blank=True)
+    feedback_confidence_email = models.CharField(max_length=20, choices=CONFIDENCE_CHOICES)
+
+    computed_score = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "school_id_number_snapshot"],
+                name="unique_module5_submission_per_session_school_id",
+            )
+        ]
+        verbose_name = "Module 5 submission"
+        verbose_name_plural = "Module 5 submissions"
+
+    def __str__(self) -> str:
+        return f"M5-{self.school_id_number_snapshot} - {self.session.session_code}"
+
+    def calculate_score(self) -> int:
+        score = 0
+        if self.quiz_q1 == "vrai":
+            score += 1
+        if self.quiz_q2 == "vrai":
+            score += 1
+        if self.quiz_q3 == "faux":
+            score += 1
+        if self.quiz_q4 == "faux":
+            score += 1
+        if self.quiz_q5 == "demande_information_devoir_mathematiques":
+            score += 1
+        if self.quiz_q6 == "bonjour_monsieur_madame":
+            score += 1
+        if set(self.quiz_q7_selected) == self.QUIZ_Q7_CORRECT_ANSWERS:
+            score += 1
+        return score
+
+    def save(self, *args, **kwargs):
+        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
+        self.computed_score = self.calculate_score()
+        super().save(*args, **kwargs)
+
+
 class FormPresence(models.Model):
     STATUS_ACTIVE = "active"
     STATUS_SUBMITTED = "submitted"

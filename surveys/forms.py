@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Module3Submission, Module4Submission, Student, Submission
+from .models import Module3Submission, Module4Submission, Module5Submission, Student, Submission
 
 
 class Module2SubmissionForm(forms.Form):
@@ -416,6 +416,161 @@ class Module3SubmissionForm(forms.Form):
     feedback_confidence_search = forms.ChoiceField(
         label="Je me sens plus capable de chercher efficacement sur Internet.",
         choices=Module3Submission.CONFIDENCE_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    def clean_school_id_number(self):
+        value = self.cleaned_data["school_id_number"].strip()
+        if not value.isdigit() or len(value) != 2:
+            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
+        return value
+
+
+class Module5SubmissionForm(forms.Form):
+    school_id_number = forms.CharField(
+        label="Numéro à l'école",
+        min_length=2,
+        max_length=2,
+        help_text="Exemple : 01, 09, 39",
+        error_messages={
+            "required": "Entre ton numéro.",
+            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
+            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
+        },
+    )
+    full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
+    class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
+    group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
+
+    auto_eval_email_purpose = forms.ChoiceField(
+        label="Je sais expliquer à quoi sert une adresse email.",
+        choices=Module5Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_write_email = forms.ChoiceField(
+        label="Je sais écrire un email simple et poli.",
+        choices=Module5Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_attach_file = forms.ChoiceField(
+        label="Je sais joindre un fichier ou une photo dans un message.",
+        choices=Module5Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    todo_spotted_recipient = forms.BooleanField(
+        label="J'ai repéré le destinataire de l'email.", required=False,
+    )
+    todo_written_clear_subject = forms.BooleanField(
+        label="J'ai écrit un objet clair.", required=False,
+    )
+    todo_started_greeting = forms.BooleanField(
+        label="J'ai commencé par une salutation.", required=False,
+    )
+    todo_written_short_message = forms.BooleanField(
+        label="J'ai écrit un message court et précis.", required=False,
+    )
+    todo_added_politeness = forms.BooleanField(
+        label="J'ai ajouté une formule de politesse.", required=False,
+    )
+    todo_signed_name = forms.BooleanField(
+        label="J'ai signé avec mon nom.", required=False,
+    )
+    todo_checked_attachment = forms.BooleanField(
+        label="J'ai vérifié la pièce jointe si besoin.", required=False,
+    )
+    todo_reread_before_sending = forms.BooleanField(
+        label="J'ai relu avant d'envoyer.", required=False,
+    )
+
+    quiz_q1 = forms.ChoiceField(
+        label="1. Un email peut servir à communiquer avec un professeur ou une école.",
+        choices=Module5Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q2 = forms.ChoiceField(
+        label="2. L'objet d'un email doit aider le destinataire à comprendre le sujet.",
+        choices=Module5Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q3 = forms.ChoiceField(
+        label="3. Il est recommandé d'envoyer un email sans le relire.",
+        choices=Module5Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q4 = forms.ChoiceField(
+        label="4. Il est acceptable de donner son mot de passe par email à un ami.",
+        choices=Module5Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q5 = forms.ChoiceField(
+        label="5. Quel objet est le plus clair ?",
+        choices=Module5Submission.QUIZ_Q5_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q6 = forms.ChoiceField(
+        label="6. Quelle formule est la plus adaptée pour commencer un email à un professeur ?",
+        choices=Module5Submission.QUIZ_Q6_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q7_selected = forms.MultipleChoiceField(
+        label="7. Que faut-il vérifier avant d'envoyer un email ?",
+        choices=[
+            (Module5Submission.QUIZ_Q7_OPTION_DESTINATAIRE, "Le bon destinataire"),
+            (Module5Submission.QUIZ_Q7_OPTION_OBJET, "L'objet du message"),
+            (Module5Submission.QUIZ_Q7_OPTION_POLITESSE, "La politesse du message"),
+            (Module5Submission.QUIZ_Q7_OPTION_PJ, "La pièce jointe si elle est annoncée"),
+            (Module5Submission.QUIZ_Q7_OPTION_PASSWORD, "Le mot de passe du compte"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    practical_who_writing_to = forms.CharField(
+        label="À qui veux-tu écrire ?",
+        max_length=255,
+        help_text="Exemple : professeur de mathématiques, administration, responsable de formation.",
+    )
+    practical_email_subject = forms.CharField(
+        label="Écris l'objet de ton email.",
+        max_length=255,
+        help_text="Exemple : Demande d'information sur le devoir de français.",
+    )
+    practical_email_message = forms.CharField(
+        label="Écris ton message en quelques phrases.",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Commence par Bonjour, explique ta demande, puis termine poliment.",
+    )
+    practical_needs_attachment = forms.ChoiceField(
+        label="Ton email a-t-il besoin d'une pièce jointe ?",
+        choices=Module5Submission.YES_NO_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    practical_attachment_file = forms.CharField(
+        label="Si oui, quel fichier veux-tu joindre ?",
+        max_length=255,
+        required=False,
+        help_text="Exemple : devoir.pdf, photo_exercice.jpg, fiche_revision.docx.",
+    )
+    practical_best_tool = forms.ChoiceField(
+        label="Quel outil est le plus adapté pour envoyer un devoir à un professeur ?",
+        choices=Module5Submission.BEST_TOOL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    feedback_understood_today = forms.CharField(
+        label="Ce que j'ai compris aujourd'hui :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Écris une ou deux phrases simples.",
+    )
+    feedback_still_difficult = forms.CharField(
+        label="Ce qui reste difficile pour moi :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        required=False,
+        help_text="Écris ce qui n'est pas encore clair.",
+    )
+    feedback_confidence_email = forms.ChoiceField(
+        label="Après cette séance, je me sens plus capable d'écrire un email correct.",
+        choices=Module5Submission.CONFIDENCE_CHOICES,
         widget=forms.RadioSelect,
     )
 

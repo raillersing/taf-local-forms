@@ -52,16 +52,19 @@ docker compose exec web python manage.py createsuperuser
 
 Ce compte sert pour l'admin et le dashboard.
 
-## Préparer les données Module 2
+## Préparer les données
 
 ```powershell
 docker compose exec web python manage.py seed_module2
+docker compose exec web python manage.py seed_module3
+docker compose exec web python manage.py seed_module4
+docker compose exec web python manage.py seed_module5
 ```
 
 Résultat attendu :
 
-- le module `MODULE_2` existe ;
-- la session active `M2-ANDO-001` est prête.
+- les modules `MODULE_2`, `MODULE_3`, `MODULE_4`, `MODULE_5` existent ;
+- les sessions actives sont prêtes.
 
 ## Trouver l'adresse IP de l'ordinateur
 

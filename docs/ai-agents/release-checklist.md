@@ -21,6 +21,9 @@ Run this checklist before every release. If any step fails, stop and fix before 
 ## Runtime checks (if Docker is running)
 
 - [ ] `curl -I http://127.0.0.1:8010/module-2/` — returns 200
+- [ ] `curl -I http://127.0.0.1:8010/module-5/` — returns 200
+- [ ] `/dashboard/module-5/` — renders for authenticated user
+- [ ] `/dashboard/export/module-5.csv` — downloads CSV for authenticated user
 - [ ] `/dashboard/network/` — accessible after login
 - [ ] `/dashboard/module-2/` — renders for authenticated user
 - [ ] `/dashboard/export/module-2.csv` — downloads CSV for authenticated user
