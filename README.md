@@ -26,6 +26,7 @@ Pages détail étudiant par module :
 - **Module 5** : Email et outils de communication  (`/modules/module-5/`)
 - **Module 6** : Ressources éducatives en ligne  (`/modules/module-6/`)
 - **Module 7** : Sécurité en ligne  (`/modules/module-7/`)
+- **Module 8** : Synthèse et exercices pratiques  (`/modules/module-8/`)
 
 Chaque page détail affiche un **bloc pédagogique** structuré qui contient le contenu réel des présentations PowerPoint (résumé, objectifs, notions clés, méthode, activités, à éviter/erreurs, à retenir), ainsi qu'un bouton CTA **« Commencer le questionnaire »** (ou **« Consulter le questionnaire »** si les réponses sont fermées).
 
@@ -37,6 +38,7 @@ Les questionnaires sont accessibles directement :
 - **Module 5** : `/module-5/`
 - **Module 6** : `/module-6/`
 - **Module 7** : `/module-7/`
+- **Module 8** : `/module-8/`
 
 ## Démarrage rapide
 
@@ -211,9 +213,7 @@ Modules intégrés :
 - **Module 5** — Email et outils de communication (F025) : formulaire avec quiz (7 QCM), exercice pratique email
 - **Module 6** — Ressources éducatives en ligne (F026) : formulaire avec quiz (7 QCM+checkbox), activité recherche
 - **Module 7** — Sécurité en ligne (F027) : formulaire avec quiz (7 QCM+checkbox), analyse de messages suspects
-
-Module à venir :
-- **Module 8** — Synthèse et exercices pratiques (F028, en attente) : formulaire complet avec synthèse transversale M2-M7
+- **Module 8** — Synthèse et exercices pratiques (F028) : formulaire avec quiz (7 questions), 10 todo, exercice pratique de recherche documentaire en 6 étapes
 
 Audit complet : `docs/audits/F024_MODULES_5_8_SOURCE_AUDIT.md`
 

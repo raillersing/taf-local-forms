@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Student, Submission
+from .models import Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission
 
 
 class Module2SubmissionForm(forms.Form):
@@ -895,6 +895,191 @@ class Module7SubmissionForm(forms.Form):
         label="Après cette séance, je me sens plus capable de me protéger en ligne.",
         choices=Module7Submission.CONFIDENCE_CHOICES,
         widget=forms.RadioSelect,
+    )
+
+    def clean_school_id_number(self):
+        value = self.cleaned_data["school_id_number"].strip()
+        if not value.isdigit() or len(value) != 2:
+            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
+        return value
+
+
+class Module8SubmissionForm(forms.Form):
+    school_id_number = forms.CharField(
+        label="Numéro à l'école",
+        min_length=2, max_length=2,
+        help_text="Exemple : 01, 09, 39",
+        error_messages={
+            "required": "Entre ton numéro.",
+            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
+            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
+        },
+    )
+    full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
+    class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
+    group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
+
+    auto_eval_search = forms.ChoiceField(
+        label="Je sais faire une recherche utile sur Internet pour apprendre.",
+        choices=Module8Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_source = forms.ChoiceField(
+        label="Je sais vérifier si une source en ligne est fiable.",
+        choices=Module8Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    auto_eval_summarize = forms.ChoiceField(
+        label="Je sais résumer une information avec mes propres mots.",
+        choices=Module8Submission.SELF_EVAL_CHOICES,
+        widget=forms.RadioSelect,
+    )
+
+    todo_chose_subject = forms.BooleanField(
+        label="J'ai choisi une matière à travailler.", required=False,
+    )
+    todo_written_question = forms.BooleanField(
+        label="J'ai écrit ma question de départ.", required=False,
+    )
+    todo_transformed_keywords = forms.BooleanField(
+        label="J'ai transformé ma question en mots-clés.", required=False,
+    )
+    todo_found_first_source = forms.BooleanField(
+        label="J'ai trouvé une première source en ligne.", required=False,
+    )
+    todo_found_second_source = forms.BooleanField(
+        label="J'ai trouvé une deuxième source différente.", required=False,
+    )
+    todo_checked_source_quality = forms.BooleanField(
+        label="J'ai vérifié l'auteur, le site, la date ou les preuves.", required=False,
+    )
+    todo_chose_most_useful = forms.BooleanField(
+        label="J'ai choisi la source la plus utile.", required=False,
+    )
+    todo_noted_three_ideas = forms.BooleanField(
+        label="J'ai noté trois idées importantes.", required=False,
+    )
+    todo_prepared_synthesis = forms.BooleanField(
+        label="J'ai préparé une synthèse courte.", required=False,
+    )
+    todo_presented_explained = forms.BooleanField(
+        label="J'ai présenté ou expliqué ma synthèse.", required=False,
+    )
+
+    quiz_q1 = forms.ChoiceField(
+        label="1. Le Module 8 permet d'appliquer les compétences apprises dans les modules précédents.",
+        choices=Module8Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q2 = forms.ChoiceField(
+        label="2. Une bonne recherche sur Internet commence par une question claire.",
+        choices=Module8Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q3 = forms.ChoiceField(
+        label="3. Il suffit de copier le premier résultat trouvé pour répondre à une question.",
+        choices=Module8Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q4 = forms.ChoiceField(
+        label="4. Avant d'utiliser une information, il faut vérifier la source.",
+        choices=Module8Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q5 = forms.ChoiceField(
+        label="5. Un message académique doit être clair et respectueux.",
+        choices=Module8Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q6 = forms.ChoiceField(
+        label="6. Il est acceptable de partager mon mot de passe avec un ami de confiance.",
+        choices=Module8Submission.TRUE_FALSE_UNKNOWN_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    quiz_q7_selected = forms.MultipleChoiceField(
+        label="7. Que faut-il faire quand on cherche une information en ligne ?",
+        choices=[
+            (Module8Submission.QUIZ_Q7_OPTION_CLARIFIER, "Formuler une question claire avant de chercher"),
+            (Module8Submission.QUIZ_Q7_OPTION_MOTS_CLES, "Choisir des mots-clés adaptés"),
+            (Module8Submission.QUIZ_Q7_OPTION_SOURCE, "Vérifier la fiabilité de la source"),
+            (Module8Submission.QUIZ_Q7_OPTION_COMPARER, "Comparer plusieurs sources"),
+            (Module8Submission.QUIZ_Q7_OPTION_COPIER, "Copier sans essayer de comprendre"),
+            (Module8Submission.QUIZ_Q7_OPTION_RESUMER, "Résumer l'information avec ses propres mots"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    practical_subject = forms.ChoiceField(
+        label="Matière choisie",
+        choices=Module8Submission.PRACTICAL_SUBJECT_CHOICES,
+    )
+    practical_topic = forms.CharField(
+        label="Quel sujet veux-tu approfondir ?",
+        max_length=255,
+        help_text="Exemple : équations, photosynthèse, la Révolution française.",
+    )
+    practical_starting_question = forms.CharField(
+        label="Écris ta question de départ.",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Exemple : Qu'est-ce qui a causé la Révolution française ?",
+    )
+    practical_keywords_used = forms.CharField(
+        label="Quels mots-clés as-tu utilisés pour chercher ?",
+        max_length=255,
+        help_text="Exemple : causes Révolution française 1789.",
+    )
+    practical_first_source = forms.CharField(
+        label="Écris le titre ou le lien de ta première source.",
+        max_length=255,
+    )
+    practical_second_source = forms.CharField(
+        label="Écris le titre ou le lien de ta deuxième source (si tu en as une).",
+        max_length=255,
+        required=False,
+    )
+    practical_verified_elements = forms.MultipleChoiceField(
+        label="Qu'as-tu vérifié sur tes sources ?",
+        choices=Module8Submission.VERIFIED_ELEMENTS_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    practical_three_ideas = forms.CharField(
+        label="Quelles sont les trois idées importantes que tu as retenues ?",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Écris trois idées ou informations clés.",
+    )
+    practical_synthesis = forms.CharField(
+        label="Écris une mini-synthèse de 4 à 6 lignes.",
+        widget=forms.Textarea(attrs={"rows": 6}),
+        help_text="Résume ce que tu as appris avec tes propres mots.",
+    )
+    practical_academic_message = forms.CharField(
+        label="Message académique (optionnel) : écris un message à ton formateur.",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        help_text="Exemple : un retour sur ce que tu as appris.",
+    )
+
+    feedback_best_success = forms.CharField(
+        label="Ce que j'ai réussi aujourd'hui :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Écris une ou deux phrases sur ce dont tu es fier.",
+    )
+    feedback_still_difficult = forms.CharField(
+        label="Ce qui reste difficile pour moi :",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        required=False,
+        help_text="Écris ce qui n'est pas encore clair.",
+    )
+    feedback_confidence = forms.ChoiceField(
+        label="Après cette séance, je me sens plus à l'aise avec la recherche et l'utilisation d'informations en ligne.",
+        choices=Module8Submission.CONFIDENCE_CHOICES,
+        widget=forms.RadioSelect,
+    )
+    feedback_one_thing_to_practice = forms.CharField(
+        label="Une chose que je veux continuer à pratiquer :",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        help_text="Écris une habitude ou compétence à renforcer.",
     )
 
     def clean_school_id_number(self):

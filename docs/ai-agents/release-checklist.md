@@ -24,12 +24,15 @@ Run this checklist before every release. If any step fails, stop and fix before 
 - [ ] `curl -I http://127.0.0.1:8010/module-5/` — returns 200
 - [ ] `curl -I http://127.0.0.1:8010/module-6/` — returns 200
 - [ ] `curl -I http://127.0.0.1:8010/module-7/` — returns 200
+- [ ] `curl -I http://127.0.0.1:8010/module-8/` — returns 200
 - [ ] `/dashboard/module-5/` — renders for authenticated user
 - [ ] `/dashboard/module-6/` — renders for authenticated user
 - [ ] `/dashboard/module-7/` — renders for authenticated user
 - [ ] `/dashboard/export/module-5.csv` — downloads CSV for authenticated user
 - [ ] `/dashboard/export/module-6.csv` — downloads CSV for authenticated user
 - [ ] `/dashboard/export/module-7.csv` — downloads CSV for authenticated user
+- [ ] `/dashboard/module-8/` — renders for authenticated user
+- [ ] `/dashboard/export/module-8.csv` — downloads CSV for authenticated user
 - [ ] `/dashboard/network/` — accessible after login
 - [ ] `/dashboard/module-2/` — renders for authenticated user
 - [ ] `/dashboard/export/module-2.csv` — downloads CSV for authenticated user

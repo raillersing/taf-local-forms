@@ -932,6 +932,144 @@ class Module7Submission(models.Model):
         super().save(*args, **kwargs)
 
 
+class Module8Submission(models.Model):
+    SELF_EVAL_CHOICES = [
+        ("pas_encore", "Pas encore"),
+        ("un_peu", "Un peu"),
+        ("bien", "Bien"),
+        ("tres_bien", "Très bien"),
+    ]
+    TRUE_FALSE_UNKNOWN_CHOICES = [
+        ("vrai", "Vrai"),
+        ("faux", "Faux"),
+        ("je_ne_sais_pas", "Je ne sais pas"),
+    ]
+    QUIZ_Q7_OPTION_CLARIFIER = "formuler_question_claire"
+    QUIZ_Q7_OPTION_MOTS_CLES = "choisir_mots_cles"
+    QUIZ_Q7_OPTION_SOURCE = "verifier_source"
+    QUIZ_Q7_OPTION_COMPARER = "comparer_sources"
+    QUIZ_Q7_OPTION_COPIER = "copier_sans_comprendre"
+    QUIZ_Q7_OPTION_RESUMER = "resumer_propres_mots"
+    QUIZ_Q7_CORRECT_ANSWERS = {
+        QUIZ_Q7_OPTION_CLARIFIER,
+        QUIZ_Q7_OPTION_MOTS_CLES,
+        QUIZ_Q7_OPTION_SOURCE,
+        QUIZ_Q7_OPTION_COMPARER,
+        QUIZ_Q7_OPTION_RESUMER,
+    }
+    PRACTICAL_SUBJECT_CHOICES = [
+        ("francais", "Français"),
+        ("mathematiques", "Mathématiques"),
+        ("sciences_physiques", "Sciences physiques"),
+        ("sciences_naturelles", "Sciences naturelles"),
+        ("anglais", "Anglais"),
+        ("histoire_geographie", "Histoire-Géographie"),
+        ("informatique", "Informatique"),
+        ("autre", "Autre"),
+    ]
+    VERIFIED_ELEMENTS_CHOICES = [
+        ("auteur_identifie", "L'auteur est identifiable"),
+        ("site_connu", "Le site est connu ou fiable"),
+        ("date_publiee", "La date de publication est indiquée"),
+        ("sources_citees", "Les sources sont citées"),
+        ("contenu_exact", "Le contenu correspond à ce que je cherche"),
+        ("informations_coherentes", "Les informations sont cohérentes entre elles"),
+    ]
+    CONFIDENCE_CHOICES = [
+        ("pas_encore", "Pas encore"),
+        ("un_peu", "Un peu"),
+        ("oui", "Oui"),
+        ("oui_beaucoup", "Oui, beaucoup"),
+    ]
+
+    student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module8_submissions")
+    session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module8_submissions")
+    school_id_number_snapshot = models.CharField(
+        max_length=2,
+        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    auto_eval_search = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+    auto_eval_source = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+    auto_eval_summarize = models.CharField(max_length=20, choices=SELF_EVAL_CHOICES)
+
+    todo_chose_subject = models.BooleanField(default=False)
+    todo_written_question = models.BooleanField(default=False)
+    todo_transformed_keywords = models.BooleanField(default=False)
+    todo_found_first_source = models.BooleanField(default=False)
+    todo_found_second_source = models.BooleanField(default=False)
+    todo_checked_source_quality = models.BooleanField(default=False)
+    todo_chose_most_useful = models.BooleanField(default=False)
+    todo_noted_three_ideas = models.BooleanField(default=False)
+    todo_prepared_synthesis = models.BooleanField(default=False)
+    todo_presented_explained = models.BooleanField(default=False)
+
+    quiz_q1 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q2 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q3 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q4 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q5 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q6 = models.CharField(max_length=20, choices=TRUE_FALSE_UNKNOWN_CHOICES)
+    quiz_q7_selected = models.JSONField(default=list)
+
+    practical_subject = models.CharField(max_length=40, choices=PRACTICAL_SUBJECT_CHOICES)
+    practical_topic = models.CharField(max_length=255)
+    practical_starting_question = models.TextField()
+    practical_keywords_used = models.CharField(max_length=255)
+    practical_first_source = models.CharField(max_length=255)
+    practical_second_source = models.CharField(max_length=255, blank=True)
+    practical_verified_elements = models.JSONField(default=list)
+    practical_three_ideas = models.TextField()
+    practical_synthesis = models.TextField()
+    practical_academic_message = models.TextField(blank=True)
+
+    feedback_best_success = models.TextField()
+    feedback_still_difficult = models.TextField(blank=True)
+    feedback_confidence = models.CharField(max_length=20, choices=CONFIDENCE_CHOICES)
+    feedback_one_thing_to_practice = models.TextField(blank=True)
+
+    computed_score = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "school_id_number_snapshot"],
+                name="unique_module8_submission_per_session_school_id",
+            )
+        ]
+        verbose_name = "Module 8 submission"
+        verbose_name_plural = "Module 8 submissions"
+
+    def __str__(self) -> str:
+        return f"M8-{self.school_id_number_snapshot} - {self.session.session_code}"
+
+    def calculate_score(self) -> int:
+        score = 0
+        if self.quiz_q1 == "vrai":
+            score += 1
+        if self.quiz_q2 == "vrai":
+            score += 1
+        if self.quiz_q3 == "faux":
+            score += 1
+        if self.quiz_q4 == "vrai":
+            score += 1
+        if self.quiz_q5 == "vrai":
+            score += 1
+        if self.quiz_q6 == "faux":
+            score += 1
+        if set(self.quiz_q7_selected) == self.QUIZ_Q7_CORRECT_ANSWERS:
+            score += 1
+        return score
+
+    def save(self, *args, **kwargs):
+        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
+        self.computed_score = self.calculate_score()
+        super().save(*args, **kwargs)
+
+
 class FormPresence(models.Model):
     STATUS_ACTIVE = "active"
     STATUS_SUBMITTED = "submitted"

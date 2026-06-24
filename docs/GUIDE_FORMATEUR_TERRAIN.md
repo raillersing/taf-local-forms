@@ -59,11 +59,14 @@ docker compose exec web python manage.py seed_module2
 docker compose exec web python manage.py seed_module3
 docker compose exec web python manage.py seed_module4
 docker compose exec web python manage.py seed_module5
+docker compose exec web python manage.py seed_module6
+docker compose exec web python manage.py seed_module7
+docker compose exec web python manage.py seed_module8
 ```
 
 Résultat attendu :
 
-- les modules `MODULE_2`, `MODULE_3`, `MODULE_4`, `MODULE_5` existent ;
+- les modules `MODULE_2` à `MODULE_8` existent ;
 - les sessions actives sont prêtes.
 
 ## Trouver l'adresse IP de l'ordinateur
@@ -170,6 +173,10 @@ Adresses :
 - Module 2 : `http://<IP_PC>:8000/dashboard/module-2/`
 - Module 3 : `http://<IP_PC>:8000/dashboard/module-3/`
 - Module 4 : `http://<IP_PC>:8000/dashboard/module-4/`
+- Module 5 : `http://<IP_PC>:8000/dashboard/module-5/`
+- Module 6 : `http://<IP_PC>:8000/dashboard/module-6/`
+- Module 7 : `http://<IP_PC>:8000/dashboard/module-7/`
+- Module 8 : `http://<IP_PC>:8000/dashboard/module-8/`
 
 Les dashboards permettent de :
 

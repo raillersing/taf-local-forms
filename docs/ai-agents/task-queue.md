@@ -32,7 +32,7 @@
 | F025 | Intégration Module 5 – Email et outils de communication | done |
 | F026 | Intégration Module 6 – Ressources éducatives en ligne | done |
 | F027 | Intégration Module 7 – Sécurité en ligne | done |
-| F028 | Intégration Module 8 – Synthèse et exercices pratiques | pending |
+| F028 | Intégration Module 8 – Synthèse et exercices pratiques | done |
 | F029 | PostgreSQL + 100-user LAN hardening | done |
 | F030 | LAN Control Center (helper PowerShell, page Django, tests) | done |
 | F030A | Make LAN Control Center browser-driven (CORS, OPTIONS, AbortController, button states, template fix) | done |
