@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 
-from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
 
 admin.site.site_header = getattr(settings, "ADMIN_SITE_HEADER", "TAf Local Forms")
 admin.site.site_title = getattr(settings, "ADMIN_SITE_TITLE", "TAf Admin")
@@ -113,6 +113,15 @@ class Module7SubmissionAdmin(admin.ModelAdmin):
         "computed_score",
         "created_at",
     )
+    list_filter = ("session", "student__class_level", "student__group_name", "created_at")
+    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    autocomplete_fields = ("student", "session")
+    readonly_fields = ("computed_score",)
+
+
+@admin.register(Module8Submission)
+class Module8SubmissionAdmin(admin.ModelAdmin):
+    list_display = ("school_id_number_snapshot", "student", "session", "computed_score", "created_at")
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
     search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
     autocomplete_fields = ("student", "session")

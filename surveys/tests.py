@@ -13,7 +13,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -4766,3 +4766,567 @@ class F030NetworkControlTests(TestCase):
         content = diag_path.read_text(encoding="utf-8", errors="replace")
         self.assertIn("Processus", content)
         self.assertIn("Port 8019", content)
+
+
+class SeedModule8CommandTests(TestCase):
+    def test_seed_module8_creates_expected_module_and_active_session(self):
+        call_command("seed_module8")
+        module = TrainingModule.objects.get(code="MODULE_8")
+        session = TrainingSession.objects.get(session_code="M8-ANDO-001")
+        self.assertEqual(module.title, "Module 8 - Synthese et exercices pratiques")
+        self.assertEqual(session.module, module)
+        self.assertEqual(session.location, "Lycee Andohalo Antananarivo")
+        self.assertEqual(session.trainer_name, "Formateur TAfHSSiM")
+        self.assertTrue(session.is_active)
+
+    def test_seed_module8_is_idempotent(self):
+        call_command("seed_module8")
+        call_command("seed_module8")
+        self.assertEqual(TrainingModule.objects.filter(code="MODULE_8").count(), 1)
+        self.assertEqual(TrainingSession.objects.filter(session_code="M8-ANDO-001").count(), 1)
+
+    def test_seed_module8_does_not_overwrite_existing_session_details(self):
+        call_command("seed_module8")
+        session = TrainingSession.objects.get(session_code="M8-ANDO-001")
+        session.trainer_name = "Autre Formateur"
+        session.save(update_fields=["trainer_name"])
+        call_command("seed_module8")
+        session.refresh_from_db()
+        self.assertEqual(session.trainer_name, "Autre Formateur")
+
+
+class Module8SubmissionConstraintTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_8",
+            title="Module 8 - Synthese",
+            description="Mettre en pratique les competences de recherche documentaire.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 23),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M8-ANDO-001",
+            is_active=True,
+        )
+        self.student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rakoto Aina",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+            group_name="Salle A",
+        )
+        self.other_student = Student.objects.create(
+            school_id_number="01",
+            full_name="Rabe Hery",
+            class_level=Student.CLASS_LEVEL_PREMIERE,
+            group_name="Salle B",
+        )
+
+    def make_submission(self, student):
+        return Module8Submission.objects.create(
+            student=student,
+            session=self.session,
+            school_id_number_snapshot=student.school_id_number,
+            auto_eval_search="bien",
+            auto_eval_source="bien",
+            auto_eval_summarize="bien",
+            todo_chose_subject=True,
+            todo_written_question=True,
+            todo_transformed_keywords=True,
+            todo_found_first_source=True,
+            todo_found_second_source=True,
+            todo_checked_source_quality=True,
+            todo_chose_most_useful=True,
+            todo_noted_three_ideas=True,
+            todo_prepared_synthesis=True,
+            todo_presented_explained=True,
+            quiz_q1="vrai",
+            quiz_q2="vrai",
+            quiz_q3="faux",
+            quiz_q4="vrai",
+            quiz_q5="vrai",
+            quiz_q6="faux",
+            quiz_q7_selected=list(Module8Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            practical_subject="informatique",
+            practical_topic="L intelligence artificielle",
+            practical_starting_question="Comment l IA peut elle aider les eleves ?",
+            practical_keywords_used="IA, intelligence artificielle, education",
+            practical_first_source="Article Wikipedia sur l IA",
+            practical_second_source="Video Youtube explicative",
+            practical_verified_elements=["auteur_identifie", "site_connu"],
+            practical_three_ideas="L IA peut aider a apprendre",
+            practical_synthesis="L IA est un outil puissant pour l education.",
+            practical_academic_message="L IA peut revolutionner l apprentissage.",
+            feedback_best_success="J ai compris comment chercher.",
+            feedback_still_difficult="",
+            feedback_confidence="oui",
+            feedback_one_thing_to_practice="Verifier les sources",
+        )
+
+    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
+        self.make_submission(self.student)
+        with self.assertRaises(IntegrityError):
+            self.make_submission(self.other_student)
+
+    def test_score_is_computed_on_save(self):
+        sub = self.make_submission(self.student)
+        self.assertEqual(sub.computed_score, 7)
+
+    def test_score_zero_for_wrong_answers(self):
+        sub = Module8Submission.objects.create(
+            student=self.student,
+            session=self.session,
+            school_id_number_snapshot=self.student.school_id_number,
+            auto_eval_search="pas_encore",
+            auto_eval_source="pas_encore",
+            auto_eval_summarize="pas_encore",
+            quiz_q1="faux",
+            quiz_q2="faux",
+            quiz_q3="vrai",
+            quiz_q4="faux",
+            quiz_q5="faux",
+            quiz_q6="vrai",
+            quiz_q7_selected=["copier_sans_comprendre"],
+            practical_subject="autre",
+            practical_topic="Test",
+            practical_starting_question="Test",
+            practical_keywords_used="Test",
+            practical_first_source="Test",
+            practical_verified_elements=[],
+            practical_three_ideas="Test",
+            practical_synthesis="Test",
+            feedback_best_success="Test",
+            feedback_confidence="pas_encore",
+        )
+        self.assertEqual(sub.computed_score, 0)
+
+    def test_has_seven_quiz_questions(self):
+        sub = self.make_submission(self.student)
+        self.assertIsNotNone(sub.quiz_q1)
+        self.assertIsNotNone(sub.quiz_q6)
+        self.assertIsNotNone(sub.quiz_q7_selected)
+
+    def test_has_ten_todo_fields(self):
+        sub = self.make_submission(self.student)
+        todo_fields = [
+            sub.todo_chose_subject,
+            sub.todo_written_question,
+            sub.todo_transformed_keywords,
+            sub.todo_found_first_source,
+            sub.todo_found_second_source,
+            sub.todo_checked_source_quality,
+            sub.todo_chose_most_useful,
+            sub.todo_noted_three_ideas,
+            sub.todo_prepared_synthesis,
+            sub.todo_presented_explained,
+        ]
+        self.assertTrue(all(todo_fields))
+        self.assertEqual(len(todo_fields), 10)
+
+
+class Module8FormViewTests(TestCase):
+    def setUp(self):
+        self.module = TrainingModule.objects.create(
+            code="MODULE_8",
+            title="Module 8 - Synthese",
+            description="Mettre en pratique les competences de recherche documentaire.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 23),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M8-ANDO-001",
+            is_active=True,
+        )
+
+    def valid_payload(self):
+        return {
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_search": "bien",
+            "auto_eval_source": "bien",
+            "auto_eval_summarize": "bien",
+            "todo_chose_subject": "on",
+            "todo_written_question": "on",
+            "todo_transformed_keywords": "on",
+            "todo_found_first_source": "on",
+            "todo_found_second_source": "on",
+            "todo_checked_source_quality": "on",
+            "todo_chose_most_useful": "on",
+            "todo_noted_three_ideas": "on",
+            "todo_prepared_synthesis": "on",
+            "todo_presented_explained": "on",
+            "quiz_q1": "vrai",
+            "quiz_q2": "vrai",
+            "quiz_q3": "faux",
+            "quiz_q4": "vrai",
+            "quiz_q5": "vrai",
+            "quiz_q6": "faux",
+            "quiz_q7_selected": list(Module8Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_subject": "informatique",
+            "practical_topic": "L intelligence artificielle",
+            "practical_starting_question": "Comment l IA peut elle aider les eleves ?",
+            "practical_keywords_used": "IA, intelligence artificielle, education",
+            "practical_first_source": "Article Wikipedia sur l IA",
+            "practical_second_source": "Video Youtube explicative",
+            "practical_verified_elements": ["auteur_identifie", "site_connu"],
+            "practical_three_ideas": "L IA peut aider a apprendre",
+            "practical_synthesis": "L IA est un outil puissant pour l education.",
+            "practical_academic_message": "L IA peut revolutionner l apprentissage.",
+            "feedback_best_success": "J ai compris comment chercher.",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+            "feedback_one_thing_to_practice": "Verifier les sources",
+        }
+
+    def test_module_8_form_get(self):
+        response = self.client.get(reverse("surveys:module_8"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 8")
+        self.assertContains(response, "Envoyer")
+
+    def test_valid_submission_creates_student_and_submission(self):
+        response = self.client.post(reverse("surveys:module_8"), data=self.valid_payload(), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Merci")
+        self.assertEqual(Module8Submission.objects.count(), 1)
+        self.assertEqual(Student.objects.count(), 1)
+
+    def test_invalid_school_id_is_rejected(self):
+        payload = self.valid_payload()
+        payload["school_id_number"] = "1"
+        response = self.client.post(reverse("surveys:module_8"), data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "2 chiffres")
+
+    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
+        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
+        response = self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "déjà")
+
+    def test_success_page_requires_matching_session_submission_id(self):
+        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
+        submission = Module8Submission.objects.get()
+        other_client = self.client_class()
+        response = other_client.get(reverse("surveys:module_8_success", args=[submission.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("surveys:module_8"))
+
+    def test_module_8_form_returns_200_when_responses_closed(self):
+        self.session.accepting_responses = False
+        self.session.save(update_fields=["accepting_responses"])
+        response = self.client.get(reverse("surveys:module_8"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "fermees")
+
+    def test_practical_synthesis_saved(self):
+        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
+        sub = Module8Submission.objects.first()
+        self.assertEqual(sub.practical_synthesis, "L IA est un outil puissant pour l education.")
+
+    def test_todo_10_items(self):
+        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
+        sub = Module8Submission.objects.first()
+        for field in [
+            "todo_chose_subject",
+            "todo_written_question",
+            "todo_transformed_keywords",
+            "todo_found_first_source",
+            "todo_found_second_source",
+            "todo_checked_source_quality",
+            "todo_chose_most_useful",
+            "todo_noted_three_ideas",
+            "todo_prepared_synthesis",
+            "todo_presented_explained",
+        ]:
+            self.assertTrue(getattr(sub, field), f"{field} should be True")
+
+    def test_quiz_score_max_7(self):
+        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
+        sub = Module8Submission.objects.first()
+        self.assertEqual(sub.computed_score, 7)
+
+
+class Module8PedagogyContentTests(TestCase):
+    def setUp(self):
+        call_command("seed_module8")
+
+    def test_student_modules_shows_module_8(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 8 - Synthese et exercices pratiques")
+
+    def test_student_module_8_detail_status_200(self):
+        response = self.client.get(reverse("surveys:student_module_8_detail"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_module_8_detail_contains_title(self):
+        response = self.client.get(reverse("surveys:student_module_8_detail"))
+        self.assertContains(response, "Module 8 - Synthese et exercices pratiques")
+
+    def test_student_module_8_detail_contains_form_link(self):
+        response = self.client.get(reverse("surveys:student_module_8_detail"))
+        self.assertContains(response, "Commencer le questionnaire")
+
+
+class Module8DashboardAndCockpitTests(TestCase):
+    def setUp(self):
+        call_command("seed_module8")
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user(
+            username="formateur", password="motdepasse-solide-123",
+        )
+
+    def test_module_8_form_200(self):
+        response = self.client.get(reverse("surveys:module_8"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_dashboard_module_8_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_module_8"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_csv_export_module_8_requires_login(self):
+        response = self.client.get(reverse("surveys:export_module_8_csv"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_module_8_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_module_8"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 8")
+
+    def test_csv_export_module_8_contains_submission_data(self):
+        self.client.post(reverse("surveys:module_8"), data={
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_search": "bien",
+            "auto_eval_source": "bien",
+            "auto_eval_summarize": "bien",
+            "quiz_q1": "vrai",
+            "quiz_q2": "vrai",
+            "quiz_q3": "faux",
+            "quiz_q4": "vrai",
+            "quiz_q5": "vrai",
+            "quiz_q6": "faux",
+            "quiz_q7_selected": list(Module8Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_subject": "informatique",
+            "practical_topic": "IA",
+            "practical_starting_question": "Test?",
+            "practical_keywords_used": "IA, test",
+            "practical_first_source": "Wiki",
+            "practical_verified_elements": ["auteur_identifie"],
+            "practical_three_ideas": "Idee 1, Idee 2, Idee 3",
+            "practical_synthesis": "Synthese de test.",
+            "practical_academic_message": "Message academique.",
+            "feedback_best_success": "J ai reussi.",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+            "feedback_one_thing_to_practice": "Plus de pratique.",
+        })
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:export_module_8_csv"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rakoto Aina")
+
+    def test_csv_export_sanitizes_formula_like_cells(self):
+        self.client.post(reverse("surveys:module_8"), data={
+            "school_id_number": "02",
+            "full_name": "=SUM(1,1)",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_search": "bien",
+            "auto_eval_source": "bien",
+            "auto_eval_summarize": "bien",
+            "quiz_q1": "vrai",
+            "quiz_q2": "vrai",
+            "quiz_q3": "faux",
+            "quiz_q4": "vrai",
+            "quiz_q5": "vrai",
+            "quiz_q6": "faux",
+            "quiz_q7_selected": list(Module8Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_subject": "informatique",
+            "practical_topic": "Test",
+            "practical_starting_question": "Test?",
+            "practical_keywords_used": "Test",
+            "practical_first_source": "Test",
+            "practical_verified_elements": ["auteur_identifie"],
+            "practical_three_ideas": "Test",
+            "practical_synthesis": "Test",
+            "feedback_best_success": "Test",
+            "feedback_confidence": "oui",
+        })
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:export_module_8_csv"))
+        content = response.content.decode()
+        self.assertIn("'=SUM(1,1)", content)
+
+    def test_cockpit_shows_module_8_when_logged_in(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module 8 - Synthese et exercices pratiques")
+
+
+class Module8ClosedSubmissionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module8")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        session = TrainingSession.objects.get(module__code="MODULE_8", is_active=True)
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+
+    def test_module_8_get_200_when_closed(self):
+        response = self.client.get(reverse("surveys:module_8"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "fermees")
+
+    def test_module_8_post_rejected_when_closed(self):
+        response = self.client.post(
+            reverse("surveys:module_8"),
+            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+        )
+        self.assertNotEqual(response.status_code, 302)
+        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
+
+    def test_module_8_reopened_accepts_submission(self):
+        session = TrainingSession.objects.get(module__code="MODULE_8", is_active=True)
+        session.accepting_responses = True
+        session.save(update_fields=["accepting_responses"])
+        response = self.client.post(reverse("surveys:module_8"), data={
+            "school_id_number": "01",
+            "full_name": "Rakoto",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "group_name": "Salle A",
+            "auto_eval_search": "bien",
+            "auto_eval_source": "bien",
+            "auto_eval_summarize": "bien",
+            "quiz_q1": "vrai",
+            "quiz_q2": "vrai",
+            "quiz_q3": "faux",
+            "quiz_q4": "vrai",
+            "quiz_q5": "vrai",
+            "quiz_q6": "faux",
+            "quiz_q7_selected": list(Module8Submission.QUIZ_Q7_CORRECT_ANSWERS),
+            "practical_subject": "informatique",
+            "practical_topic": "Test",
+            "practical_starting_question": "Test?",
+            "practical_keywords_used": "Test",
+            "practical_first_source": "Test",
+            "practical_verified_elements": ["auteur_identifie"],
+            "practical_three_ideas": "Test",
+            "practical_synthesis": "Test",
+            "feedback_best_success": "Test",
+            "feedback_confidence": "oui",
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Merci")
+
+
+class Module8ToggleResponsesTests(TestCase):
+    def setUp(self):
+        call_command("seed_module8")
+        from django.contrib.auth.models import User
+        self.staff = User.objects.create_user(
+            username="staff", password="secret", is_staff=True,
+        )
+        self.url = reverse("surveys:toggle_module_responses", kwargs={"module_code": "MODULE_8"})
+
+    def test_toggle_requires_login(self):
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_toggle_requires_staff(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_toggle_closes_module_8(self):
+        self.client.login(username="staff", password="secret")
+        response = self.client.post(self.url, follow=True)
+        session = TrainingSession.objects.get(module__code="MODULE_8", is_active=True)
+        self.assertFalse(session.accepting_responses)
+
+    def test_toggle_reopens_module_8(self):
+        self.client.login(username="staff", password="secret")
+        self.client.post(self.url)
+        self.client.post(self.url)
+        session = TrainingSession.objects.get(module__code="MODULE_8", is_active=True)
+        self.assertTrue(session.accepting_responses)
+
+
+class Module8AdminTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.superuser = User.objects.create_superuser(
+            username="super", password="super", email="super@example.com",
+        )
+        self.client.login(username="super", password="super")
+
+    def test_admin_module8submission_accessible(self):
+        response = self.client.get(reverse("admin:surveys_module8submission_changelist"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_no_secret_exposed(self):
+        response = self.client.get(reverse("admin:surveys_module8submission_changelist"))
+        self.assertNotContains(response, "SECRET_KEY")
+
+
+class Module8RegressionTests(TestCase):
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+        call_command("seed_module5")
+        call_command("seed_module6")
+        call_command("seed_module7")
+        call_command("seed_module8")
+
+    def test_module_2_still_200(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_3_still_200(self):
+        response = self.client.get(reverse("surveys:module_3"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_4_still_200(self):
+        response = self.client.get(reverse("surveys:module_4"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_5_still_200(self):
+        response = self.client.get(reverse("surveys:module_5"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_6_still_200(self):
+        response = self.client.get(reverse("surveys:module_6"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_7_still_200(self):
+        response = self.client.get(reverse("surveys:module_7"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_module_8_still_200(self):
+        response = self.client.get(reverse("surveys:module_8"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_modules_no_trainer_links(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertNotContains(response, "Cockpit formateur")
+        self.assertNotContains(response, "Export CSV")
+        self.assertNotContains(response, "/admin/")
+
+    def test_dashboard_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertIn(response.status_code, (302, 401, 403))

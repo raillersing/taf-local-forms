@@ -43,6 +43,7 @@ Chaque page détail affiche :
 | Module 5 – Email et outils de communication | `http://127.0.0.1:8010/module-5/` |
 | Module 6 – Ressources éducatives en ligne | `http://127.0.0.1:8010/module-6/` |
 | Module 7 – Sécurité en ligne | `http://127.0.0.1:8010/module-7/` |
+| Module 8 – Synthèse et exercices pratiques | `http://127.0.0.1:8010/module-8/` |
 | Panel formateur | `http://127.0.0.1:8010/dashboard/` |
 | Accès réseau | `http://127.0.0.1:8010/dashboard/network/` |
 | Contrôle réseau local | `http://127.0.0.1:8010/dashboard/network-control/` |
@@ -189,6 +190,10 @@ Chargez les données de chaque module. Cette opération est **idempotente** (on 
 docker compose exec web python manage.py seed_module2
 docker compose exec web python manage.py seed_module3
 docker compose exec web python manage.py seed_module4
+docker compose exec web python manage.py seed_module5
+docker compose exec web python manage.py seed_module6
+docker compose exec web python manage.py seed_module7
+docker compose exec web python manage.py seed_module8
 ```
 
 Chaque commande :
@@ -224,6 +229,10 @@ curl -I http://127.0.0.1:8010/
 curl -I http://127.0.0.1:8010/module-2/
 curl -I http://127.0.0.1:8010/module-3/
 curl -I http://127.0.0.1:8010/module-4/
+curl -I http://127.0.0.1:8010/module-5/
+curl -I http://127.0.0.1:8010/module-6/
+curl -I http://127.0.0.1:8010/module-7/
+curl -I http://127.0.0.1:8010/module-8/
 ```
 
 Résultat attendu : **`200 OK`** pour chaque page.
@@ -235,6 +244,10 @@ curl -I http://127.0.0.1:8010/dashboard/
 curl -I http://127.0.0.1:8010/dashboard/module-2/
 curl -I http://127.0.0.1:8010/dashboard/module-3/
 curl -I http://127.0.0.1:8010/dashboard/module-4/
+curl -I http://127.0.0.1:8010/dashboard/module-5/
+curl -I http://127.0.0.1:8010/dashboard/module-6/
+curl -I http://127.0.0.1:8010/dashboard/module-7/
+curl -I http://127.0.0.1:8010/dashboard/module-8/
 ```
 
 Résultat attendu (sans connexion) : **`302 Found`** (redirection vers la page de connexion).
@@ -300,6 +313,10 @@ Affiche en plus un résumé des décisions (fiable / douteuse / pas encore).
 | Module 2 | `/dashboard/export/module-2.csv` |
 | Module 3 | `/dashboard/export/module-3.csv` |
 | Module 4 | `/dashboard/export/module-4.csv` |
+| Module 5 | `/dashboard/export/module-5.csv` |
+| Module 6 | `/dashboard/export/module-6.csv` |
+| Module 7 | `/dashboard/export/module-7.csv` |
+| Module 8 | `/dashboard/export/module-8.csv` |
 
 > **Conseil** : après la séance, exportez les CSV et sauvegardez-les dans un dossier sécurisé.
 > Un script de sauvegarde est disponible : `bash scripts/dev/taf-db-backup` (détecte
@@ -330,7 +347,7 @@ Champs modifiables :
 ## Compteur temps réel des élèves en cours de saisie
 
 Le cockpit formateur affiche en temps quasi réel le nombre d'élèves en train
-de remplir chaque module (Module 2, 3, 4).
+de remplir chaque module (Module 2, 3, 4, 5, 6, 7, 8).
 
 Fonctionnement :
 - un petit script sur la page de chaque module envoie un signal toutes les 30 secondes
@@ -360,7 +377,7 @@ Le logo Internet Society / TAfHSSiM (en haut à gauche) redirige vers le **cockp
 
 Le cockpit formateur `/dashboard/` est organisé en sections avec onglets :
 - **Vue d'ensemble** — statistiques globales
-- **Modules** — cartes Module 2/3/4 avec statut et switch d'ouverture/fermeture des réponses
+- **Modules** — cartes Module 2–8 avec statut et switch d'ouverture/fermeture des réponses
 - **Présence** — compteur en direct des élèves en cours de saisie
 - **Réseau** — adresses IP et liens vers chaque page (s'ouvrent dans un nouvel onglet)
 - **Exports** — téléchargement CSV des résultats
@@ -452,7 +469,7 @@ Redémarrez les seeds si de nouveaux modules ont été ajoutés (cf. « Initiali
 - [ ] WSL Ubuntu est ouvert
 - [ ] `docker compose up --build -d` a été lancé
 - [ ] `docker compose ps` montre `Up`
-- [ ] Les seeds ont été lancés (Modules 2, 3, 4)
+- [ ] Les seeds ont été lancés (Modules 2 à 8)
 - [ ] Le compte formateur est créé
 - [ ] L'IP réseau a été vérifiée (`ipconfig`)
 - [ ] Un téléphone sur le même réseau ouvre la page d'accueil
@@ -464,7 +481,7 @@ Redémarrez les seeds si de nouveaux modules ont été ajoutés (cf. « Initiali
 ## Résumé ultra-court
 
 1. **Démarrer** → `docker compose up --build -d`
-2. **Seeder** → `seed_module2`, `seed_module3`, `seed_module4`
+2. **Seeder** → `seed_module2` à `seed_module8`
 3. **Compte** → `createsuperuser`
 4. **Vérifier** → `curl` les pages (dont `/` et `/modules/`)
 5. **Ouvrir** → `/dashboard/network/` pour l'IP

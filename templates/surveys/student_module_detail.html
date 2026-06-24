@@ -39,6 +39,8 @@
             {% include "surveys/partials/module_6_pedagogy.html" %}
         {% elif module.code == "MODULE_7" %}
             {% include "surveys/partials/module_7_pedagogy.html" %}
+        {% elif module.code == "MODULE_8" %}
+            {% include "surveys/partials/module_8_pedagogy.html" %}
         {% endif %}
 
         <div class="cta-section" style="margin-top:1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem">
@@ -56,6 +58,8 @@
                         <a class="cta-student" href="{% url 'surveys:module_6' %}">Commencer le questionnaire</a>
                     {% elif module.code == "MODULE_7" %}
                         <a class="cta-student" href="{% url 'surveys:module_7' %}">Commencer le questionnaire</a>
+                    {% elif module.code == "MODULE_8" %}
+                        <a class="cta-student" href="{% url 'surveys:module_8' %}">Commencer le questionnaire</a>
                     {% endif %}
                 {% else %}
                     {% if module.code == "MODULE_2" %}
@@ -70,6 +74,8 @@
                         <a class="cta-consult" href="{% url 'surveys:module_6' %}">Consulter le questionnaire</a>
                     {% elif module.code == "MODULE_7" %}
                         <a class="cta-consult" href="{% url 'surveys:module_7' %}">Consulter le questionnaire</a>
+                    {% elif module.code == "MODULE_8" %}
+                        <a class="cta-consult" href="{% url 'surveys:module_8' %}">Consulter le questionnaire</a>
                     {% endif %}
                 {% endif %}
             {% else %}

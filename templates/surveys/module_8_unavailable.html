@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Formulaire non disponible{% endblock %}
+{% block hero_title %}Formulaire non disponible{% endblock %}
+{% block hero_text %}Le formulaire n'est pas disponible maintenant.{% endblock %}
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+{% block content %}
+<main class="content-grid">
+    <section class="card" style="text-align:center">
+        <h2>Module 8 — Synthese et production</h2>
+        <p>Le formulaire n'est pas disponible pour le moment.</p>
+        <p>Demande au formateur d'activer la seance Module 8.</p>
+        <p style="margin-top:2rem"><a class="primary-button" href="{% url 'surveys:home' %}">Retour a l'accueil</a></p>
+    </section>
+</main>
+{% endblock %}
