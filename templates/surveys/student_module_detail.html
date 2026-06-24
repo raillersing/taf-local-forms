@@ -10,19 +10,19 @@
 {% endblock %}
 
 {% block content %}
-<main class="content-grid">
-    <section class="card">
+<main id="content" class="content-grid">
+    <section class="card" aria-labelledby="module-detail-heading">
         <div class="section-row">
-            <h2>{{ module.title }}</h2>
-            <div>
+            <h2 id="module-detail-heading">{{ module.title }}</h2>
+            <div class="badge-group">
                 {% if has_active_session %}
                     {% if accepting_responses %}
-                        <span class="pill" style="margin:0">Réponses ouvertes</span>
+                        <span class="badge badge-success">Réponses ouvertes</span>
                     {% else %}
-                        <span class="pill consultation-pill" style="margin:0;background:#fff3cd;color:#856404">Consultation seulement</span>
+                        <span class="badge badge-warning">Consultation seulement</span>
                     {% endif %}
                 {% else %}
-                    <span class="pill" style="margin:0;background:#e6eef8;color:var(--muted)">Indisponible</span>
+                    <span class="badge badge-muted">Indisponible</span>
                 {% endif %}
             </div>
         </div>
@@ -43,7 +43,7 @@
             {% include "surveys/partials/module_8_pedagogy.html" %}
         {% endif %}
 
-        <div class="cta-section" style="margin-top:1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem">
+        <div class="cta-section">
             {% if has_active_session %}
                 {% if accepting_responses %}
                     {% if module.code == "MODULE_2" %}

@@ -6,7 +6,13 @@
     {% include "surveys/partials/nav_trainer.html" %}
 {% endblock %}
 {% block content %}
-<main class="content-grid">
+<main id="content" class="content-grid">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{% url 'surveys:dashboard_home' %}">Cockpit</a>
+        <span class="sep">/</span>
+        <span class="current">{{item|cut:"_"|capfirst}}</span>
+    </nav>
+
     <nav class="sub-nav" aria-label="Sections">
         <a href="#overview" class="sub-nav-link">Vue d'ensemble</a>
         <a href="#submissions" class="sub-nav-link">Reponses</a>
@@ -33,9 +39,9 @@
 
     <section class="card">
         <h2>Filtres</h2>
-        <form method="get" class="filter-form" style="display:flex;gap:1rem;align-items:end;flex-wrap:wrap">
-            <div>
-                <label class="muted" style="display:block;font-size:0.85rem">Classe</label>
+        <form method="get" class="filter-grid">
+            <div class="field">
+                <label class="muted">Classe</label>
                 <select name="class_level" onchange="this.form.submit()">
                     <option value="">Toutes</option>
                     {% for val, label in class_level_choices %}
@@ -43,21 +49,23 @@
                     {% endfor %}
                 </select>
             </div>
-            <div>
-                <label class="muted" style="display:block;font-size:0.85rem">Groupe</label>
+            <div class="field">
+                <label class="muted">Groupe</label>
                 <input type="text" name="group_name" value="{{ selected_group_name }}" placeholder="Salle A">
             </div>
-            <button type="submit" class="primary-button" style="padding:0.4rem 1rem">Filtrer</button>
+            <button type="submit" class="primary-button">Filtrer</button>
         </form>
     </section>
 
     <section id="todo" class="card">
         <h2>Suivi des taches</h2>
-        <div style="display:grid;gap:0.5rem;margin-top:0.75rem">
+        <div class="progress-list">
             {% for item in todo_completion %}
-            <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:0.9rem">{{ item.label }}</span>
-                <span style="font-weight:600;min-width:4rem;text-align:right">{{ item.rate }}%</span>
+            <div class="progress-item">
+                <div class="section-row">
+                    <span>{{ item.label }}</span>
+                    <span>{{ item.rate }}%</span>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -65,7 +73,8 @@
 
     <section id="submissions" class="card">
         <h2>Reponses</h2>
-        <div class="table-scroll">
+        {% if submissions %}
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
@@ -87,15 +96,19 @@
                         <td>{{ s.student.group_name }}</td>
                         <td>{{ s.computed_score }}/7</td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="muted" style="text-align:center">Aucune reponse pour l'instant.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <p class="empty-state-title">Aucune réponse pour l'instant.</p>
+        </div>
+        {% endif %}
     </section>
 
-    <section class="card" style="text-align:center">
+    <section class="card">
         <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}">Export CSV</a>
     </section>
 </main>

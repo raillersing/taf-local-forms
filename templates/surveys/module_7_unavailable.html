@@ -3,15 +3,15 @@
 {% block hero_title %}Formulaire non disponible{% endblock %}
 {% block hero_text %}Le formulaire n'est pas disponible maintenant.{% endblock %}
 {% block main_nav %}
-    {% include "surveys/partials/nav_student.html" %}
+    {% include "surveys/partials/nav_public_landing.html" %}
 {% endblock %}
 {% block content %}
-<main class="content-grid">
-    <section class="card" style="text-align:center">
+<main id="content" class="content-grid">
+    <section class="card empty-state">
         <h2>Module 7 — Securite en ligne</h2>
         <p>Le formulaire n'est pas disponible pour le moment.</p>
         <p>Demande au formateur d'activer la seance Module 7.</p>
-        <p style="margin-top:2rem"><a class="primary-button" href="{% url 'surveys:home' %}">Retour a l'accueil</a></p>
+        <p><a class="primary-button" href="{% url 'surveys:home' %}">Retour a l'accueil</a></p>
     </section>
 </main>
 {% endblock %}

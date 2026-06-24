@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    dashboard_backup,
     dashboard_home,
     dashboard_module_2,
     dashboard_module_3,
@@ -86,6 +87,7 @@ urlpatterns = [
     path("dashboard/export/module-8.csv", export_module_8_csv, name="export_module_8_csv"),
     path("dashboard/network/", network_access_dashboard, name="dashboard_network"),
     path("dashboard/network-control/", network_control, name="dashboard_network_control"),
+    path("dashboard/backup/", dashboard_backup, name="dashboard_backup"),
     path("dashboard/settings/", dashboard_settings, name="dashboard_settings"),
     path("dashboard/settings/use-current-address/", dashboard_use_current_address, name="dashboard_use_current_address"),
     path("dashboard/presence.json", dashboard_presence_json, name="dashboard_presence_json"),

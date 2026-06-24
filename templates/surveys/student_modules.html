@@ -10,33 +10,33 @@
 {% endblock %}
 
 {% block content %}
-<main class="content-grid">
-    <section class="card intro-card">
-        <h2>Bienvenue</h2>
+<main id="content" class="content-grid">
+    <section class="card intro-card" aria-labelledby="welcome-heading">
+        <h2 id="welcome-heading">Bienvenue</h2>
         <p>Cette application te permet de répondre aux questionnaires de formation TAfHSSiM.</p>
         <p>Connecte-toi au Wi-Fi de la classe et choisis ton module ci-dessous.</p>
     </section>
 
     {% for item in module_data %}
-    <section class="card">
+    <section class="card" aria-labelledby="module-title-{{ forloop.counter }}">
         <div class="section-row">
-            <h2>{{ item.module.title }}</h2>
-            <div style="display:flex;gap:0.5rem;align-items:center">
+            <h2 id="module-title-{{ forloop.counter }}">{{ item.module.title }}</h2>
+            <div class="badge-group">
                 {% if item.has_active_session %}
                     {% if item.active_session.accepting_responses %}
-                        <span class="pill" style="margin:0">Réponses ouvertes</span>
+                        <span class="badge badge-success">Réponses ouvertes</span>
                     {% else %}
-                        <span class="pill consultation-pill" style="margin:0;background:#fff3cd;color:#856404">Consultation seulement</span>
+                        <span class="badge badge-warning">Consultation seulement</span>
                     {% endif %}
                 {% else %}
-                    <span class="pill" style="margin:0;background:#e6eef8;color:var(--muted)">Indisponible</span>
+                    <span class="badge badge-muted">Indisponible</span>
                 {% endif %}
             </div>
         </div>
 
-        <p style="margin-top:0.75rem;color:var(--muted)">{{ item.module.description|default:"" }}</p>
+        <p class="muted">{{ item.module.description|default:"" }}</p>
 
-        <div style="margin-top:1.25rem">
+        <div class="module-card-actions">
             {% if item.has_active_session %}
                 <a class="primary-button" href="{{ item.detail_url }}">Voir le module</a>
             {% else %}
@@ -45,8 +45,9 @@
         </div>
     </section>
     {% empty %}
-    <section class="card">
-        <p>Aucun module de formation disponible pour le moment.</p>
+    <section class="card empty-state" aria-labelledby="no-modules">
+        <h2 id="no-modules" class="empty-state-title">Aucun module disponible</h2>
+        <p>Aucun module de formation n'est ouvert pour le moment.</p>
     </section>
     {% endfor %}
 </main>

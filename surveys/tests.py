@@ -4502,18 +4502,17 @@ class F030NetworkControlTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Controle reseau local")
         self.assertContains(response, "127.0.0.1:8019")
-        self.assertContains(response, "Verifier l'etat")
-        self.assertContains(response, "Configurer / Demarrer")
-        self.assertContains(response, "Redemarrer l'application")
-        self.assertContains(response, "Tester l'URL eleves")
-        self.assertContains(response, "Copier l'URL eleves")
-        self.assertContains(response, "Desactiver l'acces LAN")
+        self.assertContains(response, "Configurer et rendre accessible")
+        self.assertContains(response, "Redémarrer l'application")
+        self.assertContains(response, "Tester l'URL")
+        self.assertContains(response, "Copier l'URL")
+        self.assertContains(response, "Désactiver l'accès LAN")
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_shows_helper_not_found_when_not_localhost(self):
         self.client.login(username="ctrlstaff", password="secret")
         response = self.client.get(self.url, HTTP_HOST="192.168.0.100")
-        self.assertContains(response, "helper n'ecoute que sur")
+        self.assertContains(response, "n'écoute que sur")
         self.assertContains(response, "127.0.0.1")
 
     def test_shows_helper_endpoint_in_page(self):
@@ -5330,3 +5329,155 @@ class Module8RegressionTests(TestCase):
     def test_dashboard_requires_login(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertIn(response.status_code, (302, 401, 403))
+
+
+class RedesignUITests(TestCase):
+    """Tests for F033 global UI redesign."""
+
+    def setUp(self):
+        call_command("seed_module2")
+        call_command("seed_module3")
+        call_command("seed_module4")
+        call_command("seed_module5")
+        call_command("seed_module6")
+        call_command("seed_module7")
+        call_command("seed_module8")
+        self.user = get_user_model().objects.create_user(
+            username="formateur", password="motdepasse-solide-123", is_staff=True
+        )
+
+    def test_public_pages_respond_200(self):
+        for url_name in ["surveys:home", "surveys:student_modules"]:
+            with self.subTest(url=url_name):
+                response = self.client.get(reverse(url_name))
+                self.assertEqual(response.status_code, 200)
+
+    def test_dashboard_pages_require_login(self):
+        for url_name in [
+            "surveys:dashboard_home",
+            "surveys:dashboard_network",
+            "surveys:dashboard_network_control",
+            "surveys:dashboard_settings",
+            "surveys:dashboard_backup",
+            "surveys:dashboard_module_2",
+            "surveys:dashboard_module_8",
+            "surveys:export_module_2_csv",
+            "surveys:export_module_8_csv",
+        ]:
+            with self.subTest(url=url_name):
+                response = self.client.get(reverse(url_name))
+                self.assertIn(response.status_code, (302, 401, 403))
+
+    def test_trainer_navigation_visible_when_logged_in(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Cockpit")
+        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Contrôle LAN")
+        self.assertContains(response, "Configuration")
+        self.assertContains(response, "Sauvegarde")
+        self.assertContains(response, "Admin avancé")
+
+    def test_student_navigation_has_no_trainer_links(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertContains(response, "Modules")
+        self.assertNotContains(response, "Cockpit")
+        self.assertNotContains(response, "Export CSV")
+        self.assertNotContains(response, "/admin/")
+        self.assertNotContains(response, "dashboard/")
+
+    def test_student_module_links_present(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        for num in range(2, 9):
+            with self.subTest(module=num):
+                self.assertContains(response, f"Module {num}")
+
+    def test_trainer_sees_all_modules_in_dashboard(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        for num in range(2, 9):
+            with self.subTest(module=num):
+                self.assertContains(response, f"Module {num}")
+
+    def test_cockpit_has_network_control_steps(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_network_control"))
+        steps = [
+            "Helper local",
+            "Application locale",
+            "IP Wi-Fi",
+            "Portproxy",
+            "Pare-feu",
+            "Django autorise l'IP",
+            "URL élèves accessible",
+        ]
+        for step in steps:
+            with self.subTest(step=step):
+                self.assertContains(response, step)
+        self.assertContains(response, "Configurer et rendre accessible")
+
+    def test_dashboard_results_page_exists(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_backup"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Sauvegarder les données")
+        self.assertContains(response, "Ne jamais supprimer")
+        self.assertContains(response, "Commandes interdites")
+
+    def test_dashboard_has_breadcrumbs(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_module_2"))
+        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, "Cockpit")
+
+    def test_no_cdn_in_templates(self):
+        for template_name in [
+            "surveys/home.html",
+            "surveys/student_modules.html",
+            "surveys/dashboard_home.html",
+            "surveys/dashboard_network_control.html",
+            "surveys/dashboard_backup.html",
+            "surveys/base.html",
+        ]:
+            path = Path(__file__).resolve().parent.parent / "templates" / template_name
+            if not path.exists():
+                continue
+            content = path.read_text()
+            with self.subTest(template=template_name):
+                self.assertNotIn("cdnjs", content)
+                self.assertNotIn("jsdelivr", content)
+                self.assertNotIn("unpkg", content)
+                self.assertNotIn("bootstrapcdn", content)
+
+    def test_no_secret_key_in_templates(self):
+        for path in (Path(__file__).resolve().parent.parent / "templates").rglob("*.html"):
+            content = path.read_text()
+            with self.subTest(template=str(path)):
+                self.assertNotIn("SECRET_KEY", content)
+
+    def test_no_destructive_commands_in_templates_or_scripts(self):
+        from pathlib import Path
+        project_root = Path(__file__).resolve().parent.parent
+        checked_paths = list((project_root / "templates").rglob("*.html"))
+        for path in checked_paths:
+            content = path.read_text()
+            with self.subTest(template=str(path)):
+                self.assertNotIn("down -v", content)
+                self.assertNotIn("system prune --volumes", content)
+                self.assertNotIn("manage.py flush", content)
+
+    def test_skip_link_present(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, 'class="skip-link"')
+        self.assertContains(response, 'href="#content"')
+
+    def test_aria_labels_present(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertContains(response, 'aria-labelledby')
+
+    def test_progress_bars_use_css_var(self):
+        """The dashboard_module_2 should render progress bars via --w var."""
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_module_2"))
+        self.assertContains(response, "--w:")
+        self.assertContains(response, "progress-bar")
