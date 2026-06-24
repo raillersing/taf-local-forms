@@ -10,16 +10,39 @@
 {% endblock %}
 
 {% block content %}
-<main class="content-grid">
+<main id="content" class="content-grid">
+
+    <nav class="breadcrumbs" aria-label="fil d'ariane">
+        <a href="{% url 'surveys:dashboard_home' %}">Cockpit</a>
+        <span class="sep">›</span>
+        <span class="current">Controle reseau local</span>
+    </nav>
 
     {% if not is_localhost %}
-    <div class="alert" style="margin-bottom:1rem">
-        <strong>Attention :</strong> Tu accedes a cette page depuis l'URL LAN (<code>{{ net_ctx.current_request_host }}</code>).
-        Le helper n'ecoute que sur <code>127.0.0.1</code>. Ouvre
+    <div class="alert">
+        <strong>Attention :</strong> Tu accèdes à cette page depuis l'URL LAN (<code>{{ net_ctx.current_request_host }}</code>).
+        Le helper n'écoute que sur <code>127.0.0.1</code>. Ouvre
         <a href="http://localhost:8010/dashboard/network-control/"><code>http://localhost:8010/dashboard/network-control/</code></a>
-        pour utiliser les boutons de controle.
+        pour utiliser les boutons de contrôle.
     </div>
     {% endif %}
+
+    <div class="card">
+        <h2>Assistant configuration LAN</h2>
+        <div class="steps" aria-label="Étapes de configuration LAN">
+            <div id="step-helper" class="step">1. Helper local</div>
+            <div id="step-local-app" class="step">2. Application locale</div>
+            <div id="step-lan-ip" class="step">3. IP Wi-Fi</div>
+            <div id="step-portproxy" class="step">4. Portproxy</div>
+            <div id="step-firewall" class="step">5. Pare-feu</div>
+            <div id="step-django" class="step">6. Django autorise l'IP</div>
+            <div id="step-student-url" class="step">7. URL élèves accessible</div>
+        </div>
+
+        <div class="alert alert-info" role="status" aria-live="polite" id="global-status-card">
+            <strong id="global-status-text">Vérification en cours...</strong>
+        </div>
+    </div>
 
     <section id="helper-status" class="card">
         <h2>Statut du helper LAN</h2>
@@ -53,79 +76,79 @@
 
     <section id="helper-actions" class="card">
         <h2>Actions</h2>
-        <p class="muted" style="margin-top:0.25rem">
+        <p class="muted">
             Les actions suivantes communiquent avec le helper LAN sur <code>{{ helper_url }}</code>.
         </p>
-        <div class="tools-grid" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem">
+        <div class="tools-grid">
 
-            <button id="btn-check-status" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f0f7ff;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
-                <strong>Verifier l'etat</strong>
-                <span class="muted" style="font-size:0.85rem;display:block">Rafraichir le statut du reseau</span>
-            </button>
+        <button id="btn-sync" class="tool-card" type="button">
+            <strong>Configurer et rendre accessible</strong>
+            <span class="muted">Portproxy + pare-feu + synchronisation</span>
+        </button>
 
-            <button id="btn-sync" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#d9f2e3;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
-                <strong>Configurer / Demarrer l'acces eleves</strong>
-                <span class="muted" style="font-size:0.85rem;display:block">Portproxy + pare-feu + synchronisation</span>
-            </button>
+        <button id="btn-check-status" class="tool-card" type="button">
+            <strong>Actualiser l'état</strong>
+            <span class="muted">Rafraîchir le statut du réseau</span>
+        </button>
 
-            <button id="btn-restart" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#fff3cd;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
-                <strong>Redemarrer l'application</strong>
-                <span class="muted" style="font-size:0.85rem;display:block">docker compose restart web</span>
-            </button>
+        <button id="btn-test" class="tool-card" type="button">
+            <strong>Tester l'URL élèves</strong>
+            <span class="muted">Vérifier l'accessibilité depuis le LAN</span>
+        </button>
 
-            <button id="btn-test" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f0f7ff;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
-                <strong>Tester l'URL eleves</strong>
-                <span class="muted" style="font-size:0.85rem;display:block">Verifier l'accessibilite depuis le LAN</span>
-            </button>
+        <button id="btn-copy-url" class="tool-card" type="button">
+            <strong>Copier l'URL élèves</strong>
+            <span class="muted">Copier dans le presse-papiers</span>
+        </button>
 
-            <button id="btn-copy-url" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f0f7ff;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
-                <strong>Copier l'URL eleves</strong>
-                <span class="muted" style="font-size:0.85rem;display:block">Copier dans le presse-papier</span>
-            </button>
+        <button id="btn-disable" class="tool-card" type="button">
+            <strong>Désactiver l'accès LAN</strong>
+            <span class="muted">Supprimer portproxy + règle pare-feu</span>
+        </button>
 
-            <button id="btn-disable" class="tool-card" style="cursor:pointer;border:none;text-align:left;background:#f8d7da;padding:0.75rem 1rem;border-radius:8px;flex:1;min-width:180px">
-                <strong>Desactiver l'acces LAN</strong>
-                <span class="muted" style="font-size:0.85rem;display:block">Supprimer portproxy + regle pare-feu</span>
-            </button>
+        <button id="btn-restart" class="tool-card" type="button">
+            <strong>Redémarrer l'application</strong>
+            <span class="muted">docker compose restart web</span>
+        </button>
 
         </div>
 
-        <div id="helper-message" style="margin-top:1rem"></div>
+        <div id="helper-message" class="messages-container"></div>
     </section>
 
-    <section id="helper-not-found" class="card" style="display:none">
+    <section id="helper-not-found" class="card" hidden>
         <h2>Helper LAN non disponible</h2>
-        <div class="alert" style="margin-top:0.5rem">
+        <div class="alert">
             <strong>Le TAf LAN Helper n'est pas en cours d'execution.</strong>
         </div>
-        <p style="margin-top:0.75rem">
+        <p>
             Tu peux utiliser les scripts PowerShell manuellement :
         </p>
-        <pre class="code-block" style="margin-top:0.5rem">
+        <pre class="code-block">
 .\scripts\windows\taf-lan-sync.ps1          # Configurer l'acces LAN
 .\scripts\windows\taf-lan-show-status.ps1    # Afficher l'etat
 .\scripts\windows\taf-lan-helper-start.ps1   # Demarrer le helper
         </pre>
-        <p style="margin-top:0.75rem">
+        <p>
             <strong>Installation du helper (une seule fois, PowerShell Admin) :</strong>
         </p>
-        <pre class="code-block" style="margin-top:0.5rem">
+        <pre class="code-block">
 # Depuis le dossier du projet :
 .\scripts\windows\taf-lan-helper-start.ps1
         </pre>
-        <p class="muted" style="margin-top:0.5rem">
+        <p class="muted">
             Le helper ecoute uniquement sur <code>127.0.0.1:{{ helper_port }}</code> et n'est pas accessible depuis le LAN.
         </p>
     </section>
 
-    <section id="helper-result" class="card" style="display:none">
+    <section id="helper-result" class="card" hidden>
         <h2>Resultat</h2>
-        <pre id="helper-result-content" class="code-block" style="margin-top:0.5rem;max-height:300px;overflow:auto"></pre>
+        <pre id="helper-result-content" class="code-block"></pre>
     </section>
 
     <section class="card">
         <h2>Scripts disponibles</h2>
-        <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.75rem">
+        <div class="back-links">
             <a class="text-link" href="/dashboard/network/">Diagnostic reseau complet &rarr;</a>
             <a class="text-link" href="/dashboard/settings/">Configuration reseau &rarr;</a>
         </div>
@@ -151,7 +174,7 @@
 
     function showSuccess(msg) {
         document.getElementById('helper-message').innerHTML =
-            '<div class="alert" style="background:#d9f2e3">' + msg + '</div>';
+            '<div class="alert alert-success">' + msg + '</div>';
     }
 
     function clearMessage() {
@@ -161,7 +184,7 @@
     function showRawResult(data) {
         var section = document.getElementById('helper-result');
         var content = document.getElementById('helper-result-content');
-        section.style.display = 'block';
+        section.hidden = false;
         content.textContent = JSON.stringify(data, null, 2);
     }
 
@@ -251,7 +274,7 @@
                 } else {
                     showError('Impossible de contacter le helper (' + helperUrl + '). Verifie qu\'il est lance (voir ci-dessous).');
                 }
-                document.getElementById('helper-not-found').style.display = 'block';
+                document.getElementById('helper-not-found').hidden = false;
                 document.getElementById('helper-status-content').innerHTML =
                     '<div class="alert"><strong>Helper non contacte.</strong> Lance taf-lan-helper-start.ps1 en tant qu\'administrateur.</div>';
                 if (btnId) setButtonLoading(btnId, false);
@@ -261,43 +284,81 @@
 
     function updateStatusDisplay(data) {
         var statusEl = document.getElementById('helper-status-content');
+        var helperOk = false;
         if (data.success) {
-            statusEl.innerHTML = '<div class="alert" style="background:#d9f2e3"><strong>Helper actif</strong> sur ' + helperUrl + '</div>';
-            document.getElementById('helper-not-found').style.display = 'none';
+            statusEl.innerHTML = '<div class="alert alert-success"><strong>Helper actif</strong> sur ' + helperUrl + '</div>';
+            document.getElementById('helper-not-found').hidden = true;
+            helperOk = true;
         } else {
-            statusEl.innerHTML = '<div class="alert"><strong>Helper repond mais signale une erreur.</strong></div>';
+            statusEl.innerHTML = '<div class="alert"><strong>Helper répond mais signale une erreur.</strong></div>';
         }
+
+        var allOk = helperOk;
 
         if (data.lan_ip) {
             setStatus('status-lan-ip', data.lan_ip, true);
         } else {
-            setStatus('status-lan-ip', 'Non detectee', false);
+            setStatus('status-lan-ip', 'Non détectée', false);
+            allOk = false;
         }
 
-        if (data.local_ok !== undefined) {
-            setStatus('status-local-app', data.local_ok ? 'Accessible' : 'Inaccessible', data.local_ok);
-        }
-        if (data.portproxy !== undefined) {
-            setStatus('status-portproxy', data.portproxy ? 'Configure' : 'Non configure', data.portproxy);
-        }
-        if (data.firewall !== undefined) {
-            setStatus('status-firewall', data.firewall ? 'Configure' : 'Non configure', data.firewall);
-        }
-        if (data.lan_ok !== undefined) {
-            setStatus('status-lan-test', data.lan_ok ? 'Accessible' : 'Inaccessible', data.lan_ok);
-        }
+        var localOk = data.local_ok !== undefined && data.local_ok;
+        setStatus('status-local-app', localOk ? 'Accessible' : 'Inaccessible', localOk);
+        allOk = allOk && localOk;
+
+        var portproxyOk = data.portproxy !== undefined && data.portproxy;
+        setStatus('status-portproxy', portproxyOk ? 'Configuré' : 'Non configuré', portproxyOk);
+        allOk = allOk && portproxyOk;
+
+        var firewallOk = data.firewall !== undefined && data.firewall;
+        setStatus('status-firewall', firewallOk ? 'Configuré' : 'Non configuré', firewallOk);
+        allOk = allOk && firewallOk;
+
+        var djangoOk = data.django_ok !== undefined ? data.django_ok : (data.student_url && data.student_url.indexOf('127.0.0.1') === -1);
+        setStatus('status-django', djangoOk ? "Autorise l'IP" : 'IP non autorisée', djangoOk);
+        document.getElementById('step-django').className = 'step ' + (djangoOk ? 'step-done' : (helperOk ? 'step-active' : 'step-error'));
+        allOk = allOk && djangoOk;
+
+        var lanOk = data.lan_ok !== undefined && data.lan_ok;
+        setStatus('status-lan-test', lanOk ? 'Accessible' : 'Inaccessible', lanOk);
+        allOk = allOk && lanOk;
+
         if (data.student_url) {
             lastStudentUrl = data.student_url;
             setStatus('status-student-url', data.student_url, true);
+            document.getElementById('step-student-url').className = allOk ? 'step step-done' : 'step step-error';
+        } else {
+            setStatus('status-student-url', 'Non disponible', false);
+            allOk = false;
+            document.getElement('step-student-url').className = 'step step-error';
         }
+
+        updateGlobalStatus(
+            allOk ? '✅ LAN prêt — les élèves peuvent accéder à l\'application' : '⚠ Configuration incomplète — suivez les étapes ci-dessous',
+            allOk
+        );
     }
+
 
     function setStatus(id, text, ok) {
         var el = document.getElementById(id);
         if (el) {
             el.innerHTML = ok
-                ? '<span style="color:#155724">' + text + '</span>'
-                : '<span style="color:#856404">' + text + '</span>';
+                ? '<span class="badge badge-success">' + text + '</span>'
+                : '<span class="badge badge-warning">' + text + '</span>';
+        }
+        var step = document.getElementById('step-' + id.replace('status-', ''));
+        if (step) {
+            step.className = 'step ' + (ok ? 'step-done' : 'step-error');
+        }
+    }
+
+    function updateGlobalStatus(text, ok) {
+        var card = document.getElementById('global-status-card');
+        var label = document.getElementById('global-status-text');
+        if (card && label) {
+            label.textContent = text;
+            card.className = ok ? 'card alert-success' : 'card alert-warning';
         }
     }
 
@@ -350,16 +411,15 @@
         }
     });
 
-    // Show helper-not-found section initially
-    document.getElementById('helper-not-found').style.display = 'block';
+    document.getElementById('helper-not-found').hidden = false;
 
     // Auto-check on load
     if (isLocalhost) {
-        setTimeout(function() { callHelper('status', 'GET', 'Verification initiale', 'btn-check-status'); }, 500);
+        setTimeout(function() { callHelper('status', 'GET', 'Vérification initiale', 'btn-check-status'); }, 500);
     } else {
         document.getElementById('helper-status-content').innerHTML =
             '<div class="alert"><strong>Helper non accessible</strong> depuis l\'URL LAN. Ouvre localhost:8010.</div>';
-        document.getElementById('helper-not-found').style.display = 'block';
+        document.getElementById('helper-not-found').hidden = false;
     }
 })();
 </script>

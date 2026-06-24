@@ -40,13 +40,35 @@ Les questionnaires sont accessibles directement :
 - **Module 7** : `/module-7/`
 - **Module 8** : `/module-8/`
 
+## Refonte UI/UX globale (F033)
+
+L'interface a été entièrement refondue pour unifier l'expérience étudiant et formateur :
+
+- **Design system local** (`static/css/app.css`) avec variables CSS, badges, boutons, cartes, tableaux, breadcrumbs, assistant étapes, états vides, responsive et reduced-motion.
+- **Layout unifié** (`templates/base.html`) avec skip-link, blocs `extra_css`/`extra_js`, hero par page et navigation contextuelle.
+- **Espace étudiant** (`/modules/`) : liste des modules, pages détail avec bloc pédagogique et CTA clairs, pas de lien formateur.
+- **Cockpit formateur** (`/dashboard/`) : statistiques, modules 2–8, présence live, réseau, exports, sous-navigation et breadcrumbs.
+- **Contrôle réseau local** (`/dashboard/network-control/`) : assistant LAN en 7 étapes, statut global, bouton « Configurer et rendre accessible ».
+- **Sauvegarde / diagnostic** (`/dashboard/backup/`) : moteur de base actif, commande de backup, volumes Docker, commandes interdites documentées.
+- **Admin Django** : navigation vers cockpit/réseau/configuration, CSS local cohérent.
+- **Pas de CDN** : tout le CSS/JS est local.
+- **Accessibilité** : skip-link, labels ARIA, contrastes renforcés.
+
+### Ports utilisés
+
+| Côté | Port | Usage |
+|------|------|-------|
+| Docker local | `8010` | `http://localhost:8010/` – PC formateur uniquement |
+| LAN élèves | `8011` | `http://192.168.x.x:8011/` – téléphones des élèves (via portproxy Windows) |
+| Helper LAN | `8019` | `http://127.0.0.1:8019/` – API du helper (localhost uniquement) |
+
 ## Démarrage rapide
 
 1. Ouvrez Docker Desktop.
 2. Configurez le fichier `.env`.
 3. Lancez l'application.
 4. Créez le compte admin.
-5. Chargez les données Module 2, 3, 4, 5.
+5. Chargez les données Module 2 à 8.
 6. Donnez l'adresse aux élèves.
 
 Guides pour la séance :
@@ -326,8 +348,9 @@ Consultez le guide complet : `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md`.
 - `SECRET_KEY` n'est plus la valeur d'exemple ;
 - l'IP locale de l'ordinateur est connue ;
 - la page d'accueil `/` s'ouvre avec le choix étudiant / formateur ;
-- un téléphone sur le même réseau ouvre bien `/module-2/`, `/module-3/`, `/module-4/`, `/module-5/`, `/module-6/` et `/module-7/` ;
-- le cockpit formateur `/dashboard/` est accessible.
+- un téléphone sur le même réseau ouvre bien `/module-2/`, `/module-3/`, `/module-4/`, `/module-5/`, `/module-6/`, `/module-7/` et `/module-8/` ;
+- le cockpit formateur `/dashboard/` est accessible ;
+- la page de sauvegarde `/dashboard/backup/` affiche le moteur de base actif.
 
 Si vous utilisez le mode sans Docker, adaptez cette checklist à votre commande de lancement locale.
 
@@ -391,7 +414,9 @@ Utile pour valider les performances avant une séance avec de nombreux élèves.
 - CSV Module 5 : `/dashboard/export/module-5.csv`
 - CSV Module 6 : `/dashboard/export/module-6.csv`
 - CSV Module 7 : `/dashboard/export/module-7.csv`
+- CSV Module 8 : `/dashboard/export/module-8.csv`
 - Configuration réseau (interface) : `/dashboard/settings/`
+- Sauvegarde et diagnostic : `/dashboard/backup/`
 - Présence temps réel : `/dashboard/presence.json`
 - Heartbeat élève (POST) : `/presence/heartbeat/`
 - Admin : `/admin/`

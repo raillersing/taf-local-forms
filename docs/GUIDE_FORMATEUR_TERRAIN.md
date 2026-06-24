@@ -21,6 +21,19 @@ Cette page liste les modules actifs avec :
 
 Les blocs pédagogiques sont des templates partiels (fichiers `templates/surveys/module_X_pedagogy.html`) qui peuvent être mis à jour module par module. Les présentations PowerPoint restent la source de référence.
 
+## Refonte UI/UX globale (F033)
+
+L'interface a été entièrement refondue pour unifier l'expérience étudiant et formateur :
+
+- **Design system local** (`static/css/app.css`) : variables CSS, badges, boutons, cartes, tableaux, breadcrumbs, assistant étapes, états vides, responsive et reduced-motion.
+- **Layout unifié** (`templates/base.html`) : skip-link, blocs `extra_css`/`extra_js`, hero par page, navigation contextuelle.
+- **Navigation** : la barre formateur affiche Accueil, Cockpit, Réseau, Contrôle LAN, Sauvegarde, Configuration, Admin avancé. L'espace étudiant n'affiche que Accueil et Modules.
+- **Cockpit formateur** (`/dashboard/`) : statistiques globales, cartes Modules 2–8, présence live, réseau, exports, breadcrumbs.
+- **Contrôle réseau local** (`/dashboard/network-control/`) : assistant LAN en 7 étapes, statut global, bouton « Configurer et rendre accessible ».
+- **Sauvegarde / diagnostic** (`/dashboard/backup/`) : moteur de base actif, commande de backup, volumes Docker, commandes interdites documentées.
+- **Accessibilité** : skip-link, labels ARIA, contrastes renforcés.
+- **Pas de CDN** : tout le CSS/JS est local.
+
 ## Avant la séance
 
 - [ ] Démarrez Docker Desktop.
@@ -146,12 +159,15 @@ Connexion obligatoire.
 ### Navigation
 
 La barre de navigation en haut de chaque page donne accès à :
-- **Modules de formation** → `/modules/` (espace étudiant)
-- **Dashboard** → `/dashboard/` (cockpit formateur)
-- **Accès réseau** → diagnostic et adresses (pages formateur uniquement)
-- **Contrôle LAN** → helper et boutons de contrôle (pages formateur uniquement)
-- **Configuration réseau** → paramètres IP (pages formateur uniquement)
-- **Admin avancé** → administration Django (pages formateur uniquement)
+- **Accueil** → `/`
+- **Cockpit** → `/dashboard/` (formateur)
+- **Réseau** → `/dashboard/network/` (formateur)
+- **Contrôle LAN** → `/dashboard/network-control/` (formateur)
+- **Sauvegarde** → `/dashboard/backup/` (formateur)
+- **Configuration réseau** → `/dashboard/settings/` (formateur)
+- **Admin avancé** → `/admin/` (formateur)
+
+Les liens formateur n'apparaissent pas dans l'espace étudiant.
 
 Le logo Internet Society / TAfHSSiM redirige vers le cockpit formateur.
 
@@ -236,9 +252,16 @@ Ou utilisez directement :
 
 Connexion obligatoire.
 
-## Sauvegarde
+## Sauvegarde et diagnostic
 
-Deux bases possibles selon la configuration :
+Une page dédiée `/dashboard/backup/` permet de :
+
+- vérifier le moteur de base actif (PostgreSQL ou SQLite) ;
+- voir la commande de sauvegarde recommandée ;
+- lister les volumes Docker à préserver ;
+- consulter les commandes interdites qui détruisent les données.
+
+Script de sauvegarde automatique :
 
 | Base | Emplacement Docker | Volume |
 |------|-------------------|--------|
@@ -256,9 +279,11 @@ crée une sauvegarde horodatée dans `/tmp/taf-backups/`.
 
 ### Sauvegarde manuelle
 
-1. arrêtez l'application si possible ;
+1. arrêtez l'application si possible avec `docker compose down` (sans option de suppression de volume) ;
 2. copiez la base SQLite ou le volume Docker ;
 3. gardez une copie sur un support externe si nécessaire.
+
+> **Commandes interdites** : ne jamais utiliser les options de suppression de volume avec `docker compose down` ou `docker system prune`, ni `flush` Django.
 
 ## Restauration
 

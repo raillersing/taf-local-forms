@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<main class="content-grid">
+<main id="content" class="content-grid">
     <!-- Dashboard sub-navigation -->
     <nav class="sub-nav" aria-label="Sections du tableau de bord">
         <a href="#overview" class="sub-nav-link">Vue d'ensemble</a>
@@ -47,95 +47,47 @@
     <!-- Section: Modules -->
     <section id="modules" class="card">
         <h2>Modules de formation</h2>
-        <p class="muted" style="margin-top:0.25rem">Gère les modules, active ou désactive les réponses, accède aux résultats.</p>
-        <div class="module-grid" style="margin-top:1rem">
+        <p class="muted">Gère les modules, active ou désactive les réponses, accède aux résultats.</p>
+        <div class="module-grid">
             {% for item in module_list %}
-                <div class="module-card" style="padding:1.25rem;border:1px solid var(--line);border-radius:12px">
+                <div class="module-card">
                     <div class="module-card-header">
                         <div>
-                            <strong style="font-size:1.1rem">{{ item.module.title }}</strong>
+                            <strong>{{ item.module.title }}</strong>
                             <br>
-                            <span class="muted" style="font-size:0.85rem">{{ item.module.code }}</span>
+                            <span class="muted">{{ item.module.code }}</span>
                             {% if item.has_active_session %}
                                 {% if item.accepting_responses %}
-                                    <span class="pill" style="margin-left:0.5rem;background:#d9f2e3;color:#155724">Réponses ouvertes</span>
+                                    <span class="badge badge-success">Réponses ouvertes</span>
                                 {% else %}
-                                    <span class="pill" style="margin-left:0.5rem;background:#fff3cd;color:#856404">Réponses fermées</span>
+                                    <span class="badge badge-warning">Réponses fermées</span>
                                 {% endif %}
                             {% endif %}
                         </div>
                     </div>
-                    <p style="margin-top:0.5rem;color:var(--muted);font-size:0.9rem">{{ item.module.description|default:"" }}</p>
+                    <p class="muted">{{ item.module.description|default:"" }}</p>
                     <div class="module-card-actions">
                         {% if item.has_active_session %}
-                            {% if item.module.code == "MODULE_2" %}
-                                <a class="text-link" href="{% url 'surveys:dashboard_module_2' %}">Dashboard</a>
-                                <a class="text-link" href="{% url 'surveys:module_2' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
-                                <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Export CSV</a>
-                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_2' %}" style="display:inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                    </button>
-                                </form>
-                            {% elif item.module.code == "MODULE_3" %}
-                                <a class="text-link" href="{% url 'surveys:dashboard_module_3' %}">Dashboard</a>
-                                <a class="text-link" href="{% url 'surveys:module_3' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
-                                <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}">Export CSV</a>
-                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_3' %}" style="display:inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                    </button>
-                                </form>
-                            {% elif item.module.code == "MODULE_4" %}
-                                <a class="text-link" href="{% url 'surveys:dashboard_module_4' %}">Dashboard</a>
-                                <a class="text-link" href="{% url 'surveys:module_4' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
-                                <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}">Export CSV</a>
-                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_4' %}" style="display:inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                    </button>
-                                </form>
-                            {% elif item.module.code == "MODULE_5" %}
-                                <a class="text-link" href="{% url 'surveys:dashboard_module_5' %}">Dashboard</a>
-                                <a class="text-link" href="{% url 'surveys:module_5' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
-                                <a class="text-link" href="{% url 'surveys:export_module_5_csv' %}">Export CSV</a>
-                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_5' %}" style="display:inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                    </button>
-                                </form>
-                            {% elif item.module.code == "MODULE_6" %}
-                                <a class="text-link" href="{% url 'surveys:dashboard_module_6' %}">Dashboard</a>
-                                <a class="text-link" href="{% url 'surveys:module_6' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
-                                <a class="text-link" href="{% url 'surveys:export_module_6_csv' %}">Export CSV</a>
-                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_6' %}" style="display:inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                    </button>
-                                </form>
-                            {% elif item.module.code == "MODULE_7" %}
-                                <a class="text-link" href="{% url 'surveys:dashboard_module_7' %}">Dashboard</a>
-                                <a class="text-link" href="{% url 'surveys:module_7' %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
-                                <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}">Export CSV</a>
-                                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code='MODULE_7' %}" style="display:inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                        {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
-                                    </button>
-                                </form>
-                            {% endif %}
+                            {% with num=item.module.code|slice:"7:" %}
+                                {% with dashboard_url='surveys:dashboard_module_'|add:num module_url='surveys:module_'|add:num export_url='surveys:export_module_'|add:num|add:'_csv' %}
+                                    <a class="text-link" href="{% url dashboard_url %}">Dashboard</a>
+                                    <a class="text-link" href="{% url module_url %}" target="_blank" rel="noopener noreferrer">Consulter formulaire</a>
+                                    <a class="text-link" href="{% url export_url %}">Export CSV</a>
+                                {% endwith %}
+                            {% endwith %}
+                            <form method="post" action="{% url 'surveys:toggle_module_responses' module_code=item.module.code %}">
+                                {% csrf_token %}
+                                <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
+                                    {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
+                                </button>
+                            </form>
                         {% else %}
-                            <span class="muted" style="font-size:0.9rem">Aucune session active</span>
+                            <span class="badge-muted">Aucune session active</span>
                         {% endif %}
                     </div>
                 </div>
             {% empty %}
-                <p class="muted">Aucun module enregistré.</p>
+                <p class="empty-state">Aucun module enregistré.</p>
             {% endfor %}
         </div>
     </section>
@@ -143,8 +95,8 @@
     <!-- Section: Présence en direct -->
     <section id="presence" class="card">
         <h2>Présence en direct</h2>
-        <p class="muted" style="margin-top:0.25rem">Élèves actuellement en train de remplir un questionnaire. Mise à jour toutes les 8 secondes.</p>
-        <div id="presence-container" style="display:flex;flex-wrap:wrap;gap:0.7rem;margin-top:0.75rem">
+        <p class="muted">Élèves actuellement en train de remplir un questionnaire. Mise à jour toutes les 8 secondes.</p>
+        <div id="presence-container">
             <div class="presence-counter">
                 <span class="presence-dot"></span>
                 <span>Module 2 : </span>
@@ -175,24 +127,29 @@
                 <span>Module 7 : </span>
                 <span class="presence-count" id="presence-module-7">…</span>
             </div>
-            <div class="presence-counter" style="font-weight:800">
+            <div class="presence-counter">
+                <span class="presence-dot"></span>
+                <span>Module 8 : </span>
+                <span class="presence-count" id="presence-module-8">…</span>
+            </div>
+            <div class="presence-counter">
                 <span>Total : </span>
                 <span class="presence-count" id="presence-total">…</span>
             </div>
         </div>
-        <p class="muted" style="margin-top:0.5rem;font-size:0.85rem">Le compteur est indicatif. Un élève peut être compté même s'il a fini depuis moins d'une minute.</p>
+        <p class="muted">Le compteur est indicatif. Un élève peut être compté même s'il a fini depuis moins d'une minute.</p>
     </section>
 
     <!-- Section: Réseau -->
     <section id="network" class="card">
         <h2>Accès réseau</h2>
-        <p class="muted" style="margin-top:0.25rem">Adresses à donner aux élèves pour accéder aux questionnaires depuis leur téléphone.</p>
+        <p class="muted">Adresses à donner aux élèves pour accéder aux questionnaires depuis leur téléphone.</p>
 
         {% if network.recommended_student_base_url %}
-        <div class="network-ip-banner" style="background:#d9f2e3;padding:0.75rem 1rem;border-radius:8px;margin-top:0.75rem">
+        <div class="network-ip-banner">
             <strong>Adresse élèves :</strong>
-            <code style="font-size:1.1rem">{{ network.recommended_student_base_url }}/</code>
-            <span class="muted" style="display:block;margin-top:0.25rem;font-size:0.85rem">
+            <code>{{ network.recommended_student_base_url }}/</code>
+            <span class="muted">
                 {% if network.lan_host_source == "request" %}
                 Adresse détectée depuis cette connexion.
                 {% elif network.lan_host_source == "settings" %}
@@ -203,60 +160,66 @@
             </span>
         </div>
         {% if network.lan_host_stale %}
-        <div class="alert" style="margin-top:0.5rem">
+        <div class="alert">
             <strong>L'IP configurée ({{ network.configured_host }}) diffère de l'adresse actuelle ({{ network.current_host }}).</strong>
             <a href="{% url 'surveys:dashboard_settings' %}">Mets à jour la configuration.</a>
         </div>
         {% endif %}
         {% elif network.lan_host_source == "missing" %}
-        <div class="alert" style="margin-top:0.75rem">
+        <div class="alert">
             <strong>IP locale non configurée.</strong> Les liens ci-dessous utilisent l'adresse locale actuelle. Si les élèves ne peuvent pas accéder à l'application, configure l'IP dans <a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a>.
         </div>
         {% endif %}
 
-        <div class="network-links" style="margin-top:1rem">
+        <div class="network-links">
             <dl class="setting-list">
                 <dt class="muted setting-label">Adresse à donner aux élèves (accueil)</dt>
-                <dd style="margin:0">
+                <dd>
                     <a class="network-link" href="{{ network.student_form_url }}" target="_blank" rel="noopener noreferrer">{{ network.student_form_url }}</a>
                 </dd>
 
-                <dt class="muted setting-label" style="margin-top:0.75rem">Module 2 — Comprendre Internet</dt>
-                <dd style="margin:0">
+                <dt class="muted setting-label">Module 2 — Comprendre Internet</dt>
+                <dd>
                     <a class="network-link" href="{{ network.module_2_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_2_url }}</a>
                 </dd>
 
-                <dt class="muted setting-label" style="margin-top:0.75rem">Module 3 — Recherche efficace</dt>
-                <dd style="margin:0">
+                <dt class="muted setting-label">Module 3 — Recherche efficace</dt>
+                <dd>
                     <a class="network-link" href="{{ network.module_3_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_3_url }}</a>
                 </dd>
 
-                <dt class="muted setting-label" style="margin-top:0.75rem">Module 4 — Sources fiables</dt>
-                <dd style="margin:0">
+                <dt class="muted setting-label">Module 4 — Sources fiables</dt>
+                <dd>
                     <a class="network-link" href="{{ network.module_4_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_4_url }}</a>
                 </dd>
-                <dt class="muted setting-label" style="margin-top:0.75rem">Module 5 — Email et outils de communication</dt>
-                <dd style="margin:0">
+
+                <dt class="muted setting-label">Module 5 — Email et outils de communication</dt>
+                <dd>
                     <a class="network-link" href="{{ network.module_5_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_5_url }}</a>
                 </dd>
 
-                <dt class="muted setting-label" style="margin-top:0.75rem">Module 6 — Ressources educatives en ligne</dt>
-                <dd style="margin:0">
+                <dt class="muted setting-label">Module 6 — Ressources educatives en ligne</dt>
+                <dd>
                     <a class="network-link" href="{{ network.module_6_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_6_url }}</a>
                 </dd>
 
-                <dt class="muted setting-label" style="margin-top:0.75rem">Module 7 — Securite en ligne</dt>
-                <dd style="margin:0">
+                <dt class="muted setting-label">Module 7 — Securite en ligne</dt>
+                <dd>
                     <a class="network-link" href="{{ network.module_7_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_7_url }}</a>
                 </dd>
 
-                <dt class="muted setting-label" style="margin-top:0.75rem">Adresse formateur (cockpit)</dt>
-                <dd style="margin:0">
+                <dt class="muted setting-label">Module 8</dt>
+                <dd>
+                    <a class="network-link" href="{{ network.module_8_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_8_url }}</a>
+                </dd>
+
+                <dt class="muted setting-label">Adresse formateur (cockpit)</dt>
+                <dd>
                     <a class="network-link" href="{{ network.cockpit_url }}" target="_blank" rel="noopener noreferrer">{{ network.cockpit_url }}</a>
                 </dd>
             </dl>
 
-            <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap">
+            <div>
                 <a class="text-link" href="{% url 'surveys:dashboard_network_control' %}">Contrôle réseau local &rarr;</a>
                 <a class="text-link" href="{% url 'surveys:dashboard_network' %}" target="_blank" rel="noopener noreferrer">Diagnostic réseau complet &rarr;</a>
                 <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer l'IP locale &rarr;</a>
@@ -267,41 +230,42 @@
     <!-- Section: Exports -->
     <section id="exports" class="card">
         <h2>Exports CSV</h2>
-        <p class="muted" style="margin-top:0.25rem">Télécharge les résultats de chaque module au format CSV (tableur).</p>
-        <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.75rem">
+        <p class="muted">Télécharge les résultats de chaque module au format CSV (tableur).</p>
+        <div>
             <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 2</a>
             <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 3</a>
             <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 4</a>
             <a class="text-link" href="{% url 'surveys:export_module_5_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 5</a>
             <a class="text-link" href="{% url 'surveys:export_module_6_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 6</a>
             <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 7</a>
+            <a class="text-link" href="{% url 'surveys:export_module_8_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 8</a>
         </div>
     </section>
 
     <!-- Section: Admin avancé -->
     <section id="advanced" class="card">
         <h2>Outils formateur</h2>
-        <p class="muted" style="margin-top:0.25rem">Configuration avancée, accès réseau et documentation terrain.</p>
-        <div class="tools-grid" style="margin-top:0.75rem">
+        <p class="muted">Configuration avancée, accès réseau et documentation terrain.</p>
+        <div class="tools-grid">
             <a class="tool-card" href="{% url 'surveys:dashboard_network_control' %}">
                 <strong>Contrôle réseau local</strong>
-                <span class="muted" style="font-size:0.85rem">Configurer, tester, démarrer l'accès LAN</span>
+                <span class="muted">Configurer, tester, démarrer l'accès LAN</span>
             </a>
             <a class="tool-card" href="{% url 'surveys:dashboard_network' %}" target="_blank" rel="noopener noreferrer">
                 <strong>Accès réseau</strong>
-                <span class="muted" style="font-size:0.85rem">Adresses et diagnostic réseau</span>
+                <span class="muted">Adresses et diagnostic réseau</span>
             </a>
             <a class="tool-card" href="{% url 'surveys:dashboard_settings' %}">
                 <strong>Configuration réseau</strong>
-                <span class="muted" style="font-size:0.85rem">IP, port, hébergement autorisé</span>
+                <span class="muted">IP, port, hébergement autorisé</span>
             </a>
             <a class="tool-card" href="{% url 'admin:index' %}">
                 <strong>Admin avancé</strong>
-                <span class="muted" style="font-size:0.85rem">Gérer sessions, élèves, modules</span>
+                <span class="muted">Gérer sessions, élèves, modules</span>
             </a>
             <a class="tool-card" href="/docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer">
                 <strong>Guide dépannage réseau</strong>
-                <span class="muted" style="font-size:0.85rem">WSL, pare-feu, accès téléphone</span>
+                <span class="muted">WSL, pare-feu, accès téléphone</span>
             </a>
         </div>
     </section>
@@ -322,6 +286,7 @@
                     document.getElementById('presence-module-5').textContent = (data.by_module.MODULE_5 || 0) + ' en cours';
                     document.getElementById('presence-module-6').textContent = (data.by_module.MODULE_6 || 0) + ' en cours';
                     document.getElementById('presence-module-7').textContent = (data.by_module.MODULE_7 || 0) + ' en cours';
+                    document.getElementById('presence-module-8').textContent = (data.by_module.MODULE_8 || 0) + ' en cours';
                     document.getElementById('presence-total').textContent = data.total + ' total';
                 } catch(e) {}
             }

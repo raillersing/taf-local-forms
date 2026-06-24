@@ -1866,6 +1866,31 @@ def presence_heartbeat(request: HttpRequest) -> JsonResponse:
 
 
 @login_required
+def dashboard_backup(request: HttpRequest) -> HttpResponse:
+    from django.conf import settings
+
+    db_engine = "postgresql" if settings.DB_HOST else "sqlite"
+    context = {
+        "db_engine": db_engine,
+        "db_host": getattr(settings, "DB_HOST", ""),
+        "db_port": getattr(settings, "DATABASES", {}).get("default", {}).get("PORT", "5432"),
+        "db_name": getattr(settings, "DATABASES", {}).get("default", {}).get("NAME", "taf_local_forms"),
+        "db_path": getattr(settings, "DATABASE_PATH", ""),
+        "backup_command": "bash scripts/dev/taf-db-backup",
+        "total_submissions": (
+            Submission.objects.count()
+            + Module3Submission.objects.count()
+            + Module4Submission.objects.count()
+            + Module5Submission.objects.count()
+            + Module6Submission.objects.count()
+            + Module7Submission.objects.count()
+            + Module8Submission.objects.count()
+        ),
+    }
+    return render(request, "surveys/dashboard_backup.html", context)
+
+
+@login_required
 def dashboard_presence_json(request: HttpRequest) -> JsonResponse:
     cutoff = timezone.now() - timedelta(seconds=60)
     active = FormPresence.objects.filter(

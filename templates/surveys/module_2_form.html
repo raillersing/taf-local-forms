@@ -9,31 +9,32 @@
 {% endblock %}
 
 {% block content %}
-<main class="content-grid">
+<main id="content" class="content-grid">
     {% if not accepting_responses %}
-    <div class="card" style="background:#fff3cd;border-color:#ffc107;">
-        <p style="margin:0;font-weight:600;color:#856404">
+    <section class="card alert-warning" role="alert" aria-live="polite">
+        <p>
             Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.
         </p>
-    </div>
+    </section>
     {% endif %}
 
-    <section class="card intro-card">
+    <section class="card intro-card" aria-labelledby="intro-title">
         <p class="pill">{{ session.session_code }}</p>
-        <h2>Module 2 — Comprendre Internet</h2>
+        <h2 id="intro-title">Module 2 — Comprendre Internet</h2>
         {% include "surveys/partials/module_2_pedagogy.html" %}
-        <h2 style="margin-top:1rem">Avant de commencer</h2>
+        <h2 id="intro-start">Avant de commencer</h2>
         <p>{{ module_2_summary }}</p>
     </section>
 
     <form method="post" class="card form-card">
         {% csrf_token %}
+        <h2 id="form-heading" class="sr-only">Formulaire</h2>
         {% if form.non_field_errors %}
             <div class="alert">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <section class="form-section">
-            <h2>Tes informations</h2>
+        <section class="form-section" aria-labelledby="section-info">
+            <h2 id="section-info">Tes informations</h2>
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.school_id_number %}
                 {% include "surveys/partials/field.html" with field=form.full_name %}
@@ -42,15 +43,15 @@
             </div>
         </section>
 
-        <section class="form-section">
-            <h2>Avant la séance</h2>
+        <section class="form-section" aria-labelledby="section-avant">
+            <h2 id="section-avant">Avant la séance</h2>
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_internet_explained %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_learning_usage %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_open_browser %}
         </section>
 
-        <section class="form-section">
-            <h2>Pendant la séance</h2>
+        <section class="form-section" aria-labelledby="section-pendant">
+            <h2 id="section-pendant">Pendant la séance</h2>
             <div class="checkbox-list">
                 {% include "surveys/partials/field.html" with field=form.todo_opened_browser %}
                 {% include "surveys/partials/field.html" with field=form.todo_typed_simple_search %}
@@ -63,8 +64,8 @@
             </div>
         </section>
 
-        <section class="form-section">
-            <h2>Petit quiz</h2>
+        <section class="form-section" aria-labelledby="section-quiz">
+            <h2 id="section-quiz">Petit quiz</h2>
             {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q1 %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q2 %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q3 %}
@@ -72,8 +73,8 @@
             {% include "surveys/partials/choice_fieldset.html" with field=form.quiz_q5 %}
         </section>
 
-        <section class="form-section">
-            <h2>Recherche pratique</h2>
+        <section class="form-section" aria-labelledby="section-pratique">
+            <h2 id="section-pratique">Recherche pratique</h2>
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.practical_search_text %}
                 {% include "surveys/partials/field.html" with field=form.practical_site_text %}
@@ -81,8 +82,8 @@
             </div>
         </section>
 
-        <section class="form-section">
-            <h2>Fin de séance</h2>
+        <section class="form-section" aria-labelledby="section-fin">
+            <h2 id="section-fin">Fin de séance</h2>
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.feedback_understood_today %}
                 {% include "surveys/partials/field.html" with field=form.feedback_still_difficult %}
@@ -95,9 +96,9 @@
         <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
         {% include "surveys/partials/presence_heartbeat.html" %}
         {% else %}
-        <p class="muted" style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:8px">
-            Les réponses sont fermées pour ce module. Tu ne peux pas envoyer de réponse pour le moment.
-        </p>
+        <div class="card muted">
+            <p>Les réponses sont fermées pour ce module. Tu ne peux pas envoyer de réponse pour le moment.</p>
+        </div>
         {% endif %}
     </form>
 </main>

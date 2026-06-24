@@ -6,12 +6,12 @@
     {% include "surveys/partials/nav_student.html" %}
 {% endblock %}
 {% block content %}
-<main class="content-grid">
-    <section class="card" style="text-align:center">
+<main id="content" class="content-grid">
+    <section class="card success-card" role="status" aria-live="polite">
         <h2>Reponse enregistree</h2>
         <p>Ta reponse pour le <strong>Module 7 — Securite en ligne</strong> a bien ete envoyee.</p>
-        <p style="margin-top:1rem">Ta securite en ligne commence par tes habitudes : protege, verifie et demande de l'aide.</p>
-        <p style="margin-top:2rem"><a class="primary-button" href="{% url 'surveys:home' %}">Retour a l'accueil</a></p>
+        <p>Ta securite en ligne commence par tes habitudes : protege, verifie et demande de l'aide.</p>
+        <p><a class="primary-button" href="{% url 'surveys:home' %}">Retour a l'accueil</a></p>
     </section>
 </main>
 {% endblock %}

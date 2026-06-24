@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sauvegarde et diagnostic — Dashboard{% endblock %}
+{% block hero_title %}Sauvegarde et diagnostic{% endblock %}
+{% block hero_text %}Vérifie la base active, lance une sauvegarde et consulte les volumes de données.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{% url 'surveys:dashboard_home' %}">Cockpit</a>
+        <span class="sep">›</span>
+        <span class="current">Sauvegarde</span>
+    </nav>
+
+    <!-- Base de données active -->
+    <section class="card" aria-labelledby="db-heading">
+        <h2 id="db-heading">Base de données active</h2>
+        <dl class="setting-list">
+            <dt class="setting-label">Moteur</dt>
+            <dd>
+                {% if db_engine == "postgresql" %}
+                    <span class="badge badge-success">PostgreSQL</span>
+                {% else %}
+                    <span class="badge badge-warning">SQLite</span>
+                {% endif %}
+            </dd>
+
+            {% if db_engine == "postgresql" %}
+            <dt class="setting-label">Hôte / Base</dt>
+            <dd><code class="code-block">{{ db_host }}:{{ db_port }} / {{ db_name }}</code></dd>
+            {% else %}
+            <dt class="setting-label">Fichier SQLite</dt>
+            <dd><code class="code-block">{{ db_path }}</code></dd>
+            {% endif %}
+
+            <dt class="setting-label">Nombre de réponses</dt>
+            <dd class="stat-value" style="font-size:1.5rem">{{ total_submissions }}</dd>
+        </dl>
+    </section>
+
+    <!-- Sauvegarde -->
+    <section class="card" aria-labelledby="backup-heading">
+        <h2 id="backup-heading">Sauvegarder les données</h2>
+        <p class="muted">
+            Crée une copie horodatée de la base active dans le dossier <code>data/backups/</code>.
+            Cette commande ne supprime jamais les volumes ni les données source.
+        </p>
+
+        {% if backup_command %}
+        <pre class="code-block">{{ backup_command }}</pre>
+        <p class="muted">Exécute cette commande dans PowerShell (ou un terminal WSL) depuis la racine du projet.</p>
+        {% endif %}
+
+        <div class="alert alert-warning" role="alert">
+            <strong>Ne jamais supprimer les volumes Docker</strong> : certaines options de
+            <code>docker compose down</code> ou de <code>docker system prune</code>
+            suppriment les volumes et détruisent les données. Utilisez uniquement
+            <code>docker compose down</code> sans option de suppression de volume.
+        </div>
+    </section>
+
+    <!-- Volumes -->
+    <section class="card" aria-labelledby="volumes-heading">
+        <h2 id="volumes-heading">Volumes Docker</h2>
+        <p class="muted">Ces volumes stockent les données en production avec Docker.</p>
+
+        <div class="tools-grid" style="margin-top:1rem">
+            <article class="tool-card">
+                <strong>taf_local_forms_pgdata</strong>
+                <span class="muted">Données PostgreSQL (principal en séance)</span>
+                <span class="badge badge-success" style="margin-top:0.5rem">À préserver</span>
+            </article>
+            <article class="tool-card">
+                <strong>taf_local_forms_data</strong>
+                <span class="muted">Données SQLite (fallback si DB_HOST vide)</span>
+                <span class="badge badge-success" style="margin-top:0.5rem">À préserver</span>
+            </article>
+        </div>
+
+        <div class="alert" role="alert" style="margin-top:1rem">
+            <strong>Commandes interdites :</strong>
+            <code>docker compose down</code> avec option de suppression de volume,
+            <code>docker system prune</code> avec option de suppression de volumes,
+            <code>flush</code> Django.
+        </div>
+    </section>
+
+    <!-- Liens utiles -->
+    <section class="card" aria-labelledby="links-heading">
+        <h2 id="links-heading">Liens utiles</h2>
+        <div class="back-links">
+            <a class="text-link" href="{% url 'surveys:dashboard_home' %}">&larr; Retour au cockpit</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Accès réseau →</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configuration réseau →</a>
+        </div>
+    </section>
+</main>
+{% endblock %}
