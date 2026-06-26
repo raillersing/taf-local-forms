@@ -11,6 +11,9 @@
 
 {% block content %}
 <main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% url 'surveys:student_modules' as modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label=module.title %}
     <section class="card" aria-labelledby="module-detail-heading">
         <div class="section-row">
             <h2 id="module-detail-heading">{{ module.title }}</h2>

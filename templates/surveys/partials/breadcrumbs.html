@@ -1,0 +1,25 @@
+<nav class="breadcrumbs" aria-label="Fil d'Ariane">
+    {% if crumb_1_label %}
+        {% if crumb_1_url %}
+            <a href="{{ crumb_1_url }}">{{ crumb_1_label }}</a>
+        {% else %}
+            <span>{{ crumb_1_label }}</span>
+        {% endif %}
+    {% endif %}
+
+    {% if crumb_2_label %}
+        <span class="sep">›</span>
+        {% if crumb_2_url %}
+            <a href="{{ crumb_2_url }}">{{ crumb_2_label }}</a>
+        {% else %}
+            <span>{{ crumb_2_label }}</span>
+        {% endif %}
+    {% endif %}
+
+    {% if current_label %}
+        {% if crumb_1_label or crumb_2_label %}
+            <span class="sep">›</span>
+        {% endif %}
+        <span class="current">{{ current_label }}</span>
+    {% endif %}
+</nav>

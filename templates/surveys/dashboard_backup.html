@@ -11,11 +11,8 @@
 
 {% block content %}
 <main id="content" class="content-grid">
-    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
-        <a href="{% url 'surveys:dashboard_home' %}">Cockpit</a>
-        <span class="sep">›</span>
-        <span class="current">Sauvegarde</span>
-    </nav>
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Sauvegarde" %}
 
     <!-- Base de données active -->
     <section class="card" aria-labelledby="db-heading">
