@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un support — Dashboard{% endblock %}
+{% block hero_title %}Ajouter un support{% endblock %}
+{% block hero_text %}Dépose un document pédagogique local avec un statut brouillon ou publié, sans exposer les fichiers non validés aux élèves.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% url 'surveys:dashboard_supports' as dashboard_supports_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Supports" crumb_2_url=dashboard_supports_url current_label="Ajouter un support" %}
+
+    <section class="card card-elevated form-card support-upload-card">
+        <div class="section-row">
+            <div>
+                <h2>Formulaire d’upload</h2>
+                <p class="muted">Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG et TXT. Taille maximale : 20 MB.</p>
+            </div>
+            <a class="btn btn-secondary" href="{% url 'surveys:dashboard_supports' %}">Retour aux supports</a>
+        </div>
+
+        <div class="alert alert-info support-upload-note">
+            Le support reste privé tant que la case de publication n’est pas cochée. Vérifie la source et la licence avant de publier.
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert">
+            {% for error in form.non_field_errors %}
+                <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="form-section">
+            {% csrf_token %}
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.title %}
+                {% include "surveys/partials/field.html" with field=form.resource_type %}
+            </div>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.module_number %}
+                {% include "surveys/partials/field.html" with field=form.file %}
+            </div>
+            {% include "surveys/partials/field.html" with field=form.description %}
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.source %}
+                {% include "surveys/partials/field.html" with field=form.license_label %}
+            </div>
+            <div class="field support-publish-field">
+                <label for="{{ form.is_published.id_for_label }}" class="support-checkbox-label">
+                    {{ form.is_published }}
+                    <span>Publier ce support dans le catalogue élèves</span>
+                </label>
+                {% if form.is_published.help_text %}
+                    <p class="help-text">{{ form.is_published.help_text }}</p>
+                {% endif %}
+                {% for error in form.is_published.errors %}
+                    <p class="error-text">{{ error }}</p>
+                {% endfor %}
+            </div>
+            <div class="section-row">
+                <button type="submit" class="btn btn-primary">Enregistrer le support</button>
+                <span class="muted">Le slug est généré automatiquement à partir du titre.</span>
+            </div>
+        </form>
+    </section>
+</main>
+{% endblock %}

@@ -5653,3 +5653,170 @@ class LearningResourceViewTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_supports"))
 
         self.assertContains(response, reverse("surveys:dashboard_supports"))
+
+    def test_dashboard_support_upload_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_support_upload"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_support_upload_get_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_support_upload"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ajouter un support")
+        self.assertContains(response, "20 MB")
+
+    def test_dashboard_support_upload_valid_pdf_creates_draft_resource(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Nouveau guide module 4",
+                "description": "Support de test.",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "module_number": 4,
+                "file": SimpleUploadedFile("guide-module-4.pdf", b"%PDF-1.4 upload content", content_type="application/pdf"),
+                "source": "TAfHSSiM",
+                "license_label": "Usage classe",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("surveys:dashboard_supports"))
+        resource = LearningResource.objects.get(title="Nouveau guide module 4")
+        self.assertFalse(resource.is_published)
+        self.assertEqual(resource.slug, "nouveau-guide-module-4")
+
+    def test_upload_created_as_draft_does_not_appear_in_public_catalog(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Support privé module 5",
+                "description": "Brouillon interne.",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "module_number": 5,
+                "file": SimpleUploadedFile("support-prive.pdf", b"%PDF-1.4 private content", content_type="application/pdf"),
+                "source": "TAfHSSiM",
+                "license_label": "Usage classe",
+            },
+        )
+
+        response = self.client_class().get(reverse("surveys:support_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Support privé module 5")
+
+    def test_upload_created_as_published_appears_in_public_catalog(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Support publié module 6",
+                "description": "Visible côté élèves.",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "module_number": 6,
+                "file": SimpleUploadedFile("support-publie.pdf", b"%PDF-1.4 public content", content_type="application/pdf"),
+                "source": "TAfHSSiM",
+                "license_label": "Usage classe",
+                "is_published": "on",
+            },
+        )
+
+        response = self.client.get(reverse("surveys:support_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Support publié module 6")
+
+    def test_dashboard_support_upload_rejects_forbidden_extension(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Exécutable interdit",
+                "description": "Doit échouer.",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "file": SimpleUploadedFile("danger.exe", b"MZfake", content_type="application/octet-stream"),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Format non autorisé")
+        self.assertFalse(LearningResource.objects.filter(title="Exécutable interdit").exists())
+
+    def test_dashboard_support_upload_rejects_too_large_file(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Fichier trop volumineux",
+                "description": "Doit échouer.",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "file": SimpleUploadedFile(
+                    "trop-lourd.pdf",
+                    b"x" * (20 * 1024 * 1024 + 1),
+                    content_type="application/pdf",
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "20 MB")
+        self.assertFalse(LearningResource.objects.filter(title="Fichier trop volumineux").exists())
+
+    def test_dashboard_support_upload_rejects_missing_file(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Sans fichier",
+                "description": "Doit échouer.",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ce champ est obligatoire.")
+        self.assertFalse(LearningResource.objects.filter(title="Sans fichier").exists())
+
+    def test_dashboard_support_upload_generates_unique_slug_for_duplicate_titles(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": self.published.title,
+                "description": "Variante 1",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "file": SimpleUploadedFile("variante-1.pdf", b"%PDF-1.4 one", content_type="application/pdf"),
+            },
+        )
+        self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": self.published.title,
+                "description": "Variante 2",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "file": SimpleUploadedFile("variante-2.pdf", b"%PDF-1.4 two", content_type="application/pdf"),
+            },
+        )
+
+        slugs = set(LearningResource.objects.filter(title=self.published.title).values_list("slug", flat=True))
+        self.assertIn("guide-pdf-module-2", slugs)
+        self.assertIn("guide-pdf-module-2-2", slugs)
+        self.assertIn("guide-pdf-module-2-3", slugs)
+
+    def test_dashboard_supports_contains_add_upload_link(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_supports"))
+
+        self.assertContains(response, reverse("surveys:dashboard_support_upload"))
+        self.assertContains(response, "Ajouter un support")

@@ -3,7 +3,7 @@
         <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
         <li><a href="{% url 'surveys:dashboard_home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_home' %} class="nav-active"{% endif %}>Cockpit</a></li>
         <li><a href="{% url 'surveys:dashboard_projection' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_projection' %} class="nav-active"{% endif %}>Projection</a></li>
-        <li><a href="{% url 'surveys:dashboard_supports' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_supports' %} class="nav-active"{% endif %}>Supports</a></li>
+        <li><a href="{% url 'surveys:dashboard_supports' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_supports' or request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_support_upload' %} class="nav-active"{% endif %}>Supports</a></li>
         <li><a href="{% url 'surveys:dashboard_home' %}#modules"{% if request.resolver_match and 'dashboard_module_' in request.resolver_match.view_name %} class="nav-active"{% endif %}>Modules</a></li>
         <li><a href="{% url 'surveys:dashboard_home' %}#exports">Exports</a></li>
         <li><a href="{% url 'surveys:dashboard_network' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' %} class="nav-active"{% endif %}>Réseau</a></li>

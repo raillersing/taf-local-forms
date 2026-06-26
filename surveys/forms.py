@@ -1,6 +1,19 @@
 from django import forms
+from django.utils.text import slugify
 
-from .models import Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission
+from .models import LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission
+
+
+LEARNING_RESOURCE_MAX_UPLOAD_SIZE = 20 * 1024 * 1024
+LEARNING_RESOURCE_ALLOWED_EXTENSIONS = {
+    ".pdf",
+    ".docx",
+    ".pptx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".txt",
+}
 
 
 class Module2SubmissionForm(forms.Form):
@@ -123,6 +136,99 @@ class Module2SubmissionForm(forms.Form):
         if not value.isdigit() or len(value) != 2:
             raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
         return value
+
+
+class LearningResourceForm(forms.ModelForm):
+    class Meta:
+        model = LearningResource
+        fields = [
+            "title",
+            "description",
+            "resource_type",
+            "module_number",
+            "file",
+            "source",
+            "license_label",
+            "is_published",
+        ]
+        labels = {
+            "title": "Titre du support",
+            "description": "Description",
+            "resource_type": "Type de support",
+            "module_number": "Module lié",
+            "file": "Fichier",
+            "source": "Source",
+            "license_label": "Licence",
+            "is_published": "Publier immédiatement",
+        }
+        help_texts = {
+            "title": "Titre lisible pour les élèves et le formateur.",
+            "description": "Résumé court du contenu du support.",
+            "module_number": "Optionnel. Laisse vide pour un support général.",
+            "file": "Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT. Taille maximale : 20 MB.",
+            "source": "Exemple : TAfHSSiM, professeur, manuel local.",
+            "license_label": "Exemple : usage classe, libre diffusion, CC BY.",
+            "is_published": "Décoche pour garder ce support en brouillon.",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["resource_type"].widget.attrs["class"] = "taf-select"
+        self.fields["module_number"].widget.attrs["class"] = "taf-input"
+        self.fields["title"].widget.attrs["class"] = "taf-input"
+        self.fields["source"].widget.attrs["class"] = "taf-input"
+        self.fields["license_label"].widget.attrs["class"] = "taf-input"
+        self.fields["description"].widget.attrs["class"] = "taf-textarea"
+        self.fields["file"].widget.attrs["class"] = "taf-input"
+        self.fields["file"].widget.attrs["accept"] = ",".join(sorted(LEARNING_RESOURCE_ALLOWED_EXTENSIONS))
+
+    def clean_file(self):
+        uploaded_file = self.cleaned_data.get("file")
+        if not uploaded_file:
+            raise forms.ValidationError("Ajoute un fichier avant d'enregistrer ce support.")
+
+        if not getattr(uploaded_file, "name", ""):
+            raise forms.ValidationError("Le nom du fichier est invalide.")
+
+        name = uploaded_file.name.strip()
+        dot_index = name.rfind(".")
+        extension = name[dot_index:].lower() if dot_index != -1 else ""
+        if not extension:
+            raise forms.ValidationError("Le fichier doit avoir une extension reconnue.")
+        if extension not in LEARNING_RESOURCE_ALLOWED_EXTENSIONS:
+            raise forms.ValidationError(
+                "Format non autorisé. Utilise un fichier PDF, DOCX, PPTX, PNG, JPG, JPEG ou TXT."
+            )
+        if uploaded_file.size > LEARNING_RESOURCE_MAX_UPLOAD_SIZE:
+            raise forms.ValidationError("Le fichier dépasse la taille maximale autorisée de 20 MB.")
+        return uploaded_file
+
+    def clean_title(self):
+        title = self.cleaned_data["title"].strip()
+        if not title:
+            raise forms.ValidationError("Entre un titre pour ce support.")
+        return title
+
+    def clean(self):
+        cleaned_data = super().clean()
+        title = cleaned_data.get("title", "")
+        if title:
+            base_slug = slugify(title)
+            if not base_slug:
+                raise forms.ValidationError("Le titre doit permettre de générer un slug valide.")
+            slug = base_slug
+            index = 2
+            queryset = LearningResource.objects.all()
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            while queryset.filter(slug=slug).exists():
+                slug = f"{base_slug}-{index}"
+                index += 1
+            self.instance.slug = slug
+        return cleaned_data
 
 
 class Module4SubmissionForm(forms.Form):

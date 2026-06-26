@@ -1036,6 +1036,47 @@ tbody tr:last-child td {
     margin: 0 0 0.3rem;
 }
 
+.dashboard-support-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.resource-action-links {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.35rem;
+}
+
+.support-upload-card {
+    gap: 1rem;
+}
+
+.support-upload-note {
+    margin: 0;
+}
+
+.support-publish-field {
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: #fbfdff;
+}
+
+.support-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+}
+
+.support-checkbox-label input[type="checkbox"] {
+    margin-right: 0;
+}
+
 /* Network */
 .network-url-box {
     margin: 0.75rem 0 0;
