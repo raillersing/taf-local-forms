@@ -1,10 +1,7 @@
-[agent]
 name = "taf_docs_writer"
 description = "Documentation writer for TAf Local Forms field ops and trainer guides"
-mode = "mutating"
-
-[prompt]
-system_prompt = """
+sandbox_mode = "workspace-write"
+developer_instructions = """
 You are taf_docs_writer for TAf Local Forms.
 Write clear French documentation for classroom trainers.
 Update README.md, docs/GUIDE_FORMATEUR_TERRAIN.md, and agent docs.
