@@ -130,6 +130,26 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 - Ponytail ne doit jamais réduire sécurité, tests, accessibilité, backup, protection données, auth ou anti-doublon.
 - Ne jamais scanner ou committer `.env`, backups, dumps, bases locales, logs sensibles ou médias runtime.
 
+## Local TAf Agent Skills
+
+Before significant work, use the local skills in `.agents/skills/`.
+
+Recommended order:
+1. `taf-project-governance`
+2. `taf-agent-orchestration-graphify-ponytail`
+3. the task-specific skill:
+   - Django: `taf-django-local-app`
+   - UI/prototype: `taf-ui-ux-prototype-6`
+   - data/backup: `taf-data-safety-backup`
+   - LAN: `taf-lan-field-operations`
+   - media: `taf-media-library`
+   - tests/release: `taf-testing-release-quality`
+   - docs/specs: `taf-docs-spec-traceability`
+   - accessibility: `taf-accessibility-mobile-classroom`
+
+Do not install public skills from skills.sh without review.
+Do not use `npx skills add --all`.
+
 ## Task queue
 
 | ID | Description | Status |
