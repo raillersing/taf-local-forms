@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mode projection — Cockpit formateur{% endblock %}
+{% block hero_title %}Mode projection{% endblock %}
+{% block hero_text %}Affichage grand format de l'URL élèves et du QR code local pour la salle.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Projection" %}
+
+    <section class="card projection-stage" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
+        <div class="projection-topbar">
+            <div>
+                <span class="taf-pill">Projection salle</span>
+                <h2>Accès élèves</h2>
+                <p class="muted">Demande aux élèves de scanner le QR code ou de saisir l'adresse ci-dessous.</p>
+            </div>
+            <div class="projection-actions">
+                <button type="button" class="taf-button taf-button-primary" data-fullscreen-toggle>
+                    Plein écran
+                </button>
+                <button type="button" class="taf-button taf-button-secondary" data-copy-url {% if not student_access_ready %}disabled{% endif %}>
+                    Copier l'URL
+                </button>
+                <a class="taf-button taf-button-ghost" href="{% url 'surveys:dashboard_home' %}">
+                    Retour cockpit
+                </a>
+            </div>
+        </div>
+
+        <div class="projection-grid">
+            <div class="projection-copy">
+                {% if student_access_ready %}
+                <p class="projection-url">{{ student_access_url }}</p>
+                <p class="projection-note">
+                    Ouvre cette adresse depuis le Wi-Fi local de la salle.
+                </p>
+                {% else %}
+                <p class="projection-url projection-url-missing">URL LAN non configurée</p>
+                <p class="projection-note">Disponible après configuration réseau. Vérifie d'abord la page Réseau.</p>
+                {% endif %}
+
+                {% if network.lan_host_stale %}
+                <div class="taf-alert taf-alert-warning">
+                    L'adresse LAN actuelle diffère de l'IP configurée. Mets à jour la configuration avant la séance.
+                </div>
+                {% endif %}
+
+                <ol class="projection-steps">
+                    <li>Connecte le téléphone au même Wi-Fi ou hotspot que le PC formateur.</li>
+                    <li>Scanne le QR code ou saisis l'URL exactement.</li>
+                    <li>Choisis le module demandé par le formateur.</li>
+                </ol>
+                <p class="student-access-feedback" data-copy-feedback aria-live="polite"></p>
+            </div>
+
+            <div class="projection-qr-column">
+                <div class="projection-qr-frame">
+                    <div class="student-qr-code student-qr-code-large" data-qr-target aria-label="QR code de projection"></div>
+                </div>
+                <p class="muted">Le QR code ne contient que l'URL élèves locale.</p>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/vendor/qrcode.js' %}"></script>
+<script src="{% static 'js/taf_projection.js' %}"></script>
+{% endblock %}

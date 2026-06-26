@@ -298,6 +298,50 @@ class DashboardAccessTests(TestCase):
         self.assertContains(response, "Accès réseau")
         self.assertContains(response, "Admin avancé")
         self.assertContains(response, "Guide dépannage réseau")
+        self.assertContains(response, "Accès élèves")
+        self.assertContains(response, "Mode projection")
+        self.assertNotContains(response, "https://cdnjs.cloudflare.com")
+
+    def test_projection_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_projection"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_projection_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_projection"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mode projection")
+        self.assertContains(response, "Plein écran")
+        self.assertContains(response, "Retour cockpit")
+        self.assertNotContains(response, "https://cdnjs.cloudflare.com")
+
+    @patch("surveys.network.get_network_access_context")
+    def test_cockpit_handles_missing_lan_url(self, mock_network_context):
+        mock_network_context.return_value = {
+            "configured_host": "",
+            "student_form_url": "http://localhost:8010/",
+            "recommended_lan_host": "",
+            "lan_host_source": "missing",
+            "lan_host_stale": False,
+        }
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Disponible après configuration réseau")
+        self.assertContains(response, "URL LAN non configurée")
+
+    def test_projection_tools_do_not_appear_in_student_pages(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Mode projection")
+        self.assertNotContains(response, "/dashboard/projection/")
 
 
 class DashboardCsvTests(TestCase):

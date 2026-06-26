@@ -61,6 +61,61 @@ def home(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/home.html")
 
 
+def _build_cockpit_context(request: HttpRequest) -> dict:
+    from .network import get_network_access_context
+
+    net_ctx = get_network_access_context(request)
+    total_submissions = (
+        Submission.objects.count()
+        + Module3Submission.objects.count()
+        + Module4Submission.objects.count()
+        + Module5Submission.objects.count()
+        + Module6Submission.objects.count()
+        + Module7Submission.objects.count()
+        + Module8Submission.objects.count()
+    )
+    total_students = Student.objects.count()
+    avg_score_m2 = Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score_m3 = Module3Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score_m4 = Module4Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score_m5 = Module5Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score_m6 = Module6Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score_m7 = Module7Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score_m8 = Module8Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
+    avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4 + avg_score_m5 + avg_score_m6 + avg_score_m7 + avg_score_m8) / 7
+    modules = TrainingModule.objects.all().order_by("code")
+    module_list = []
+    modules_open = 0
+    for mod in modules:
+        active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        accepting = active_session.accepting_responses if active_session else False
+        if accepting:
+            modules_open += 1
+        module_list.append({
+            "module": mod,
+            "has_active_session": active_session is not None,
+            "accepting_responses": accepting,
+            "active_session_id": active_session.pk if active_session else None,
+        })
+
+    student_access_url = ""
+    if net_ctx.get("recommended_lan_host"):
+        student_access_url = net_ctx.get("student_form_url", "")
+
+    return {
+        "total_submissions": total_submissions,
+        "total_students": total_students,
+        "average_score": avg_score,
+        "module_list": module_list,
+        "modules_open": modules_open,
+        "network": net_ctx,
+        "student_access_url": student_access_url,
+        "student_access_ready": bool(student_access_url),
+        "projection_url": "/dashboard/projection/",
+        "has_lan_host": bool(net_ctx.get("configured_host")),
+    }
+
+
 def student_modules(request: HttpRequest) -> HttpResponse:
     from django.urls import reverse
     URL_MAP = {
@@ -206,56 +261,12 @@ def module_2_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 
 @login_required
 def dashboard_home(request: HttpRequest) -> HttpResponse:
-    from .network import get_network_access_context
+    return render(request, "surveys/dashboard_home.html", _build_cockpit_context(request))
 
-    net_ctx = get_network_access_context(request)
-    total_submissions = (
-        Submission.objects.count()
-        + Module3Submission.objects.count()
-        + Module4Submission.objects.count()
-        + Module5Submission.objects.count()
-        + Module6Submission.objects.count()
-        + Module7Submission.objects.count()
-        + Module8Submission.objects.count()
-    )
-    total_students = Student.objects.count()
-    avg_score_m2 = Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m3 = Module3Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m4 = Module4Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m5 = Module5Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m6 = Module6Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m7 = Module7Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m8 = Module8Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4 + avg_score_m5 + avg_score_m6 + avg_score_m7 + avg_score_m8) / 7
-    modules = TrainingModule.objects.all().order_by("code")
-    module_list = []
-    modules_open = 0
-    for mod in modules:
-        active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
-        accepting = active_session.accepting_responses if active_session else False
-        if accepting:
-            modules_open += 1
-        module_list.append({
-            "module": mod,
-            "has_active_session": active_session is not None,
-            "accepting_responses": accepting,
-            "active_session_id": active_session.pk if active_session else None,
-        })
 
-    base_url = net_ctx.get("student_form_url", "http://localhost:8000/").rstrip("/")
-    if base_url.endswith("/"):
-        base_url = base_url[:-1]
-    context = {
-        "total_submissions": total_submissions,
-        "total_students": total_students,
-        "average_score": avg_score,
-        "module_list": module_list,
-        "modules_open": modules_open,
-        "network": net_ctx,
-        "base_network_url": base_url,
-        "has_lan_host": bool(net_ctx.get("configured_host")),
-    }
-    return render(request, "surveys/dashboard_home.html", context)
+@login_required
+def dashboard_projection(request: HttpRequest) -> HttpResponse:
+    return render(request, "surveys/dashboard_projection.html", _build_cockpit_context(request))
 
 
 MODULE_5_SUMMARY = (
