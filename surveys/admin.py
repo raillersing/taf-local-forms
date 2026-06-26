@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 
-from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import FormPresence, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
 
 admin.site.site_header = getattr(settings, "ADMIN_SITE_HEADER", "TAf Local Forms")
 admin.site.site_title = getattr(settings, "ADMIN_SITE_TITLE", "TAf Admin")
@@ -134,3 +134,12 @@ class FormPresenceAdmin(admin.ModelAdmin):
     list_filter = ("module_code", "status", "training_session")
     search_fields = ("client_id", "module_code")
     readonly_fields = ("started_at", "last_seen_at")
+
+
+@admin.register(LearningResource)
+class LearningResourceAdmin(admin.ModelAdmin):
+    list_display = ("title", "resource_type", "module_number", "is_published", "updated_at")
+    list_filter = ("is_published", "resource_type", "module_number")
+    search_fields = ("title", "description", "source")
+    prepopulated_fields = {"slug": ("title",)}
+    readonly_fields = ("created_at", "updated_at")

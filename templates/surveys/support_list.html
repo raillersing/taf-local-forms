@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Supports pédagogiques{% endblock %}
+{% block hero_title %}Supports pédagogiques{% endblock %}
+{% block hero_text %}Consulte les documents publiés par le formateur pour continuer à apprendre hors questionnaire.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Supports" %}
+
+    <section class="card">
+        <div class="section-row">
+            <h2>Catalogue public</h2>
+            <span class="badge badge-info">{{ resources|length }} support{{ resources|length|pluralize }}</span>
+        </div>
+        <p class="muted">Seuls les supports publiés apparaissent ici.</p>
+    </section>
+
+    {% if resources %}
+    <section class="resource-grid" aria-label="Liste des supports">
+        {% for resource in resources %}
+        <article class="card resource-card">
+            <div class="section-row">
+                <h2 class="resource-title"><a href="{% url 'surveys:support_detail' resource.slug %}">{{ resource.title }}</a></h2>
+                <div class="badge-group">
+                    <span class="badge badge-info">{{ resource.get_resource_type_display }}</span>
+                    {% if resource.module_number %}
+                    <span class="badge badge-muted">Module {{ resource.module_number }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if resource.description %}
+            <p class="muted">{{ resource.description|truncatechars:180 }}</p>
+            {% else %}
+            <p class="muted">Support pédagogique disponible au téléchargement.</p>
+            {% endif %}
+            <dl class="resource-meta">
+                {% if resource.source %}
+                <div><dt>Source</dt><dd>{{ resource.source }}</dd></div>
+                {% endif %}
+                {% if resource.license_label %}
+                <div><dt>Licence</dt><dd>{{ resource.license_label }}</dd></div>
+                {% endif %}
+                <div><dt>Mise à jour</dt><dd>{{ resource.updated_at|date:"d/m/Y" }}</dd></div>
+            </dl>
+            <div class="module-card-actions">
+                <a class="text-link" href="{% url 'surveys:support_detail' resource.slug %}">Voir le détail</a>
+                <a class="taf-button taf-button-primary" href="{% url 'surveys:support_download' resource.slug %}">Télécharger</a>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="card empty-state" aria-labelledby="supports-empty-title">
+        <h2 id="supports-empty-title" class="empty-state-title">Aucun support publié</h2>
+        <p>Le formateur ajoutera les documents de cette médiathèque dans une prochaine séance.</p>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

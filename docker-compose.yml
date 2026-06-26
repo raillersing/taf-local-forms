@@ -36,6 +36,7 @@ services:
       GUNICORN_TIMEOUT: "${GUNICORN_TIMEOUT:-60}"
     volumes:
       - taf_local_forms_data:/app/data
+      - taf_local_forms_media:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -44,3 +45,4 @@ services:
 volumes:
   taf_local_forms_data:
   taf_local_forms_pgdata:
+  taf_local_forms_media:

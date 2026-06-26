@@ -1863,6 +1863,56 @@ tbody tr:last-child td {
     gap: 0.65rem;
 }
 
+/* Media library */
+.resource-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.resource-card {
+    display: grid;
+    gap: 0.9rem;
+}
+.resource-title {
+    margin: 0;
+    font-size: 1.15rem;
+}
+.resource-title a {
+    color: var(--navy);
+    text-decoration: none;
+}
+.resource-title a:hover {
+    text-decoration: underline;
+}
+.resource-meta {
+    display: grid;
+    gap: 0.7rem;
+    margin: 0;
+}
+.resource-meta div {
+    display: grid;
+    gap: 0.15rem;
+}
+.resource-meta dt {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+}
+.resource-meta dd {
+    margin: 0;
+    color: var(--text);
+    word-break: break-word;
+}
+.resource-detail-panel {
+    display: grid;
+    gap: 1rem;
+}
+.resource-meta-detail {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
 /* Responsive */
 @media (max-width: 760px) {
     .page-shell {
@@ -1913,7 +1963,9 @@ tbody tr:last-child td {
     }
     .cockpit-hero,
     .cockpit-access-grid,
-    .projection-grid {
+    .projection-grid,
+    .resource-grid,
+    .resource-meta-detail {
         grid-template-columns: 1fr;
     }
     .cockpit-stats-grid {

@@ -1,5 +1,6 @@
 import csv
 import json
+import mimetypes
 from datetime import datetime, timedelta
 
 from django.contrib import messages
@@ -7,15 +8,15 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count
 from django.db import IntegrityError
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm, Module5SubmissionForm, Module6SubmissionForm, Module7SubmissionForm, Module8SubmissionForm
 from .models import (
     FormPresence,
+    LearningResource,
     Module3Submission,
     Module4Submission,
     Module5Submission,
@@ -61,10 +62,16 @@ def home(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/home.html")
 
 
+def _published_resources_queryset():
+    return LearningResource.objects.filter(is_published=True)
+
+
 def _build_cockpit_context(request: HttpRequest) -> dict:
     from .network import get_network_access_context
 
     net_ctx = get_network_access_context(request)
+    published_resources_count = _published_resources_queryset().count()
+    total_resources_count = LearningResource.objects.count()
     total_submissions = (
         Submission.objects.count()
         + Module3Submission.objects.count()
@@ -113,6 +120,8 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         "student_access_ready": bool(student_access_url),
         "projection_url": "/dashboard/projection/",
         "has_lan_host": bool(net_ctx.get("configured_host")),
+        "published_resources_count": published_resources_count,
+        "total_resources_count": total_resources_count,
     }
 
 
@@ -164,6 +173,31 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
         "accepting_responses": accepting,
         "summary": summary,
     })
+
+
+def support_list(request: HttpRequest) -> HttpResponse:
+    resources = _published_resources_queryset().order_by("module_number", "title")
+    return render(request, "surveys/support_list.html", {"resources": resources})
+
+
+def support_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    resource = get_object_or_404(_published_resources_queryset(), slug=slug)
+    return render(request, "surveys/support_detail.html", {"resource": resource})
+
+
+def support_download(request: HttpRequest, slug: str) -> FileResponse:
+    resource = get_object_or_404(_published_resources_queryset(), slug=slug)
+    if not resource.file:
+        raise Http404("Fichier indisponible")
+    try:
+        file_handle = resource.file.open("rb")
+    except FileNotFoundError as exc:
+        raise Http404("Fichier indisponible") from exc
+    content_type, _ = mimetypes.guess_type(resource.file.name)
+    response = FileResponse(file_handle, as_attachment=True, filename=resource.file.name.rsplit("/", 1)[-1])
+    if content_type:
+        response["Content-Type"] = content_type
+    return response
 
 
 def module_2_form(request: HttpRequest) -> HttpResponse:
@@ -267,6 +301,17 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
 @login_required
 def dashboard_projection(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_projection.html", _build_cockpit_context(request))
+
+
+@login_required
+def dashboard_supports(request: HttpRequest) -> HttpResponse:
+    resources = LearningResource.objects.order_by("-updated_at", "title")
+    context = {
+        "resources": resources,
+        "published_count": resources.filter(is_published=True).count(),
+        "draft_count": resources.filter(is_published=False).count(),
+    }
+    return render(request, "surveys/dashboard_supports.html", context)
 
 
 MODULE_5_SUMMARY = (
