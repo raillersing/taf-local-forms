@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>TAf Local Forms — Prototype combiné 3 + 4</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --primary: #2563EB;
+    --primary-dark: #1D4ED8;
+    --primary-light: #EFF6FF;
+    --success: #059669;
+    --warning: #D97706;
+    --danger: #DC2626;
+    --info: #0891B2;
+    --bg: #F1F5F9;
+    --surface: #FFFFFF;
+    --surface-2:#F8FAFC;
+    --text: #0F172A;
+    --text-secondary: #475569;
+    --border: #CBD5E1;
+    --border-soft:#E2E8F0;
+    --radius-lg: 16px;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+    --max-width: 1200px;
+    --header-height: 80px;
+    --nav-height: 56px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container { width: 100%; max-width: var(--max-width); margin: 0 auto; padding: 0 16px; }
+  .flex { display: flex; } .flex-col { flex-direction: column; }
+  .items-center { align-items: center; } .justify-between { justify-content: space-between; }
+  .justify-center { justify-content: center; } .justify-end { justify-content: flex-end; }
+  .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
+  .w-full { width: 100%; } .hidden { display: none !important; }
+  .text-center { text-align: center; } .text-left { text-align: left; }
+  .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; }
+  .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; }
+  .font-bold { font-weight: 700; } .font-semibold { font-weight: 600; }
+  .text-secondary { color: var(--text-secondary); }
+  .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; }
+  .mb-6 { margin-bottom: 24px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; }
+  .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
+  .p-3 { padding: 12px; } .p-4 { padding: 16px; } .p-6 { padding: 24px; }
+  .rounded { border-radius: var(--radius); } .rounded-lg { border-radius: var(--radius-lg); }
+  .shadow { box-shadow: var(--shadow); } .bg-surface { background: var(--surface); }
+  .border { border: 1px solid var(--border); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 24px; border: none; border-radius: var(--radius-sm);
+    font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    text-decoration: none; min-height: 48px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-warning { background: var(--warning); color: #fff; }
+  .btn-secondary { background: #E2E8F0; color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-soft { background: #E0F2FE; color: #075985; border: 1px solid #BAE6FD; box-shadow: none; }
+  .btn-lg { padding: 18px 32px; font-size: 1.125rem; min-height: 56px; border-radius: var(--radius); }
+  .btn-sm { padding: 8px 16px; font-size: 0.875rem; min-height: 36px; }
+  .btn-block { width: 100%; }
+  .btn-icon { padding: 10px; min-height: 40px; min-width: 40px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .form-label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 6px; }
+  .form-hint { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 1rem; font-family: inherit; background: var(--surface); color: var(--text);
+    transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+  .form-group { margin-bottom: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow);
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .card-body { padding: 20px; }
+  .card-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 1.125rem; font-weight: 700; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow); padding: 22px;
+  }
+  .panel-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .panel-title h2 { font-size:1.25rem; font-weight:800; }
+
+  .badge {
+    display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
+  }
+  .badge-success { background: #D1FAE5; color: #065F46; }
+  .badge-warning { background: #FEF3C7; color: #92400E; }
+  .badge-danger { background: #FEE2E2; color: #991B1B; }
+  .badge-info { background: #CFFAFE; color: #155E75; }
+  .badge-neutral { background: #F1F5F9; color: #475569; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 36px;
+    padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border);
+    background: #fff; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;
+  }
+  .pill.ok { color: var(--success); background: #ECFDF5; border-color: #A7F3D0; }
+  .pill.warn { color: var(--warning); background: #FFFBEB; border-color: #FDE68A; }
+  .pill.danger { color: var(--danger); background: #FEF2F2; border-color: #FECACA; }
+
+  .app-header {
+    position: sticky; top: 0; z-index: 100;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+    border-bottom: 1px solid var(--border);
+    height: var(--header-height); display: flex; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .header-inner { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 100%; }
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+    text-decoration: none; color: inherit; flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  .brand:hover { opacity: 0.9; }
+  .brand-logo {
+    height: 50px; width: auto; max-width: 220px;
+    object-fit: contain; object-position: left center;
+    display: block;
+  }
+  .brand-text {
+    display: flex; flex-direction: column; gap: 0; justify-content: center;
+  }
+  .brand-title {
+    font-size: 1.45rem; font-weight: 900; letter-spacing: -0.02em;
+    color: #0B1B3B; line-height: 1.15;
+  }
+  .brand-subtitle {
+    font-size: 0.74rem; font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text-secondary); line-height: 1.25;
+    max-width: 300px;
+  }
+  @media (max-width: 640px) {
+    .brand-subtitle { font-size: 0.65rem; max-width: 180px; }
+  }
+  @media (max-width: 640px) {
+    .brand-logo { height: 40px; }
+    .brand-title { font-size: 1.15rem; }
+    .brand-subtitle { font-size: 0.72rem; }
+  }
+
+  /* Menu horizontal Prototype 3 */
+  .nav-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: sticky;
+    top: var(--header-height);
+    z-index: 95;
+  }
+  .nav-list {
+    display: flex;
+    gap: 4px;
+    padding: 8px 16px;
+    list-style: none;
+    min-width: max-content;
+    margin: 0;
+  }
+  .nav-item button {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: var(--radius-sm);
+    font-size: 0.875rem; font-weight: 700; color: var(--text-secondary);
+    background: none; border: none; cursor: pointer; white-space: nowrap;
+  }
+  .nav-item button:hover { background: #F1F5F9; color: var(--text); }
+  .nav-item.active button { background: var(--primary-light); color: var(--primary); }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: calc(var(--header-height) + var(--nav-height)); z-index: 80;
+    background: rgba(241, 245, 249, 0.95); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border); padding: 0;
+  }
+  .topbar.hidden-on-home { display: none; }
+  .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 12px 0; }
+
+  /* Fils d'ariane LDLC */
+  .breadcrumb-shell { min-height:50px; display:flex; align-items:center; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .ldlc-breadcrumb { list-style:none; display:flex; align-items:center; gap:0; min-width:max-content; margin:0; padding:0; color:#1F2937; font-size:.94rem; }
+  .crumb-item { display:flex; align-items:center; }
+  .crumb-link, .crumb-current { display:inline-flex; align-items:center; gap:8px; min-height:42px; padding:0 8px; border:0; background:transparent; color:#1F2937; text-decoration:none; border-radius:8px; font:inherit; }
+  .crumb-link { cursor:pointer; font-weight:500; }
+  .crumb-link:hover, .crumb-link:focus { color:var(--primary); background:#E8EFFC; outline:none; }
+  .crumb-current { font-weight:800; color:#111827; cursor:default; }
+  .crumb-home { font-size:1.15rem; color:#6B7280; margin-right:1px; }
+  .crumb-sep { color:#6B7280; padding:0 6px; font-size:1.35rem; line-height:1; user-select:none; }
+  .crumb-label { max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .subnav {
+    display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--border);
+  }
+  .subnav a, .subnav button {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; text-decoration: none;
+  }
+  .subnav a:hover, .subnav button:hover { border-color: var(--primary); color: var(--primary); }
+  .subnav a.active, .subnav button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .page { display: none; animation: fadeIn 0.25s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  main.container { padding-top:24px; padding-bottom:100px; }
+
+  /* Hero et statistiques d'accueil */
+  .hero { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; align-items: stretch; margin-bottom: 24px; }
+  .hero-card { background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border: 1px solid #BFDBFE; border-radius: var(--radius-lg); padding: 34px; overflow: hidden; position: relative; }
+  .hero-card h1 { font-size: 2rem; font-weight: 800; margin-bottom: 12px; color: #1E3A8A; }
+  .hero-card .lead { color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 20px; }
+  .eyebrow { display: inline-block; background: var(--primary); color: #fff; padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 16px 0; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+  .stat-card strong { display: block; font-size: 1.75rem; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+  .stat-card span { font-size: 0.85rem; color: var(--text-secondary); }
+  .steps { display: grid; gap: 12px; }
+  .step { display: flex; flex-direction: column; gap: 2px; padding: 12px; background: #F8FAFC; border-radius: var(--radius-sm); }
+  .step strong { font-weight: 700; }
+
+  .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .module-card {
+    background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-lg);
+    padding: 24px; text-align: left; cursor: pointer; transition: all 0.15s;
+    display: flex; flex-direction: column; gap: 12px; position: relative;
+  }
+  .module-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .module-card:active { transform: translateY(0); }
+  .module-number { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.875rem; }
+  .module-title { font-size: 1.125rem; font-weight: 700; padding-right: 40px; }
+  .module-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4; }
+  .module-meta { display: flex; gap: 8px; margin-top: auto; align-items: center; }
+  .module-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+  .progress { height: 6px; background: #E2E8F0; border-radius: 999px; margin: 8px 0; overflow: hidden; }
+  .progress span { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+
+  .quiz-container { max-width: 720px; margin: 0 auto; }
+  .quiz-header {
+    background: linear-gradient(135deg, var(--primary) 0%, #1E40AF 100%);
+    color: #fff; padding: 32px 24px; border-radius: var(--radius-lg); margin-bottom: 24px;
+  }
+  .quiz-header h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  .question-block {
+    background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-lg);
+    padding: 24px; margin-bottom: 20px;
+  }
+  .question-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 16px; }
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+  .choice-label, .choice {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    border: 2px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;
+    transition: all 0.1s; background: var(--surface);
+  }
+  .choice-label:hover, .choice:hover { border-color: var(--primary); background: #F8FAFC; }
+  .choice-label input, .choice input { width: 20px; height: 20px; accent-color: var(--primary); }
+  fieldset.question { border: 2px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px; }
+  fieldset.question legend { font-size: 1.125rem; font-weight: 700; padding: 0 8px; }
+
+  .alert {
+    padding: 16px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px; border-left: 4px solid transparent;
+  }
+  .alert-success { background: #ECFDF5; border-left-color: var(--success); color: #065F46; }
+  .alert-warning { background: #FFFBEB; border-left-color: var(--warning); color: #92400E; }
+  .alert-danger { background: #FEF2F2; border-left-color: var(--danger); color: #991B1B; }
+  .alert-info { background: #ECFEFF; border-left-color: var(--info); color: #155E75; }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .data-table th { background: #F8FAFC; font-weight: 700; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .data-table tr:hover td { background: #F8FAFC; }
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  .table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .table-wrap th, .table-wrap td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .table-wrap th { background: #F8FAFC; font-weight: 700; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; }
+  .table-wrap tr:hover td { background: #F8FAFC; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .kpi-grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 20px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .kpi-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .kpi-value { font-size: 1.75rem; font-weight: 800; color: var(--text); }
+  .kpi-delta { font-size: 0.8rem; font-weight: 600; }
+  .kpi-delta.up { color: var(--success); } .kpi-delta.down { color: var(--danger); }
+
+  .chart-bar { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding-top: 20px; }
+  .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chart-bar-fill { width: 100%; max-width: 40px; background: var(--primary); border-radius: 6px 6px 0 0; transition: height 0.5s ease; opacity: 0.85; }
+  .chart-bar-fill:hover { opacity: 1; }
+  .chart-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; }
+
+  .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .resource-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; transition: all 0.15s; }
+  .resource-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .resource-thumb { height: 140px; background: #F1F5F9; display: flex; align-items: center; justify-content: center; font-size: 3rem; position: relative; }
+  .resource-thumb.video { background: #1E293B; color: #fff; }
+  .resource-body { padding: 16px; }
+  .resource-title { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; }
+  .resource-meta { font-size: 0.8rem; color: var(--text-secondary); }
+
+  .filter-bar, .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+  .filter-pill, .tab {
+    padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    color: var(--text-secondary); transition: all 0.1s;
+  }
+  .filter-pill:hover, .tab:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-pill.active, .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .qr-wrap { display: inline-block; padding: 12px; background: #fff; border: 4px solid var(--text); border-radius: var(--radius); }
+  .route-chip { display: inline-block; font-family: ui-monospace, monospace; background: #F1F5F9; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
+  .network-status {
+    display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: var(--radius-sm);
+    background: #ECFDF5; color: #065F46; font-weight: 600; margin-bottom: 16px;
+  }
+  .network-status.off { background: #FEF2F2; color: #991B1B; }
+
+  details.diagnostics {
+    background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-top: 16px;
+  }
+  details.diagnostics summary {
+    padding: 12px 16px; font-weight: 600; cursor: pointer; color: var(--text-secondary);
+    list-style: none; display: flex; align-items: center; justify-content: space-between;
+  }
+  details.diagnostics summary::after { content: "▶"; font-size: 0.75rem; transition: transform 0.2s; }
+  details.diagnostics[open] summary::after { transform: rotate(90deg); }
+  details.diagnostics > div { padding: 16px; border-top: 1px solid var(--border); font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--text-secondary); }
+  pre.code { background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; font-family: ui-monospace, monospace; font-size: 0.8rem; overflow-x: auto; }
+
+  .upload-zone {
+    border: 3px dashed var(--border); border-radius: var(--radius-lg);
+    padding: 40px 24px; text-align: center; background: #F8FAFC; cursor: pointer; transition: all 0.15s;
+  }
+  .upload-zone:hover { border-color: var(--primary); background: #EFF6FF; }
+  .upload-zone .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+  .projection-mode {
+    position: fixed; inset: 0; background: #0F172A; color: #fff; z-index: 1000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+  }
+  .projection-mode .url-display { font-size: clamp(1.5rem, 6vw, 3.8rem); font-weight: 900; letter-spacing: .03em; word-break: break-all; text-align: center; }
+  .projection-mode .qr-large { width: 320px; height: 320px; background: #fff; padding: 16px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; }
+
+  .toggle { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .toggle-switch {
+    width: 44px; height: 24px; background: var(--border); border-radius: 999px; position: relative; transition: background 0.2s; flex-shrink:0;
+  }
+  .toggle-switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input { display: none; }
+  .toggle input:checked + .toggle-switch { background: var(--success); }
+  .toggle input:checked + .toggle-switch::after { transform: translateX(20px); }
+
+  .mobile-nav { display: none; }
+  .mobile-menu-btn { display: none; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .split { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 24px; align-items: start; }
+  .split.equal { grid-template-columns: 1fr 1fr; }
+
+  .video-box { background: #0F172A; border-radius: var(--radius); height: 360px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; margin-bottom: 16px; position: relative; }
+  .video-controls { position: absolute; bottom: 16px; left: 16px; right: 16px; display: flex; align-items: center; gap: 12px; font-size: 0.875rem; }
+  .video-controls span { flex: 1; height: 6px; background: rgba(255,255,255,0.25); border-radius: 999px; }
+
+  .tag-list { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag { display: inline-flex; padding: 4px 10px; border-radius: 999px; background: #F1F5F9; color: var(--text-secondary); font-size: 0.75rem; font-weight: 700; }
+
+  @media (max-width: 980px) {
+    .hero, .split, .split.equal { grid-template-columns: 1fr; }
+    .grid.cols-4, .grid.cols-3, .kpi-grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .crumb-label { max-width: 190px; }
+  }
+  @media (max-width: 640px) {
+    .grid.cols-2, .grid.cols-3, .grid.cols-4, .kpi-grid, .kpi-grid.cols-4, .stat-grid { grid-template-columns: 1fr; }
+    .hero-card h1 { font-size: 1.5rem; }
+    .btn-lg { font-size: 1rem; padding: 16px 24px; }
+    .projection-mode .url-display { font-size: 1.5rem; }
+    .projection-mode .qr-large { width: 280px; height: 280px; }
+    .hero-actions { display: grid; }
+    .hero-actions .btn { width: 100%; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+    .tab { white-space: nowrap; }
+    .topbar-inner { flex-direction: column; align-items: flex-start; }
+    .topbar-actions { width: 100%; }
+    .topbar-actions .btn { width: auto; }
+    .breadcrumb-shell { min-height: 46px; }
+    .ldlc-breadcrumb { font-size: 0.86rem; }
+    .crumb-link, .crumb-current { min-height: 38px; padding: 0 6px; }
+    .crumb-sep { padding: 0 4px; }
+    .nav-item button { padding: 8px 10px; font-size: 0.8rem; }
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+  .footer-note { font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .empty { min-height: 220px; display: grid; place-items: center; text-align: center; background: #F8FAFC; border-radius: var(--radius); border: 1px dashed var(--border); }
+  .lesson-card { background: #F8FAFC; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px; }
+  .score { font-weight: 800; color: var(--primary); }
+</style>
+</head>
+<body>
+
+<header class="app-header" id="main-header">
+  <div class="container header-inner">
+    <a href="#" class="brand" onclick="goTo('home'); return false;" aria-label="Retour à l'accueil">
+      <img src="logo%20isoc%20mg.png" alt="Internet Society Chapter Malagasy" class="brand-logo">
+      <div class="brand-text">
+        <span class="brand-title">TAfHSSiM</span>
+        <span class="brand-subtitle">Technology Access for High School Student in Madagascar powered by Internet Society Foundation</span>
+      </div>
+    </a>
+    <div class="flex items-center gap-3">
+      <span id="role-badge" class="badge badge-info">Élève</span>
+      <button class="btn btn-sm btn-secondary" id="role-toggle" onclick="toggleRole()">Passer formateur</button>
+    </div>
+  </div>
+</header>
+
+<nav class="nav-bar" id="student-nav">
+  <div class="container">
+    <ul class="nav-list">
+      <li class="nav-item active" data-target="home"><button onclick="goTo('home')">🏠 Accueil</button></li>
+      <li class="nav-item" data-target="project"><button onclick="goTo('project')">ℹ️ Le projet</button></li>
+      <li class="nav-item" data-target="modules"><button onclick="goTo('modules')">📚 Modules</button></li>
+      <li class="nav-item" data-target="supports"><button onclick="goTo('supports')">🎒 Supports</button></li>
+    </ul>
+  </div>
+</nav>
+
+<nav class="nav-bar hidden" id="instructor-nav">
+  <div class="container">
+    <ul class="nav-list">
+      <li class="nav-item active" data-target="cockpit"><button onclick="goTo('cockpit')">🏠 Cockpit</button></li>
+      <li class="nav-item" data-target="trainer-modules"><button onclick="goTo('trainer-modules')">📊 Modules</button></li>
+      <li class="nav-item" data-target="exports"><button onclick="goTo('exports')">📁 Exports</button></li>
+      <li class="nav-item" data-target="support-admin"><button onclick="goTo('support-admin')">📚 Supports</button></li>
+      <li class="nav-item" data-target="network"><button onclick="goTo('network')">🌐 Réseau</button></li>
+      <li class="nav-item" data-target="settings"><button onclick="goTo('settings')">⚙️ Config</button></li>
+      <li class="nav-item" data-target="backup"><button onclick="goTo('backup')">💾 Sauvegarde</button></li>
+      <li class="nav-item" data-target="advanced"><button onclick="goTo('advanced')">🛡️ Admin avancé</button></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="topbar" id="topbar">
+  <div class="container">
+    <div class="topbar-inner">
+      <nav class="breadcrumb-shell" aria-label="Fil d'Ariane">
+        <ol class="ldlc-breadcrumb" id="path-breadcrumb"></ol>
+      </nav>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+    <div class="subnav" id="subnav"></div>
+  </div>
+</div>
+
+<main class="container">
+
+  <section class="page active" id="page-home" data-role="student" data-level1="Élève" data-level2="Accueil" data-level3="Choix" data-level4="Action">
+    <div class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">🌱 Formation numérique locale</div>
+        <h1>Bienvenue sur TAf Local Forms</h1>
+        <p class="lead">Une interface simple pour répondre aux modules, consulter les supports et apprendre en salle sans dépendre d'Internet public.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" onclick="goTo('modules')">📚 Voir les modules</button>
+          <button class="btn btn-secondary btn-lg" onclick="goTo('supports')">🎒 Voir les supports</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>Séance en cours</h2><span class="pill ok">Ouverte</span></div>
+        <div class="stat-grid">
+          <div class="stat-card"><strong>7</strong><span>Modules disponibles</span></div>
+          <div class="stat-card"><strong>34</strong><span>Élèves connectés</span></div>
+          <div class="stat-card"><strong>28</strong><span>Réponses reçues</span></div>
+          <div class="stat-card"><strong>8</strong><span>Supports publiés</span></div>
+        </div>
+        <div class="alert alert-info" style="margin:0;">
+          <span>ℹ️</span>
+          <div><strong>URL élèves</strong><p class="text-sm">http://192.168.1.42:8011</p></div>
+        </div>
+        <div class="footer-note">Aucun compte élève requis. Utilise l'identifiant à 2 chiffres donné en classe.</div>
+      </div>
+    </div>
+    <div class="grid cols-3">
+      <div class="card"><div class="card-body"><h2 class="mb-2">📚 Répondre</h2><p class="text-secondary mb-4">Accéder aux modules 2 à 8 avec consignes courtes et boutons larges.</p><button class="btn btn-primary" onclick="goTo('modules')">Voir les modules</button></div></div>
+      <div class="card"><div class="card-body"><h2 class="mb-2">🎒 Réviser</h2><p class="text-secondary mb-4">Consulter documents, vidéos et fiches publiés par le formateur.</p><button class="btn btn-secondary" onclick="goTo('supports')">Voir les supports</button></div></div>
+      <div class="card"><div class="card-body"><h2 class="mb-2">🏫 Futur scolaire</h2><p class="text-secondary mb-4">Parcourir les futures ressources par matière, niveau et chapitre.</p><button class="btn btn-secondary" onclick="goTo('school')">Explorer</button></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-modules" data-role="student" data-level1="Élève" data-level2="Modules" data-level3="Détail module" data-level4="Questionnaire">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.5rem; font-weight:800;">Modules TAfHSSiM</h1>
+        <p class="text-secondary">Choisis le module indiqué par le formateur. Les cartes gardent le style simple et lisible sur téléphone.</p>
+      </div>
+      <span class="pill ok">Modules 2 à 8</span>
+    </div>
+    <div class="module-grid">
+      <article class="module-card" onclick="goTo('module-form')">
+        <div class="module-number">2</div>
+        <div class="module-title">Comprendre Internet</div>
+        <div class="module-desc">Questionnaire de base sur le fonctionnement d'Internet.</div>
+        <div class="progress"><span style="width:100%"></span></div>
+        <div class="module-footer"><span class="badge badge-success">Ouvert</span><button class="btn btn-sm btn-primary">Répondre</button></div>
+      </article>
+      <article class="module-card" onclick="goTo('module-form')">
+        <div class="module-number">3</div>
+        <div class="module-title">Recherche efficace</div>
+        <div class="module-desc">Méthode de recherche, mots-clés et validation rapide.</div>
+        <div class="progress"><span style="width:80%"></span></div>
+        <div class="module-footer"><span class="badge badge-success">Ouvert</span><button class="btn btn-sm btn-primary">Répondre</button></div>
+      </article>
+      <article class="module-card" onclick="goTo('module-form')">
+        <div class="module-number">4</div>
+        <div class="module-title">Sources fiables</div>
+        <div class="module-desc">Évaluer une source, repérer les indices de confiance.</div>
+        <div class="progress"><span style="width:60%"></span></div>
+        <div class="module-footer"><span class="badge badge-success">Ouvert</span><button class="btn btn-sm btn-primary">Répondre</button></div>
+      </article>
+      <article class="module-card" onclick="goTo('supports')">
+        <div class="module-number">5</div>
+        <div class="module-title">Email et communication</div>
+        <div class="module-desc">Quiz, todo et rédaction d'un email clair.</div>
+        <div class="progress"><span style="width:45%"></span></div>
+        <div class="module-footer"><span class="badge badge-warning">Bientôt</span><button class="btn btn-sm btn-secondary">Supports</button></div>
+      </article>
+      <article class="module-card" onclick="goTo('supports')">
+        <div class="module-number">6</div>
+        <div class="module-title">Ressources et recherche</div>
+        <div class="module-desc">Activité de recherche et organisation des ressources.</div>
+        <div class="progress"><span style="width:30%"></span></div>
+        <div class="module-footer"><span class="badge badge-warning">Préparé</span><button class="btn btn-sm btn-secondary">Supports</button></div>
+      </article>
+      <article class="module-card" onclick="goTo('supports')">
+        <div class="module-number">7</div>
+        <div class="module-title">Sécurité</div>
+        <div class="module-desc">Messages suspects, mots de passe, comportements sûrs.</div>
+        <div class="progress"><span style="width:20%"></span></div>
+        <div class="module-footer"><span class="badge badge-warning">Préparé</span><button class="btn btn-sm btn-secondary">Supports</button></div>
+      </article>
+      <article class="module-card" onclick="goTo('module-form')">
+        <div class="module-number">8</div>
+        <div class="module-title">Synthèse</div>
+        <div class="module-desc">Synthèse transversale des Modules 2 à 7.</div>
+        <div class="progress"><span style="width:15%"></span></div>
+        <div class="module-footer"><span class="badge badge-success">Ouvert</span><button class="btn btn-sm btn-primary">Répondre</button></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="page" id="page-project" data-role="student" data-level1="Élève" data-level2="Le projet" data-level3="Présentation" data-level4="Enjeux">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.7rem;font-weight:800;">À propos de TAfHSSiM</h1>
+        <p class="text-secondary">Faire d'Internet un outil d'éducation, d'autonomie et d'espoir.</p>
+      </div>
+      <span class="pill ok">Phase pilote — Lycée Andohalo Antananarivo</span>
+    </div>
+
+    <div class="hero" style="grid-template-columns:1fr 1fr;">
+      <div class="hero-card">
+        <div class="eyebrow">🎯 Mission</div>
+        <h1 style="font-size:1.5rem;">Réduire la fracture numérique dans l'éducation publique à Madagascar</h1>
+        <p class="lead">TAfHSSiM (Technology Access for High School Students in Madagascar) est porté par l'Internet Society Madagascar Chapter. La Phase 1 pilote au Lycée Andohalo Antananarivo offre aux élèves un premier accès structuré à Internet, à des laptops et à une formation en culture numérique.</p>
+        <p class="lead">Le projet vise à transformer Internet en outil concret pour apprendre, rechercher, préparer les examens et construire un avenir professionnel.</p>
+      </div>
+      <div class="grid" style="gap:16px;">
+        <div class="card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>1</strong><span>lycée pilote</span></div></div></div>
+        <div class="card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>100</strong><span>élèves formés maximum</span></div></div></div>
+        <div class="card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>3</strong><span>niveaux touchés : Seconde, Première, Terminale</span></div></div></div>
+        <div class="card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>7</strong><span>compétences numériques de base ciblées</span></div></div></div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-bottom:24px;">
+      <div class="card"><div class="card-header"><div class="card-title">Le problème</div></div><div class="card-body">
+        <p class="text-secondary mb-4">De nombreux élèves arrivent au lycée sans avoir utilisé d'ordinateur ou sans comprendre comment Internet peut les aider dans leurs études. Ils connaissent Internet principalement par les réseaux sociaux.</p>
+        <p class="text-secondary">Après le baccalauréat, la transition vers les outils numériques universitaires (email, recherche, plateformes éducatives) devient brutale. Le manque de compétences numériques limite la confiance, les résultats et parfois la poursuite d'études supérieures.</p>
+      </div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Objectifs</div></div><div class="card-body">
+        <ul class="steps">
+          <li class="step"><strong>Offrir un accès structuré</strong><span class="text-secondary">Internet, laptops et formation de base au lycée pilote.</span></li>
+          <li class="step"><strong>Former aux compétences utiles</strong><span class="text-secondary">Recherche, email, sources fiables, sécurité, bureautique.</span></li>
+          <li class="step"><strong>Préparer l'après-bac</strong><span class="text-secondary">Donner confiance face aux exigences des études supérieures.</span></li>
+          <li class="step"><strong>Construire un modèle réplicable</strong><span class="text-secondary">Guide pratique, retours d'expérience et extension progressive.</span></li>
+        </ul>
+      </div></div>
+    </div>
+
+    <div class="card mb-4"><div class="card-header"><div class="card-title">Contenu de la formation</div></div><div class="card-body">
+      <div class="grid cols-3">
+        <div class="step"><strong>🔍 Recherche efficace</strong><span class="text-secondary">Mots-clés, moteurs de recherche et validation rapide.</span></div>
+        <div class="step"><strong>📚 Sources fiables</strong><span class="text-secondary">Repérer les indices de confiance et éviter les rumeurs.</span></div>
+        <div class="step"><strong>✉️ Email</strong><span class="text-secondary">Créer un compte, rédiger un message clair.</span></div>
+        <div class="step"><strong>🛡️ Sécurité en ligne</strong><span class="text-secondary">Mots de passe, messages suspects, comportements sûrs.</span></div>
+        <div class="step"><strong>🎓 Ressources éducatives</strong><span class="text-secondary">Sites et chaînes utiles pour réviser les cours.</span></div>
+        <div class="step"><strong>💻 Bureautique de base</strong><span class="text-secondary">Saisie, organisation de fichiers, outils collaboratifs.</span></div>
+      </div>
+    </div></div>
+
+    <div class="alert alert-info"><span>ℹ️</span><div><strong>Partenaire financier</strong><p class="text-sm">This project was made possible through funding from the Internet Society Foundation.</p></div></div>
+  </section>
+
+  <section class="page" id="page-module-form" data-role="student" data-level1="Élève" data-level2="Modules" data-level3="Module 8" data-level4="Questionnaire">
+    <div class="split">
+      <div class="panel">
+        <div class="panel-title">
+          <div>
+            <h1 style="font-size:1.5rem; font-weight:800;">Module 8 — Synthèse</h1>
+            <p class="text-secondary">Réponds calmement. Une seule soumission est autorisée pour cette séance.</p>
+          </div>
+          <span class="pill ok">Session active</span>
+        </div>
+        <div class="alert alert-warning">
+          <span>⚠️</span>
+          <div><strong>Avant de commencer</strong><p class="text-sm">Utilise ton identifiant de salle à 2 chiffres. Exemple : 07.</p></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="school_id">Identifiant étudiant</label>
+          <input id="school_id" class="form-input" inputmode="numeric" maxlength="2" placeholder="Ex. 07" style="max-width:160px; text-align:center; font-size:1.25rem; font-weight:700;">
+          <p class="form-hint">Ne mets pas ton nom complet. Utilise seulement l'identifiant donné en classe.</p>
+        </div>
+        <fieldset class="question"><legend>1. Pourquoi vérifier une source avant de partager une information ?</legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="q1" value="a"> Pour éviter de diffuser une information fausse.</label>
+            <label class="choice"><input type="radio" name="q1" value="b"> Pour rendre Internet plus lent.</label>
+            <label class="choice"><input type="radio" name="q1" value="c"> Pour supprimer les moteurs de recherche.</label>
+          </div>
+        </fieldset>
+        <fieldset class="question"><legend>2. Quel choix est le plus sûr pour un mot de passe ?</legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="q2" value="a"> 123456</label>
+            <label class="choice"><input type="radio" name="q2" value="b"> Une phrase longue et difficile à deviner.</label>
+            <label class="choice"><input type="radio" name="q2" value="c"> Le prénom du meilleur ami.</label>
+          </div>
+        </fieldset>
+        <fieldset class="question"><legend>3. Coche les bonnes pratiques pour rester en sécurité sur Internet :</legend>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" name="q3" value="a"> Ne jamais partager son mot de passe</label>
+            <label class="choice"><input type="checkbox" name="q3" value="b"> Cliquer sur tous les liens reçus par email</label>
+            <label class="choice"><input type="checkbox" name="q3" value="c"> Vérifier que le site utilise HTTPS</label>
+            <label class="choice"><input type="checkbox" name="q3" value="d"> Télécharger n'importe quel fichier pour aller plus vite</label>
+          </div>
+        </fieldset>
+        <fieldset class="question"><legend>4. Situation pratique</legend>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" for="answer">Écris une action à faire si tu reçois un message suspect.</label>
+            <textarea id="answer" class="form-textarea" rows="3" placeholder="Je peux..."></textarea>
+          </div>
+        </fieldset>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" onclick="submitQuiz()">Envoyer mes réponses</button>
+          <button class="btn btn-secondary" onclick="goTo('modules')">Retour modules</button>
+        </div>
+      </div>
+      <aside class="panel">
+        <h2 style="font-size:1.125rem; font-weight:700; margin-bottom:12px;">Progression</h2>
+        <div class="progress"><span style="width:42%"></span></div>
+        <p class="text-secondary">4 questions visibles sur 8. Les boutons sont grands pour faciliter l'usage au téléphone.</p>
+        <div class="steps mt-4">
+          <div class="step"><strong>Identifiant</strong><span class="text-secondary">Saisie simple, sans compte.</span></div>
+          <div class="step"><strong>Réponses</strong><span class="text-secondary">Questions une par une, lisibles.</span></div>
+          <div class="step"><strong>Confirmation</strong><span class="text-secondary">Message clair après envoi.</span></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="page" id="page-confirmation" data-role="student" data-level1="Élève" data-level2="Modules" data-level3="Module 8" data-level4="Confirmation">
+    <div class="panel" style="max-width:760px; margin:auto; text-align:center;">
+      <div style="width:84px;height:84px;background:#D1FAE5;color:#059669;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.8rem;margin:0 auto 24px;">✓</div>
+      <h1 style="font-size:1.8rem; font-weight:800; margin-bottom:12px;">Réponses enregistrées</h1>
+      <p class="text-secondary mb-4">Merci <strong id="confirm-id">élève</strong>. Ta participation au Module 8 est comptabilisée pour cette séance.</p>
+      <div class="grid cols-2 mb-4" style="text-align:left;">
+        <div class="card"><div class="card-body"><div class="kpi-label">Module</div><div class="kpi-value" style="font-size:1.2rem">Synthèse</div></div></div>
+        <div class="card"><div class="card-body"><div class="kpi-label">Score estimé</div><div class="kpi-value">6 / 7</div></div></div>
+      </div>
+      <div class="hero-actions" style="justify-content:center;">
+        <button class="btn btn-primary" onclick="goTo('supports')">Consulter les supports</button>
+        <button class="btn btn-secondary" onclick="goTo('modules')">Retour aux modules</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-duplicate" data-role="student" data-level1="Élève" data-level2="Modules" data-level3="Module 8" data-level4="Doublon">
+    <div style="max-width:680px;margin:auto;" class="card"><div class="card-body text-center"><div style="font-size:3.5rem">⚠️</div><h1 style="font-size:1.7rem; font-weight:800;">Réponse déjà envoyée</h1><p class="text-secondary mt-2 mb-4">Une réponse existe déjà pour cet identifiant dans cette session. Le système empêche les doublons accidentels.</p><div class="alert alert-warning text-center"><div><strong>Action recommandée</strong><p class="text-sm">Appelle le formateur si tu penses qu'il y a une erreur. Ne change pas d'identifiant seul.</p></div></div><button class="btn btn-secondary" onclick="goTo('modules')">Retour aux modules</button></div></div>
+  </section>
+
+  <section class="page" id="page-supports" data-role="student" data-level1="Élève" data-level2="Supports" data-level3="Détail" data-level4="Action">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.5rem; font-weight:800;">Médiathèque locale</h1>
+        <p class="text-secondary">Documents et vidéos publiés par le formateur, disponibles sur le réseau local.</p>
+      </div>
+      <span class="pill ok">8 supports publiés</span>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-pill active">Tous</button>
+      <button class="filter-pill">Module 2</button>
+      <button class="filter-pill">Module 8</button>
+      <button class="filter-pill">PDF</button>
+      <button class="filter-pill">Vidéo</button>
+      <button class="filter-pill">Matières</button>
+    </div>
+    <div class="resource-grid">
+      <div class="resource-card" onclick="goTo('support-detail')"><div class="resource-thumb">📄</div><div class="resource-body"><div class="resource-title">Fiche — Comprendre Internet</div><div class="resource-meta">PDF · Module 2 · 1.8 Mo</div><div class="mt-2"><span class="badge badge-success">Téléchargeable</span></div></div></div>
+      <div class="resource-card" onclick="goTo('watch')"><div class="resource-thumb video">▶️</div><div class="resource-body"><div class="resource-title">Repérer un message suspect</div><div class="resource-meta">MP4 · Module 7 · 42 Mo</div><div class="mt-2"><span class="badge badge-info">Lecture locale</span></div></div></div>
+      <div class="resource-card" onclick="goTo('support-detail')"><div class="resource-thumb">📊</div><div class="resource-body"><div class="resource-title">Synthèse Modules 2 à 7</div><div class="resource-meta">PPTX · Module 8 · 7.4 Mo</div><div class="mt-2"><span class="badge badge-success">Publié</span></div></div></div>
+      <div class="resource-card" onclick="goTo('school')"><div class="resource-thumb">🏫</div><div class="resource-body"><div class="resource-title">Ressources scolaires futures</div><div class="resource-meta">Maths · Français · Sciences · Informatique</div><div class="mt-2"><span class="badge badge-warning">Futur</span></div></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-support-detail" data-role="student" data-level1="Élève" data-level2="Supports" data-level3="Fiche Internet" data-level4="Télécharger">
+    <div class="split">
+      <div class="panel">
+        <div class="tag-list"><span class="tag">PDF</span><span class="tag">Publié</span><span class="tag">Téléchargeable</span></div>
+        <h1 style="font-size:1.6rem; font-weight:800; margin:8px 0 12px;">Fiche — Comprendre Internet</h1>
+        <p class="text-secondary mb-4">Résumé clair pour réviser les notions principales avant ou après la séance.</p>
+        <div class="grid cols-2 mb-4">
+          <div class="card"><div class="card-body"><div class="kpi-label">Module lié</div><strong>Module 2</strong></div></div>
+          <div class="card"><div class="card-body"><div class="kpi-label">Licence</div><strong>CC BY</strong></div></div>
+        </div>
+        <div class="flex gap-3 flex-col">
+          <button class="btn btn-primary" onclick="alert('Téléchargement simulé')">Télécharger le PDF</button>
+          <button class="btn btn-secondary" onclick="goTo('supports')">Retour catalogue</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title">Aperçu document</div></div><div class="card-body text-center" style="min-height:320px;display:flex;align-items:center;justify-content:center;background:#F8FAFC;"><div><div style="font-size:4rem;">📄</div><strong>Page 1 / 4</strong><p class="text-secondary text-sm mt-2">Aperçu statique de la ressource.</p></div></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-watch" data-role="student" data-level1="Élève" data-level2="Supports" data-level3="Vidéo sécurité" data-level4="Regarder">
+    <div class="panel">
+      <div class="panel-title">
+        <div>
+          <span class="badge badge-info mb-2">MP4 local</span>
+          <h1 style="font-size:1.6rem; font-weight:800;">Repérer un message suspect</h1>
+          <p class="text-secondary">Lecture vidéo locale depuis le laptop du formateur.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="alert('Téléchargement simulé')">Téléchargement secours</button>
+      </div>
+      <div style="background:#000; border-radius:var(--radius); overflow:hidden; margin-bottom:20px;">
+        <video controls style="width:100%; display:block;" poster="">
+          <source src="" type="video/mp4">
+          <p style="color:#fff; padding:40px; text-align:center;">Lecteur vidéo natif HTML5<br><a href="#" style="color:#60A5FA;">Télécharger le MP4</a> si la lecture ne démarre pas.</p>
+        </video>
+      </div>
+      <div class="alert alert-warning"><span>⚠️</span><div><strong>Si la vidéo est lente</strong><p class="text-sm">Utilise le téléchargement de secours ou demande au formateur de limiter les lectures simultanées.</p></div></div>
+      <button class="btn btn-secondary" onclick="goTo('supports')">Retour supports</button>
+    </div>
+  </section>
+
+  <section class="page" id="page-school" data-role="student" data-level1="Élève" data-level2="Matières" data-level3="Chapitre" data-level4="Ressource">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem; font-weight:800;">Ressources scolaires futures</h1>
+        <p class="text-secondary">Extension prévue pour classer les supports par matière, niveau et chapitre.</p>
+      </div>
+      <span class="pill warn">Périmètre futur</span>
+    </div>
+    <div class="grid cols-4">
+      <div class="card card-body"><h3>Mathématiques</h3><p class="text-secondary">Fiches, exercices et corrigés.</p><button class="btn btn-sm btn-secondary" onclick="goTo('supports')">Voir supports</button></div>
+      <div class="card card-body"><h3>Français / Malagasy</h3><p class="text-secondary">Lecture, grammaire, expression écrite.</p><button class="btn btn-sm btn-secondary" onclick="goTo('supports')">Voir supports</button></div>
+      <div class="card card-body"><h3>Sciences</h3><p class="text-secondary">Cours, expériences, vidéos courtes.</p><button class="btn btn-sm btn-secondary" onclick="goTo('supports')">Voir supports</button></div>
+      <div class="card card-body"><h3>Informatique</h3><p class="text-secondary">Internet, sécurité, email, recherche.</p><button class="btn btn-sm btn-secondary" onclick="goTo('supports')">Voir supports</button></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-login" data-role="public" data-level1="Formateur" data-level2="Connexion" data-level3="Cockpit" data-level4="Action">
+    <div style="max-width:420px;margin:50px auto;"><div class="text-center mb-6"><div class="logo-icon" style="width:56px;height:56px;font-size:1.5rem;margin:0 auto 16px;">TAf</div><h1 style="font-size:1.6rem;font-weight:800;">Espace formateur</h1><p class="text-secondary text-sm">Accès protégé au tableau de bord, exports, réseau et sauvegarde.</p></div><div class="card"><div class="card-body"><div class="form-group"><label class="form-label" for="login-user">Identifiant</label><input type="text" id="login-user" class="form-input" placeholder="formateur" value="formateur"></div><div class="form-group"><label class="form-label" for="login-pass">Mot de passe</label><input type="password" id="login-pass" class="form-input" placeholder="••••••••" value="demo"></div><button class="btn btn-primary btn-block" onclick="doLogin()">Se connecter</button><p class="text-center text-xs text-secondary mt-3">Prototype : un identifiant de démonstration est prérempli.</p></div></div></div>
+  </section>
+
+  <section class="page" id="page-cockpit" data-role="instructor" data-level1="Formateur" data-level2="Cockpit" data-level3="Détail" data-level4="Action">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;">Bonjour, Formateur 👋</h1>
+        <p class="text-secondary">Vue terrain pour démarrer, surveiller, exporter et sauvegarder.</p>
+      </div>
+      <button class="btn btn-primary" onclick="toggleProjection()">📺 Mode projection</button>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Réponses reçues</div><div class="kpi-value">28</div><div class="kpi-delta up">+4 depuis 10 min</div></div>
+      <div class="kpi-card"><div class="kpi-label">Présences live</div><div class="kpi-value">34</div><div class="kpi-delta">Module 8 ouvert</div></div>
+      <div class="kpi-card"><div class="kpi-label">Participation</div><div class="kpi-value">82%</div><div class="kpi-delta up">Objectif atteint</div></div>
+      <div class="kpi-card"><div class="kpi-label">LAN</div><div class="kpi-value" style="font-size:1.25rem;">192.168.1.42</div><div class="kpi-delta">Port élèves 8011</div></div>
+    </div>
+    <div class="grid cols-3">
+      <div class="card"><div class="card-body"><h2>📊 Module actif</h2><p class="text-secondary mb-4">Module 8 — Synthèse.</p><button class="btn btn-primary" onclick="goTo('module-dashboard')">Voir dashboard</button></div></div>
+      <div class="card"><div class="card-body"><h2>🌐 Accès élèves</h2><p class="text-secondary mb-4">Afficher QR code et tester téléphone.</p><button class="btn btn-secondary" onclick="goTo('network')">Contrôler réseau</button></div></div>
+      <div class="card"><div class="card-body"><h2>💾 Après séance</h2><p class="text-secondary mb-4">Exporter CSV puis sauvegarder données et supports.</p><button class="btn btn-secondary" onclick="goTo('backup')">Sauvegarder</button></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-projection" data-role="instructor" data-level1="Formateur" data-level2="Cockpit" data-level3="Projection" data-level4="QR">
+    <div class="panel" style="text-align:center;">
+      <div class="eyebrow">📺 Mode projection</div>
+      <h1 style="font-size:1.75rem; font-weight:800; margin:16px 0 8px;">Connectez-vous et ouvrez le questionnaire</h1>
+      <p class="text-secondary" style="margin-bottom:24px;">Scannez le QR code ou tapez l'adresse locale dans le navigateur de votre téléphone.</p>
+      <div class="qr-wrap"><div id="qr-box"></div></div>
+      <p class="text-sm text-secondary mt-3">Scanne ce QR code avec l'appareil photo du téléphone</p>
+      <p style="margin:16px 0;"><span class="route-chip" style="font-size:1.2rem;">http://192.168.1.42:8011/modules/</span></p>
+      <div class="grid cols-3" style="margin-top:24px; text-align:left;">
+        <div class="card card-body"><h3>Wi‑Fi</h3><p class="text-secondary">TAfHSSiM‑Salle</p></div>
+        <div class="card card-body"><h3>Module ouvert</h3><p class="text-secondary">Module 8 — Synthèse</p></div>
+        <div class="card card-body"><h3>Aide</h3><p class="text-secondary">Demander au formateur si la page ne s'ouvre pas.</p></div>
+      </div>
+      <div class="flex gap-3 justify-center mt-4 flex-wrap">
+        <button class="btn btn-primary" onclick="toggleProjection()">🖥 Plein écran</button>
+        <button class="btn btn-secondary" onclick="testUrl()">🧪 Tester l'URL</button>
+        <button class="btn btn-success" onclick="copyUrl()">📋 Copier</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-trainer-modules" data-role="instructor" data-level1="Formateur" data-level2="Modules" data-level3="Module" data-level4="Action">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;">Gestion des modules</h1>
+        <p class="text-secondary">Ouvrir/fermer les sessions, accéder aux dashboards et exports.</p>
+      </div>
+      <button class="btn btn-secondary" onclick="goTo('exports')">Exports CSV</button>
+    </div>
+    <div class="table-wrap card">
+      <table class="data-table">
+        <thead><tr><th>Module</th><th>Route publique</th><th>Session</th><th>Réponses</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td><strong>2 — Comprendre Internet</strong></td><td><span class="route-chip">/module-2/</span></td><td><span class="badge badge-success">Ouverte</span></td><td>31</td><td><button class="btn btn-sm btn-secondary" onclick="goTo('module-dashboard')">Détail</button></td></tr>
+          <tr><td><strong>3 — Recherche efficace</strong></td><td><span class="route-chip">/module-3/</span></td><td><span class="badge badge-success">Ouverte</span></td><td>29</td><td><button class="btn btn-sm btn-secondary" onclick="goTo('module-dashboard')">Détail</button></td></tr>
+          <tr><td><strong>4 — Sources fiables</strong></td><td><span class="route-chip">/module-4/</span></td><td><span class="badge badge-success">Ouverte</span></td><td>27</td><td><button class="btn btn-sm btn-secondary" onclick="goTo('module-dashboard')">Détail</button></td></tr>
+          <tr><td><strong>5 — Email</strong></td><td><span class="route-chip">/module-5/</span></td><td><span class="badge badge-warning">Bientôt</span></td><td>0</td><td><button class="btn btn-sm btn-secondary" disabled>Détail</button></td></tr>
+          <tr><td><strong>8 — Synthèse</strong></td><td><span class="route-chip">/module-8/</span></td><td><span class="badge badge-success">Active</span></td><td>28</td><td><button class="btn btn-sm btn-primary" onclick="goTo('module-dashboard')">Dashboard</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page" id="page-module-dashboard" data-role="instructor" data-level1="Formateur" data-level2="Modules" data-level3="Module 8" data-level4="Dashboard">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;">Dashboard — Module 8</h1>
+        <p class="text-secondary">Réponses, score, présences live et doublons évités.</p>
+      </div>
+      <div class="flex gap-2" style="flex-wrap:wrap">
+        <button class="btn btn-sm btn-danger" onclick="alert('Session fermée : prototype')">🔒 Fermer la session</button>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Réponses</div><div class="kpi-value">28</div></div>
+      <div class="kpi-card"><div class="kpi-label">Présences live</div><div class="kpi-value">34</div></div>
+      <div class="kpi-card"><div class="kpi-label">Score moyen</div><div class="kpi-value">5.9/7</div></div>
+      <div class="kpi-card"><div class="kpi-label">Doublons évités</div><div class="kpi-value">2</div></div>
+    </div>
+    <div class="split">
+      <div class="card"><div class="card-header"><div class="card-title">Résultats récents</div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>ID</th><th>Score</th><th>Soumis</th><th>Statut</th></tr></thead><tbody><tr><td>07</td><td><strong>7/7</strong></td><td>09:42</td><td><span class="badge badge-success">Complet</span></td></tr><tr><td>12</td><td><strong>6/7</strong></td><td>09:43</td><td><span class="badge badge-success">Complet</span></td></tr><tr><td>18</td><td><strong>4/7</strong></td><td>09:44</td><td><span class="badge badge-warning">À revoir</span></td></tr></tbody></table></div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Questions difficiles</div></div><div class="card-body"><div class="alert alert-warning"><span>Q3</span><div><strong>52 % d'erreurs</strong><p class="text-sm">Prévoir une explication collective.</p></div></div><div class="alert alert-info"><span>Q4</span><div><strong>33 % d'erreurs</strong><p class="text-sm">Ajouter un support vidéo ou fiche.</p></div></div></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-exports" data-role="instructor" data-level1="Formateur" data-level2="Exports" data-level3="Fichier" data-level4="Télécharger">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;">Résultats et exports CSV</h1>
+        <p class="text-secondary">Fichiers protégés par login avec protection contre les formules tableur.</p>
+      </div>
+      <span class="pill ok">UTF‑8</span>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title">Modules disponibles</div><span class="badge badge-primary">UTF‑8</span></div><div class="card-body" style="padding:0;"><div class="table-wrap"><table class="data-table"><thead><tr><th>Fichier</th><th>Lignes</th><th>Dernier export</th><th>Action</th></tr></thead><tbody><tr><td><strong>module-2.csv</strong></td><td>31</td><td>09:30</td><td><button class="btn btn-sm btn-primary" onclick="alert('Export simulé')">CSV</button></td></tr><tr><td><strong>module-8.csv</strong></td><td>28</td><td>Jamais</td><td><button class="btn btn-sm btn-primary" onclick="alert('Export simulé')">CSV</button></td></tr><tr><td><strong>module-7.csv</strong></td><td>0</td><td>—</td><td><button class="btn btn-sm btn-secondary" disabled>Indisponible</button></td></tr></tbody></table></div></div></div>
+    <div class="alert alert-info mt-4"><span>ℹ️</span><div><strong>Sécurité</strong><p class="text-sm">Les valeurs commençant par = + - @ ou tabulation doivent être neutralisées avant export.</p></div></div>
+  </section>
+
+  <section class="page" id="page-network" data-role="instructor" data-level1="Formateur" data-level2="Réseau" data-level3="Diagnostic" data-level4="Test URL">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;">Configuration LAN</h1>
+        <p class="text-secondary">Rendre l'application accessible aux téléphones élèves sur le même Wi‑Fi.</p>
+      </div>
+      <span class="pill ok">Helper Windows : 127.0.0.1:8019</span>
+    </div>
+    <div class="alert alert-success"><span>✅</span><div><strong>Réseau configuré</strong><p class="text-sm">IP détectée : 192.168.1.42 · Portproxy 8011 → 8010.</p></div></div>
+    <div class="grid cols-3" style="margin-bottom:24px;">
+      <div class="card card-body"><h3>Port formateur</h3><p><span class="route-chip">localhost:8010</span></p><span class="pill ok">OK</span></div>
+      <div class="card card-body"><h3>Port élèves</h3><p><span class="route-chip">192.168.1.42:8011</span></p><span class="pill ok">Accessible</span></div>
+      <div class="card card-body"><h3>Portproxy</h3><p><span class="route-chip">8011 → 8010</span></p><span class="pill ok">Configuré</span></div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header"><div class="card-title">URL pour les élèves</div></div>
+      <div class="card-body text-center">
+        <div style="font-size:1.5rem; font-weight:800; color:var(--primary); margin-bottom:16px; word-break:break-all;">http://192.168.1.42:8011</div>
+        <div class="qr-wrap"><div id="qr-box-network"></div></div>
+        <p class="text-sm text-secondary mt-3">Scanne ce QR code avec l'appareil photo du téléphone</p>
+        <div class="flex gap-3 justify-center mt-4 flex-wrap">
+          <button class="btn btn-primary" onclick="toggleProjection()">🖥 Mode projection</button>
+          <button class="btn btn-secondary" onclick="testUrl()">🧪 Tester l'URL</button>
+          <button class="btn btn-success" onclick="copyUrl()">📋 Copier</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><h2>Checklist réseau</h2><span class="pill ok">LAN</span></div>
+      <label class="toggle mb-3"><input type="checkbox" checked><span class="toggle-switch"></span><span>Wi‑Fi partagé activé</span></label>
+      <label class="toggle mb-3"><input type="checkbox" checked><span class="toggle-switch"></span><span>Docker démarré</span></label>
+      <label class="toggle mb-3"><input type="checkbox" checked><span class="toggle-switch"></span><span>Port 8011 ouvert</span></label>
+      <label class="toggle"><input type="checkbox"><span class="toggle-switch"></span><span>Test depuis téléphone réel</span></label>
+    </div>
+    <details class="diagnostics"><summary>Diagnostics techniques avancés</summary><div><div>ALLOWED_HOSTS: localhost, 127.0.0.1, 192.168.1.42</div><div>CSRF_TRUSTED_ORIGINS: http://192.168.1.42:8011</div><div>Portproxy: 0.0.0.0:8011 -> 127.0.0.1:8010</div><div>Helper LAN: 127.0.0.1:8019</div></div></details>
+  </section>
+
+  <section class="page" id="page-support-admin" data-role="instructor" data-level1="Formateur" data-level2="Supports" data-level3="Support" data-level4="Publier">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;">Gestion supports</h1>
+        <p class="text-secondary">Upload, publication, masquage, licence et classement.</p>
+      </div>
+      <button class="btn btn-primary" onclick="goTo('upload')">+ Ajouter support</button>
+    </div>
+    <div class="filter-bar mb-4">
+      <button class="filter-pill active">Tous les statuts</button>
+      <button class="filter-pill">Publiés</button>
+      <button class="filter-pill">Brouillons</button>
+      <button class="filter-pill">Module 2</button>
+      <button class="filter-pill">Module 3</button>
+    </div>
+    <div class="card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Titre</th><th>Type</th><th>Module</th><th>Visibilité</th><th>Licence</th><th>Action</th></tr></thead><tbody><tr><td><strong>Fiche — Comprendre Internet</strong></td><td>PDF</td><td>Module 2</td><td><span class="badge badge-success">Publié</span></td><td>CC BY</td><td><button class="btn btn-sm btn-secondary" onclick="goTo('upload')">Détail</button></td></tr><tr><td><strong>Repérer un message suspect</strong></td><td>MP4</td><td>Module 7</td><td><span class="badge badge-success">Publié</span></td><td>Projet</td><td><button class="btn btn-sm btn-secondary" onclick="goTo('upload')">Détail</button></td></tr><tr><td><strong>Exercices de logique</strong></td><td>PDF</td><td>Maths</td><td><span class="badge badge-warning">Brouillon</span></td><td>À compléter</td><td><button class="btn btn-sm btn-secondary" onclick="goTo('upload')">Détail</button></td></tr></tbody></table></div></div>
+  </section>
+
+  <section class="page" id="page-upload" data-role="instructor" data-level1="Formateur" data-level2="Supports" data-level3="Upload" data-level4="Publier">
+    <h1 style="font-size:1.6rem;font-weight:800;margin-bottom:8px;">Ajouter un support</h1><p class="text-secondary mb-4">Formats : PDF, DOCX, PPTX, PNG, JPG, MP3, MP4.</p>
+    <div class="card"><div class="card-body"><div class="upload-zone"><div class="icon">📤</div><div class="font-semibold">Glisse-dépose un fichier ici</div><div class="text-sm text-secondary mt-2">ou clique pour parcourir</div></div><div class="form-row mt-4"><div class="form-group"><label class="form-label">Titre</label><input class="form-input" placeholder="Ex. Fiche Module 8"></div><div class="form-group"><label class="form-label">Module / matière</label><select class="form-select"><option>Module 8 — Synthèse</option><option>Module 2 — Comprendre Internet</option><option>Mathématiques / Seconde</option></select></div></div><div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" placeholder="Décris le contenu..."></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Source / auteur</label><input class="form-input" placeholder="Auteur ou URL source"></div><div class="form-group"><label class="form-label">Licence</label><select class="form-select"><option>Creative Commons BY</option><option>Creative Commons BY-SA</option><option>Projet TAfHSSiM</option></select></div></div><div class="flex gap-3" style="justify-content:flex-end;flex-wrap:wrap"><button class="btn btn-secondary" onclick="goTo('support-admin')">Annuler</button><button class="btn btn-primary" onclick="goTo('support-admin')">Enregistrer</button></div></div></div>
+  </section>
+
+  <section class="page" id="page-settings" data-role="instructor" data-level1="Formateur" data-level2="Configuration" data-level3="Paramètre" data-level4="Sauvegarder">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;margin-bottom:8px;">Configuration</h1>
+        <p class="text-secondary mb-4">Paramètres non destructifs pour séance, interface et accès LAN.</p>
+      </div>
+      <span class="pill warn">Formateur avancé</span>
+    </div>
+    <div class="grid cols-2"><div class="card"><div class="card-header"><div class="card-title">Séance</div></div><div class="card-body"><div class="form-group"><label class="form-label">Nom de séance</label><input class="form-input" value="TAfHSSiM — Lycée pilote"></div><div class="form-group"><label class="form-label">Module ouvert par défaut</label><select class="form-select"><option>Module 8 — Synthèse</option><option>Module 2 — Comprendre Internet</option></select></div><button class="btn btn-primary" onclick="goTo('cockpit')">Enregistrer</button></div></div><div class="card"><div class="card-header"><div class="card-title">Interface</div></div><div class="card-body"><div class="form-group"><label class="form-label">Message d'accueil</label><textarea class="form-textarea">Bienvenue. Connectez-vous au Wi‑Fi puis choisissez le module indiqué.</textarea></div><div class="form-group"><label class="form-label">Mode affichage</label><select class="form-select"><option>Simple élèves</option><option>Projection</option><option>Formateur détaillé</option></select></div></div></div></div>
+  </section>
+
+  <section class="page" id="page-backup" data-role="instructor" data-level1="Formateur" data-level2="Sauvegarde" data-level3="Backup" data-level4="Confirmation">
+    <h1 style="font-size:1.6rem;font-weight:800;margin-bottom:8px;">Sauvegarde & restauration</h1><p class="text-secondary mb-4">Protège les réponses et les supports avant chaque séance importante.</p>
+    <div class="alert alert-danger"><span>🛡️</span><div><strong>Commandes interdites</strong><p class="text-sm">Ne jamais utiliser docker compose down -v, docker system prune --volumes ou python manage.py flush sur un environnement contenant des données.</p></div></div>
+    <div class="grid cols-3"><div class="card"><div class="card-body"><h2>Réponses</h2><p class="text-secondary mb-4">Sauvegarde base PostgreSQL.</p><button class="btn btn-primary" onclick="alert('Backup simulé')">Préparer backup</button></div></div><div class="card"><div class="card-body"><h2>Médias</h2><p class="text-secondary mb-4">Archive des supports pédagogiques.</p><button class="btn btn-secondary" onclick="alert('Archive simulée')">Voir médias</button></div></div><div class="card"><div class="card-body"><h2>Restauration</h2><p class="text-secondary mb-4">Procédure à tester hors séance.</p><button class="btn btn-secondary" onclick="alert('Procédure simulée')">Voir procédure</button></div></div></div>
+  </section>
+
+  <section class="page" id="page-advanced" data-role="instructor" data-level1="Formateur" data-level2="Admin avancé" data-level3="Contrôle" data-level4="Action">
+    <div class="panel-title" style="margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:800;margin-bottom:8px;">Admin avancé</h1>
+        <p class="text-secondary mb-4">Zone séparée pour contrôles techniques non destructifs.</p>
+      </div>
+      <span class="pill danger">Accès restreint</span>
+    </div>
+    <div class="grid cols-2"><div class="card"><div class="card-header"><div class="card-title">État système</div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Contrôle</th><th>Statut</th></tr></thead><tbody><tr><td>Django check</td><td><span class="pill ok">OK</span></td></tr><tr><td>Migrations</td><td><span class="pill ok">Aucune inattendue</span></td></tr><tr><td>Secrets affichés</td><td><span class="pill ok">Non</span></td></tr></tbody></table></div></div><div class="card"><div class="card-header"><div class="card-title">Actions verrouillées</div></div><div class="card-body"><div class="alert alert-danger">Les suppressions de volume, flush base ou nettoyage global ne doivent pas être exposés comme boutons standards.</div></div></div></div>
+  </section>
+
+</main>
+
+<div class="projection-mode hidden" id="projection-mode">
+  <button class="btn btn-lg" style="position:absolute; top:24px; right:24px; background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.3);" onclick="toggleProjection()">✕ Quitter</button>
+  <div style="text-align:center; width:min(92vw, 900px);">
+    <div style="font-size:1.3rem; opacity:0.85; margin-bottom:14px;">TAf Local Forms — Mode projection</div>
+    <div class="url-display">http://192.168.1.42:8011/modules/</div>
+    <div class="qr-large" id="qr-large"></div>
+    <div style="font-size:1.2rem; opacity:0.85; margin-top:16px;">Scanne ce code ou tape l'adresse dans ton navigateur</div>
+  </div>
+</div>
+
+<script>
+  let isInstructor = false;
+  const pages = [...document.querySelectorAll('.page')];
+  const studentNav = document.getElementById('student-nav');
+  const instructorNav = document.getElementById('instructor-nav');
+  const topbar = document.getElementById('topbar');
+  const STUDENT_URL = 'http://192.168.1.42:8011/modules/';
+
+  const subnavStudent = {
+    home: [
+      { page: 'home', label: '🏠 Accueil' },
+      { page: 'project', label: 'ℹ️ Le projet' },
+      { page: 'modules', label: '📚 Modules' },
+      { page: 'supports', label: '🎒 Supports' }
+    ],
+    project: [
+      { page: 'home', label: '🏠 Accueil' },
+      { page: 'project', label: 'ℹ️ Présentation' }
+    ],
+    modules: [
+      { page: 'modules', label: '📋 Liste' },
+      { page: 'module-form', label: '📝 Questionnaire' },
+      { page: 'confirmation', label: '✅ Confirmation' },
+      { page: 'duplicate', label: '⚠️ Doublon' }
+    ],
+    supports: [
+      { page: 'supports', label: '📚 Catalogue' },
+      { page: 'support-detail', label: '📄 Détail' },
+      { page: 'watch', label: '🎬 Vidéo' },
+      { page: 'school', label: '🏫 Matières' }
+    ]
+  };
+
+  const subnavInstructor = {
+    cockpit: [
+      { page: 'cockpit', label: '🎛 Cockpit' },
+      { page: 'projection', label: '📺 Projection' },
+      { page: 'trainer-modules', label: '📊 Modules' }
+    ],
+    modules: [
+      { page: 'trainer-modules', label: '📋 Liste' },
+      { page: 'module-dashboard', label: '📈 Dashboard' }
+    ],
+    exports: [
+      { page: 'exports', label: '📥 Exports CSV' }
+    ],
+    supports: [
+      { page: 'support-admin', label: '🗂️ Gestion' },
+      { page: 'upload', label: '⬆️ Ajouter' }
+    ],
+    network: [
+      { page: 'network', label: '📡 LAN' }
+    ],
+    backup: [
+      { page: 'backup', label: '💾 Backup' }
+    ],
+    settings: [
+      { page: 'settings', label: '⚙️ Général' },
+      { page: 'advanced', label: '🛡️ Admin' }
+    ]
+  };
+
+  const treeData = [
+    { id:'student-root', target:'home', label:'Élève', root:true, children:[
+      { id:'home', label:'Accueil' },
+      { id:'project', label:'Le projet' },
+      { id:'modules', label:'Modules', children:[
+        { id:'module-form', label:'Module 8 — Synthèse', children:[
+          { id:'confirmation', label:'Confirmation' },
+          { id:'duplicate', label:'Doublon' }
+        ]}
+      ]},
+      { id:'supports', label:'Supports', children:[
+        { id:'support-detail', label:'Fiche Internet', children:[
+          { id:'watch', label:'Vidéo locale' }
+        ]},
+        { id:'school', label:'Matières futures' }
+      ]}
+    ]},
+    { id:'instructor-root', target:'login', label:'Formateur', root:true, children:[
+      { id:'login', label:'Connexion' },
+      { id:'cockpit', label:'Cockpit', children:[
+        { id:'projection', label:'Mode projection' }
+      ]},
+      { id:'trainer-modules', label:'Modules', children:[
+        { id:'module-dashboard', label:'Dashboard module' }
+      ]},
+      { id:'exports', label:'Exports' },
+      { id:'network', label:'Réseau' },
+      { id:'support-admin', label:'Supports', children:[
+        { id:'upload', label:'Ajouter un support' }
+      ]},
+      { id:'backup', label:'Sauvegarde' },
+      { id:'settings', label:'Configuration', children:[
+        { id:'advanced', label:'Admin avancé' }
+      ]}
+    ]}
+  ];
+
+  function findPath(nodes, pageId, trail=[]){
+    for(const node of nodes){
+      const nextTrail = [...trail, node];
+      if(node.id === pageId) return nextTrail;
+      if(node.children){
+        const found = findPath(node.children, pageId, nextTrail);
+        if(found) return found;
+      }
+    }
+    return null;
+  }
+
+  function renderBreadcrumbTrail(activePath){
+    if(!activePath.length) return '';
+    return activePath.map((node, index) => {
+      const isCurrent = index === activePath.length - 1;
+      const gotoId = node.target || node.id;
+      const safeLabel = String(node.label).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const homeIcon = index === 0 ? '<span class="crumb-home" aria-hidden="true">⌂</span>' : '';
+      const separator = index === 0 ? '' : '<li class="crumb-sep" aria-hidden="true">›</li>';
+      const content = isCurrent
+        ? `<span class="crumb-current" aria-current="page">${homeIcon}<span class="crumb-label">${safeLabel}</span></span>`
+        : `<button class="crumb-link" type="button" onclick="goTo('${gotoId}')" title="Revenir à ${safeLabel}">${homeIcon}<span class="crumb-label">${safeLabel}</span></button>`;
+      return `${separator}<li class="crumb-item">${content}</li>`;
+    }).join('');
+  }
+
+  function updateTrail(pageId){
+    const activePath = findPath(treeData, pageId) || findPath(treeData, 'home') || [];
+    const target = document.getElementById('path-breadcrumb');
+    if(target) target.innerHTML = renderBreadcrumbTrail(activePath);
+  }
+
+  function renderSubnav(level2) {
+    const map = isInstructor ? subnavInstructor : subnavStudent;
+    const items = map[level2] || [];
+    const subnav = document.getElementById('subnav');
+    if (items.length === 0) {
+      subnav.innerHTML = '';
+      subnav.style.display = 'none';
+      return;
+    }
+    subnav.style.display = 'flex';
+    subnav.innerHTML = items.map(item =>
+      `<a href="#" data-subnav="${item.page}" onclick="goTo('${item.page}'); return false;" class="${item.page === level2 ? 'active' : ''}">${item.label}</a>`
+    ).join('');
+  }
+
+  function renderTopbarActions(actualPage) {
+    const actions = document.getElementById('topbar-actions');
+    const actionMap = {
+      'cockpit': `<button class="btn btn-sm btn-primary" onclick="toggleProjection()">🖥 Projection</button><button class="btn btn-sm btn-secondary" onclick="goTo('network')">Tester réseau</button>`,
+      'trainer-modules': `<button class="btn btn-sm btn-secondary" onclick="goTo('exports')">📊 Exports</button>`,
+      'support-admin': `<button class="btn btn-sm btn-primary" onclick="goTo('upload')">+ Ajouter</button>`,
+      'network': `<button class="btn btn-sm btn-primary" onclick="toggleProjection()">🖥 Projection</button><button class="btn btn-sm btn-secondary" onclick="testUrl()">🧪 Tester</button><button class="btn btn-sm btn-success" onclick="copyUrl()">📋 Copier</button>`,
+      'projection': `<button class="btn btn-sm btn-primary" onclick="toggleProjection()">🖥 Plein écran</button><button class="btn btn-sm btn-secondary" onclick="goTo('cockpit')">Retour cockpit</button>`
+    };
+    actions.innerHTML = actionMap[actualPage] || '';
+  }
+
+  function updateNav(pageId){
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.target === pageId));
+    const page = document.getElementById('page-' + pageId);
+    const role = page?.dataset.role;
+    if(role === 'instructor' || (isInstructor && role !== 'student')){
+      studentNav.classList.add('hidden');
+      instructorNav.classList.remove('hidden');
+    } else {
+      studentNav.classList.remove('hidden');
+      instructorNav.classList.add('hidden');
+    }
+  }
+
+  function goTo(pageId) {
+    const instructorPages = ['cockpit','projection','trainer-modules','module-dashboard','exports','support-admin','upload','network','backup','settings','advanced','login'];
+    if(instructorPages.includes(pageId) && pageId !== 'login' && !isInstructor){
+      goTo('login');
+      return;
+    }
+
+    const target = document.getElementById('page-' + pageId) || document.getElementById('page-home');
+    const actualPage = target.id.replace('page-', '');
+
+    pages.forEach(p => p.classList.remove('active'));
+    target.classList.add('active');
+    window.scrollTo(0, 0);
+
+    const level2 = target.dataset.level2 || actualPage;
+    if(['modules','module-form','confirmation','duplicate','module-dashboard','trainer-modules'].includes(actualPage)){
+      // regroupe sous Modules
+    }
+
+    updateNav(actualPage);
+    updateTrail(actualPage);
+    renderSubnav(getNavGroup(actualPage));
+    renderTopbarActions(actualPage);
+
+    const isHome = actualPage === 'home';
+    topbar.classList.toggle('hidden-on-home', isHome);
+
+    if(actualPage === 'projection') renderQR('qr-box', STUDENT_URL);
+    if(actualPage === 'network') renderQR('qr-box-network', STUDENT_URL);
+
+    document.title = 'TAf Local Forms — ' + actualPage;
+  }
+
+  function getNavGroup(pageId){
+    const studentGroups = {
+      home: 'home', project: 'project', modules: 'modules', 'module-form': 'modules', confirmation: 'modules', duplicate: 'modules',
+      supports: 'supports', 'support-detail': 'supports', watch: 'supports', school: 'supports'
+    };
+    const instructorGroups = {
+      cockpit: 'cockpit', projection: 'cockpit', 'trainer-modules': 'modules', 'module-dashboard': 'modules',
+      exports: 'exports', 'support-admin': 'supports', upload: 'supports', network: 'network', backup: 'backup',
+      settings: 'settings', advanced: 'settings', login: 'login'
+    };
+    return isInstructor ? (instructorGroups[pageId] || pageId) : (studentGroups[pageId] || pageId);
+  }
+
+  function toggleRole(){
+    isInstructor = !isInstructor;
+    const badge = document.getElementById('role-badge');
+    const btn = document.getElementById('role-toggle');
+    if(isInstructor){
+      badge.textContent = 'Formateur';
+      badge.className = 'badge badge-success';
+      btn.textContent = 'Passer élève';
+      goTo('cockpit');
+    } else {
+      badge.textContent = 'Élève';
+      badge.className = 'badge badge-info';
+      btn.textContent = 'Passer formateur';
+      goTo('home');
+    }
+  }
+
+  function doLogin(){
+    const u = document.getElementById('login-user').value;
+    const p = document.getElementById('login-pass').value;
+    if(u && p){
+      isInstructor = true;
+      document.getElementById('role-badge').textContent = 'Formateur';
+      document.getElementById('role-badge').className = 'badge badge-success';
+      document.getElementById('role-toggle').textContent = 'Passer élève';
+      goTo('cockpit');
+    } else {
+      alert('Veuillez renseigner les identifiants.');
+    }
+  }
+
+  function submitQuiz(){
+    const id = document.getElementById('school_id').value.trim();
+    if(!/^\d{2}$/.test(id)){ alert('Renseigne ton identifiant à 2 chiffres, par exemple 07.'); return; }
+    document.getElementById('confirm-id').textContent = 'élève n°' + id;
+    goTo('confirmation');
+  }
+
+  function toggleProjection(){
+    const el = document.getElementById('projection-mode');
+    el.classList.toggle('hidden');
+    if(!el.classList.contains('hidden')) renderQR('qr-large', STUDENT_URL);
+  }
+
+  function testUrl(){
+    alert('Test de connexion simulé : 192.168.1.42:8011 accessible depuis ce téléphone.');
+  }
+  function copyUrl(){
+    navigator.clipboard.writeText(STUDENT_URL).then(() => alert('URL copiée dans le presse-papiers'));
+  }
+
+  function renderQR(containerId, url){
+    const container = document.getElementById(containerId);
+    if(!container || typeof QRCode === 'undefined') return;
+    container.innerHTML = '';
+    new QRCode(container, {
+      text: url,
+      width: containerId === 'qr-large' ? 256 : 160,
+      height: containerId === 'qr-large' ? 256 : 160,
+      colorDark: '#0F172A',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  goTo('home');
+  topbar.classList.add('hidden-on-home');
+
+  document.querySelectorAll('.filter-pill, .tab').forEach(pill => {
+    pill.addEventListener('click', function(){
+      const parent = this.parentElement;
+      parent.querySelectorAll('.filter-pill, .tab').forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){
+      document.getElementById('projection-mode').classList.add('hidden');
+    }
+  });
+</script>
+</body>
+</html>

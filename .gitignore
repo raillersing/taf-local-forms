@@ -12,6 +12,8 @@ ENV/
 # Django / local app data
 *.sqlite3
 db.sqlite3
+*.dump
+*.sql
 data/
 backups/
 media/
