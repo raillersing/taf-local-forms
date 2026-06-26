@@ -3,7 +3,7 @@
 
 {% block title %}Cockpit formateur — Tableau de bord{% endblock %}
 {% block hero_title %}Cockpit formateur{% endblock %}
-{% block hero_text %}Vue d'ensemble des modules, des résultats, de la présence et de la configuration réseau.{% endblock %}
+{% block hero_text %}Ouvre les modules, partage l'accès élèves et projette l'URL locale sans changer la logique métier.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
@@ -13,20 +13,41 @@
 <main id="content" class="content-grid">
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Cockpit" %}
-    <!-- Dashboard sub-navigation -->
-    <nav class="sub-nav" aria-label="Sections du tableau de bord">
+
+    <nav class="sub-nav" aria-label="Sections du cockpit">
         <a href="#overview" class="sub-nav-link">Vue d'ensemble</a>
+        <a href="#access" class="sub-nav-link">Accès élèves</a>
         <a href="#modules" class="sub-nav-link">Modules</a>
         <a href="#presence" class="sub-nav-link">Présence</a>
-        <a href="#network" class="sub-nav-link">Réseau</a>
         <a href="#exports" class="sub-nav-link">Exports</a>
-        <a href="#advanced" class="sub-nav-link">Admin</a>
+        <a href="#advanced" class="sub-nav-link">Outils</a>
     </nav>
 
-    <!-- Section: Vue d'ensemble -->
-    <section id="overview" class="card">
-        <h2>Vue d'ensemble</h2>
-        <div class="stats-grid">
+    <section id="overview" class="card cockpit-hero">
+        <div class="cockpit-hero-copy">
+            <span class="taf-pill">Session formateur</span>
+            <h2>Diffuser l'accès élèves en quelques gestes</h2>
+            <p class="muted">Le cockpit regroupe les liens utiles, l'état des modules et un mode projection lisible pour la salle.</p>
+            <div class="cockpit-action-grid">
+                <a class="tool-card cockpit-action-card" href="#modules">
+                    <strong>Ouvrir les modules</strong>
+                    <span class="muted">{{ modules_open }}/{{ module_list|length }} modules acceptent des réponses.</span>
+                </a>
+                <a class="tool-card cockpit-action-card" href="#exports">
+                    <strong>Voir les exports</strong>
+                    <span class="muted">Télécharge les CSV sans quitter le cockpit.</span>
+                </a>
+                <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_network' %}">
+                    <strong>Vérifier le réseau</strong>
+                    <span class="muted">Contrôle l'IP LAN et les liens donnés aux élèves.</span>
+                </a>
+                <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_projection' %}">
+                    <strong>Afficher la projection</strong>
+                    <span class="muted">Grande URL, QR local et bouton plein écran.</span>
+                </a>
+            </div>
+        </div>
+        <div class="cockpit-stats-grid">
             <article class="stat-card">
                 <p class="stat-label">Total réponses</p>
                 <p class="stat-value">{{ total_submissions }}</p>
@@ -46,10 +67,66 @@
         </div>
     </section>
 
-    <!-- Section: Modules -->
+    <section id="access" class="card cockpit-access-card">
+        <div class="cockpit-section-head">
+            <div>
+                <h2>Accès élèves</h2>
+                <p class="muted">Partage uniquement l'URL publique élèves. Les liens formateur restent protégés.</p>
+            </div>
+            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet &rarr;</a>
+        </div>
+
+        <div class="cockpit-access-grid">
+            <div class="student-access-panel" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
+                <p class="student-access-label">Adresse à afficher aux élèves</p>
+                {% if student_access_ready %}
+                <p class="student-access-url">{{ student_access_url }}</p>
+                <p class="muted">
+                    {% if network.lan_host_source == "request" %}
+                    Adresse détectée depuis cette connexion.
+                    {% elif network.lan_host_source == "settings" %}
+                    Adresse configurée dans le cockpit réseau.
+                    {% elif network.lan_host_source == "candidate" %}
+                    Adresse détectée automatiquement. À vérifier dans Réseau.
+                    {% endif %}
+                </p>
+                {% else %}
+                <p class="student-access-url student-access-url-missing">Disponible après configuration réseau</p>
+                <p class="muted">IP locale non configurée. URL LAN non configurée. Vérifie la page Réseau avant de partager un lien aux élèves.</p>
+                <p><a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer l'IP locale &rarr;</a></p>
+                {% endif %}
+                {% if network.lan_host_stale %}
+                <div class="taf-alert taf-alert-warning">
+                    L'IP configurée diffère de l'adresse actuelle. Mets à jour la configuration dans Réseau.
+                </div>
+                {% endif %}
+                <div class="student-access-actions">
+                    <button type="button" class="taf-button taf-button-primary" data-copy-url {% if not student_access_ready %}disabled{% endif %}>
+                        Copier l'URL élèves
+                    </button>
+                    <a class="taf-button taf-button-secondary" href="{% url 'surveys:dashboard_projection' %}">
+                        Mode projection
+                    </a>
+                </div>
+                <p class="student-access-feedback" data-copy-feedback aria-live="polite"></p>
+            </div>
+
+            <div class="student-qr-panel">
+                <div class="student-qr-shell">
+                    <div class="student-qr-code" data-qr-target aria-label="QR code de l'accès élèves"></div>
+                </div>
+                {% if student_access_ready %}
+                <p class="muted">Les élèves peuvent scanner ce QR code pour ouvrir l'accueil local.</p>
+                {% else %}
+                <p class="muted">Le QR code apparaîtra après configuration d'une URL LAN utilisable en classe.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
     <section id="modules" class="card">
         <h2>Modules de formation</h2>
-        <p class="muted">Gère les modules, active ou désactive les réponses, accède aux résultats.</p>
+        <p class="muted">Active ou désactive les réponses et ouvre les dashboards existants sans changer les routes.</p>
         <div class="module-grid">
             {% for item in module_list %}
                 <div class="module-card">
@@ -94,185 +171,71 @@
         </div>
     </section>
 
-    <!-- Section: Présence en direct -->
     <section id="presence" class="card">
         <h2>Présence en direct</h2>
-        <p class="muted">Élèves actuellement en train de remplir un questionnaire. Mise à jour toutes les 8 secondes.</p>
-        <div id="presence-container">
-            <div class="presence-counter">
-                <span class="presence-dot"></span>
-                <span>Module 2 : </span>
-                <span class="presence-count" id="presence-module-2">…</span>
-            </div>
-            <div class="presence-counter">
-                <span class="presence-dot"></span>
-                <span>Module 3 : </span>
-                <span class="presence-count" id="presence-module-3">…</span>
-            </div>
-            <div class="presence-counter">
-                <span class="presence-dot"></span>
-                <span>Module 4 : </span>
-                <span class="presence-count" id="presence-module-4">…</span>
-            </div>
-            <div class="presence-counter">
-                <span class="presence-dot"></span>
-                <span>Module 5 : </span>
-                <span class="presence-count" id="presence-module-5">…</span>
-            </div>
-            <div class="presence-counter">
-                <span class="presence-dot"></span>
-                <span>Module 6 : </span>
-                <span class="presence-count" id="presence-module-6">…</span>
-            </div>
-            <div class="presence-counter">
-                <span class="presence-dot"></span>
-                <span>Module 7 : </span>
-                <span class="presence-count" id="presence-module-7">…</span>
-            </div>
-            <div class="presence-counter">
-                <span class="presence-dot"></span>
-                <span>Module 8 : </span>
-                <span class="presence-count" id="presence-module-8">…</span>
-            </div>
-            <div class="presence-counter">
-                <span>Total : </span>
-                <span class="presence-count" id="presence-total">…</span>
-            </div>
-        </div>
-        <p class="muted">Le compteur est indicatif. Un élève peut être compté même s'il a fini depuis moins d'une minute.</p>
-    </section>
-
-    <!-- Section: Réseau -->
-    <section id="network" class="card">
-        <h2>Accès réseau</h2>
-        <p class="muted">Adresses à donner aux élèves pour accéder aux questionnaires depuis leur téléphone.</p>
-
-        {% if network.recommended_student_base_url %}
-        <div class="network-ip-banner">
-            <strong>Adresse élèves :</strong>
-            <code>{{ network.recommended_student_base_url }}/</code>
-            <span class="muted">
-                {% if network.lan_host_source == "request" %}
-                Adresse détectée depuis cette connexion.
-                {% elif network.lan_host_source == "settings" %}
-                Adresse configurée.
-                {% elif network.lan_host_source == "candidate" %}
-                Adresse détectée automatiquement.
-                {% endif %}
-            </span>
-        </div>
-        {% if network.lan_host_stale %}
-        <div class="alert">
-            <strong>L'IP configurée ({{ network.configured_host }}) diffère de l'adresse actuelle ({{ network.current_host }}).</strong>
-            <a href="{% url 'surveys:dashboard_settings' %}">Mets à jour la configuration.</a>
-        </div>
-        {% endif %}
-        {% elif network.lan_host_source == "missing" %}
-        <div class="alert">
-            <strong>IP locale non configurée.</strong> Les liens ci-dessous utilisent l'adresse locale actuelle. Si les élèves ne peuvent pas accéder à l'application, configure l'IP dans <a href="{% url 'surveys:dashboard_settings' %}">Configuration réseau</a>.
-        </div>
-        {% endif %}
-
-        <div class="network-links">
-            <dl class="setting-list">
-                <dt class="muted setting-label">Adresse à donner aux élèves (accueil)</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.student_form_url }}" target="_blank" rel="noopener noreferrer">{{ network.student_form_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Module 2 — Comprendre Internet</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.module_2_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_2_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Module 3 — Recherche efficace</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.module_3_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_3_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Module 4 — Sources fiables</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.module_4_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_4_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Module 5 — Email et outils de communication</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.module_5_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_5_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Module 6 — Ressources educatives en ligne</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.module_6_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_6_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Module 7 — Securite en ligne</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.module_7_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_7_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Module 8</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.module_8_url }}" target="_blank" rel="noopener noreferrer">{{ network.module_8_url }}</a>
-                </dd>
-
-                <dt class="muted setting-label">Adresse formateur (cockpit)</dt>
-                <dd>
-                    <a class="network-link" href="{{ network.cockpit_url }}" target="_blank" rel="noopener noreferrer">{{ network.cockpit_url }}</a>
-                </dd>
-            </dl>
-
-            <div>
-                <a class="text-link" href="{% url 'surveys:dashboard_network_control' %}">Contrôle réseau local &rarr;</a>
-                <a class="text-link" href="{% url 'surveys:dashboard_network' %}" target="_blank" rel="noopener noreferrer">Diagnostic réseau complet &rarr;</a>
-                <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer l'IP locale &rarr;</a>
-            </div>
+        <p class="muted">Compteur indicatif des élèves encore actifs sur les questionnaires. Mise à jour toutes les 15 secondes.</p>
+        <div id="presence-container" class="presence-grid">
+            <div class="presence-counter"><span class="presence-dot"></span><span>Module 2 :</span><span class="presence-count" id="presence-module-2">…</span></div>
+            <div class="presence-counter"><span class="presence-dot"></span><span>Module 3 :</span><span class="presence-count" id="presence-module-3">…</span></div>
+            <div class="presence-counter"><span class="presence-dot"></span><span>Module 4 :</span><span class="presence-count" id="presence-module-4">…</span></div>
+            <div class="presence-counter"><span class="presence-dot"></span><span>Module 5 :</span><span class="presence-count" id="presence-module-5">…</span></div>
+            <div class="presence-counter"><span class="presence-dot"></span><span>Module 6 :</span><span class="presence-count" id="presence-module-6">…</span></div>
+            <div class="presence-counter"><span class="presence-dot"></span><span>Module 7 :</span><span class="presence-count" id="presence-module-7">…</span></div>
+            <div class="presence-counter"><span class="presence-dot"></span><span>Module 8 :</span><span class="presence-count" id="presence-module-8">…</span></div>
+            <div class="presence-counter"><span>Total :</span><span class="presence-count" id="presence-total">…</span></div>
         </div>
     </section>
 
-    <!-- Section: Exports -->
     <section id="exports" class="card">
         <h2>Exports CSV</h2>
-        <p class="muted">Télécharge les résultats de chaque module au format CSV (tableur).</p>
-        <div>
-            <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 2</a>
-            <a class="text-link" href="{% url 'surveys:export_module_3_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 3</a>
-            <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 4</a>
-            <a class="text-link" href="{% url 'surveys:export_module_5_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 5</a>
-            <a class="text-link" href="{% url 'surveys:export_module_6_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 6</a>
-            <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 7</a>
-            <a class="text-link" href="{% url 'surveys:export_module_8_csv' %}" target="_blank" rel="noopener noreferrer">Export Module 8</a>
+        <p class="muted">Télécharge les résultats module par module au format tableur.</p>
+        <div class="cockpit-links-grid">
+            <a class="tool-card" href="{% url 'surveys:export_module_2_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 2</strong></a>
+            <a class="tool-card" href="{% url 'surveys:export_module_3_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 3</strong></a>
+            <a class="tool-card" href="{% url 'surveys:export_module_4_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 4</strong></a>
+            <a class="tool-card" href="{% url 'surveys:export_module_5_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 5</strong></a>
+            <a class="tool-card" href="{% url 'surveys:export_module_6_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 6</strong></a>
+            <a class="tool-card" href="{% url 'surveys:export_module_7_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 7</strong></a>
+            <a class="tool-card" href="{% url 'surveys:export_module_8_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 8</strong></a>
         </div>
     </section>
 
-    <!-- Section: Admin avancé -->
     <section id="advanced" class="card">
         <h2>Outils formateur</h2>
-        <p class="muted">Configuration avancée, accès réseau et documentation terrain.</p>
+        <p class="muted">Configuration avancée, réseau local et aide terrain.</p>
         <div class="tools-grid">
             <a class="tool-card" href="{% url 'surveys:dashboard_network_control' %}">
                 <strong>Contrôle réseau local</strong>
-                <span class="muted">Configurer, tester, démarrer l'accès LAN</span>
+                <span class="muted">Configurer, tester et copier l'accès LAN</span>
             </a>
-            <a class="tool-card" href="{% url 'surveys:dashboard_network' %}" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card" href="{% url 'surveys:dashboard_network' %}">
                 <strong>Accès réseau</strong>
-                <span class="muted">Adresses et diagnostic réseau</span>
+                <span class="muted">Adresses, diagnostic et ports utiles</span>
             </a>
             <a class="tool-card" href="{% url 'surveys:dashboard_settings' %}">
                 <strong>Configuration réseau</strong>
-                <span class="muted">IP, port, hébergement autorisé</span>
+                <span class="muted">IP, port et hôtes autorisés</span>
+            </a>
+            <a class="tool-card" href="{% url 'surveys:dashboard_projection' %}">
+                <strong>Projection salle</strong>
+                <span class="muted">Grande URL et QR code pour affichage écran</span>
             </a>
             <a class="tool-card" href="{% url 'admin:index' %}">
                 <strong>Admin avancé</strong>
-                <span class="muted">Gérer sessions, élèves, modules</span>
+                <span class="muted">Gérer sessions, élèves et modules</span>
             </a>
             <a class="tool-card" href="/docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer">
                 <strong>Guide dépannage réseau</strong>
-                <span class="muted">WSL, pare-feu, accès téléphone</span>
+                <span class="muted">Wi-Fi, WSL, pare-feu et téléphone</span>
             </a>
         </div>
     </section>
 </main>
+{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/vendor/qrcode.js' %}"></script>
+<script src="{% static 'js/taf_projection.js' %}"></script>
 <script>
 (function() {
     var poll = function() {
@@ -290,7 +253,7 @@
                     document.getElementById('presence-module-7').textContent = (data.by_module.MODULE_7 || 0) + ' en cours';
                     document.getElementById('presence-module-8').textContent = (data.by_module.MODULE_8 || 0) + ' en cours';
                     document.getElementById('presence-total').textContent = data.total + ' total';
-                } catch(e) {}
+                } catch (error) {}
             }
         };
         xhr.onerror = function() {
