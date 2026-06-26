@@ -13,6 +13,7 @@ ENV/
 *.sqlite3
 db.sqlite3
 data/
+backups/
 media/
 staticfiles/
 
@@ -23,6 +24,7 @@ staticfiles/
 
 # Logs
 *.log
+logs/
 logs/terminal/*.log
 
 # OS / editors
@@ -39,6 +41,7 @@ Thumbs.db
 
 # Graphviz / Graphify generated output
 docs/architecture/graphs/out/
+graphify-out/
 
 # PowerPoint source files (not committed)
 documents/

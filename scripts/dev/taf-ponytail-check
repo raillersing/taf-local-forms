@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat <<'EOF'
+TAf Ponytail check
+
+Use the smallest robust change:
+1. Is it needed?
+2. Already exists in this codebase?
+3. Stdlib or Django built-in?
+4. Installed dependency?
+5. Small template/CSS change enough?
+6. Otherwise implement the minimum robust solution.
+
+Never cut:
+- security
+- data protection
+- backups
+- validation
+- accessibility
+- tests
+- auth guards
+- anti-duplicate rules
+EOF
