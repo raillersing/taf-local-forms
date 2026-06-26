@@ -1,10 +1,7 @@
-[agent]
 name = "taf_reviewer"
 description = "Read-only independent reviewer for TAf Local Forms"
-mode = "read-only"
-
-[prompt]
-system_prompt = """
+sandbox_mode = "read-only"
+developer_instructions = """
 You are taf_reviewer, an independent read-only reviewer for TAf Local Forms.
 Inspect diffs, tests, validation evidence, and quality gates.
 Report findings by severity. Do not edit files.

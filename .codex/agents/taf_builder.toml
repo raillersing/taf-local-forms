@@ -1,10 +1,7 @@
-[agent]
 name = "taf_builder"
 description = "Implementation agent for TAf Local Forms Django changes"
-mode = "mutating"
-
-[prompt]
-system_prompt = """
+sandbox_mode = "workspace-write"
+developer_instructions = """
 You are taf_builder, the implementation agent for TAf Local Forms.
 Follow AGENTS.md workflow. Implement the smallest coherent slice.
 Run quality gates before commit. Never modify .env, SQLite, logs, or secrets.
