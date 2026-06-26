@@ -1,4 +1,4 @@
-from django.core.validators import MaxLengthValidator, MinLengthValidator, RegexValidator
+from django.core.validators import MaxLengthValidator, MaxValueValidator, MinLengthValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -1096,3 +1096,44 @@ class FormPresence(models.Model):
 
     def __str__(self):
         return f"{self.client_id} @ {self.module_code} ({self.status})"
+
+
+class LearningResource(models.Model):
+    RESOURCE_TYPE_DOCUMENT = "document"
+    RESOURCE_TYPE_IMAGE = "image"
+    RESOURCE_TYPE_AUDIO = "audio"
+    RESOURCE_TYPE_OTHER = "other"
+    RESOURCE_TYPE_CHOICES = [
+        (RESOURCE_TYPE_DOCUMENT, "Document"),
+        (RESOURCE_TYPE_IMAGE, "Image"),
+        (RESOURCE_TYPE_AUDIO, "Audio"),
+        (RESOURCE_TYPE_OTHER, "Autre"),
+    ]
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    resource_type = models.CharField(
+        max_length=20,
+        choices=RESOURCE_TYPE_CHOICES,
+        default=RESOURCE_TYPE_DOCUMENT,
+    )
+    module_number = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(2), MaxValueValidator(8)],
+    )
+    file = models.FileField(upload_to="learning_resources/%Y/%m/")
+    source = models.CharField(max_length=255, blank=True)
+    license_label = models.CharField(max_length=100, blank=True)
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["module_number", "title", "-updated_at"]
+        verbose_name = "Support pédagogique"
+        verbose_name_plural = "Supports pédagogiques"
+
+    def __str__(self) -> str:
+        return self.title

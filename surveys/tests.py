@@ -7,13 +7,14 @@ from unittest.mock import patch
 import json
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.db import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import FormPresence, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import FormPresence, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -5526,10 +5527,11 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "--w:")
         self.assertContains(response, "progress-bar")
 
-    def test_student_navigation_shows_supports_placeholder(self):
+    def test_student_navigation_shows_supports_public_link(self):
         response = self.client.get(reverse("surveys:student_modules"))
-        self.assertContains(response, "Supports bientôt")
-        self.assertNotContains(response, 'href="/supports/')
+        self.assertContains(response, "Supports")
+        self.assertContains(response, 'href="/supports/"')
+        self.assertNotContains(response, "Admin avancé")
 
     def test_student_module_detail_has_breadcrumbs(self):
         response = self.client.get(reverse("surveys:student_module_2_detail"))
@@ -5555,3 +5557,99 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, 'class="breadcrumbs"')
         self.assertContains(response, "Cockpit")
+
+
+@override_settings(ALLOWED_HOSTS=["*"], MEDIA_ROOT=Path(mkdtemp()))
+class LearningResourceViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="formateur",
+            password="motdepasse-solide-123",
+        )
+        self.published = LearningResource.objects.create(
+            title="Guide PDF Module 2",
+            slug="guide-pdf-module-2",
+            description="Support public pour les élèves.",
+            resource_type=LearningResource.RESOURCE_TYPE_DOCUMENT,
+            module_number=2,
+            file=SimpleUploadedFile("guide-module-2.pdf", b"%PDF-1.4 test content", content_type="application/pdf"),
+            source="TAfHSSiM",
+            license_label="Usage classe",
+            is_published=True,
+        )
+        self.draft = LearningResource.objects.create(
+            title="Brouillon interne",
+            slug="brouillon-interne",
+            description="Ne doit pas sortir en public.",
+            resource_type=LearningResource.RESOURCE_TYPE_DOCUMENT,
+            module_number=3,
+            file=SimpleUploadedFile("brouillon.pdf", b"%PDF-1.4 draft content", content_type="application/pdf"),
+            is_published=False,
+        )
+
+    def test_support_list_returns_200(self):
+        response = self.client.get(reverse("surveys:support_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Catalogue public")
+
+    def test_support_list_shows_only_published_resources(self):
+        response = self.client.get(reverse("surveys:support_list"))
+
+        self.assertContains(response, self.published.title)
+        self.assertNotContains(response, self.draft.title)
+
+    def test_support_detail_published_returns_200(self):
+        response = self.client.get(reverse("surveys:support_detail", args=[self.published.slug]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.published.title)
+
+    def test_support_detail_draft_returns_404(self):
+        response = self.client.get(reverse("surveys:support_detail", args=[self.draft.slug]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_support_download_published_returns_file(self):
+        response = self.client.get(reverse("surveys:support_download", args=[self.published.slug]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("attachment;", response["Content-Disposition"])
+
+    def test_support_download_draft_returns_404(self):
+        response = self.client.get(reverse("surveys:support_download", args=[self.draft.slug]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_dashboard_supports_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_supports"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_supports_renders_for_logged_in_trainer(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_supports"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Dashboard supports")
+        self.assertContains(response, self.published.title)
+        self.assertContains(response, self.draft.title)
+        self.assertContains(response, "Publié")
+        self.assertContains(response, "Brouillon")
+
+    def test_student_navigation_contains_supports_without_dashboard_links(self):
+        response = self.client.get(reverse("surveys:support_list"))
+
+        self.assertContains(response, 'href="/supports/"')
+        self.assertNotContains(response, "/dashboard/supports/")
+        self.assertNotContains(response, "Admin avancé")
+
+    def test_trainer_navigation_contains_dashboard_supports(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_supports"))
+
+        self.assertContains(response, reverse("surveys:dashboard_supports"))

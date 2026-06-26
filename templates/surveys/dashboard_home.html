@@ -45,6 +45,10 @@
                     <strong>Afficher la projection</strong>
                     <span class="muted">Grande URL, QR local et bouton plein écran.</span>
                 </a>
+                <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_supports' %}">
+                    <strong>Voir les supports</strong>
+                    <span class="muted">{{ published_resources_count }} publiés, {{ total_resources_count }} au total.</span>
+                </a>
             </div>
         </div>
         <div class="cockpit-stats-grid">
@@ -219,6 +223,10 @@
             <a class="tool-card" href="{% url 'surveys:dashboard_projection' %}">
                 <strong>Projection salle</strong>
                 <span class="muted">Grande URL et QR code pour affichage écran</span>
+            </a>
+            <a class="tool-card" href="{% url 'surveys:dashboard_supports' %}">
+                <strong>Supports pédagogiques</strong>
+                <span class="muted">Voir les supports publiés et les brouillons</span>
             </a>
             <a class="tool-card" href="{% url 'admin:index' %}">
                 <strong>Admin avancé</strong>
