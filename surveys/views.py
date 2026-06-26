@@ -194,6 +194,13 @@ def support_detail(request: HttpRequest, slug: str) -> HttpResponse:
     return render(request, "surveys/support_detail.html", {"resource": resource})
 
 
+def support_watch(request: HttpRequest, slug: str) -> HttpResponse:
+    resource = get_object_or_404(_published_resources_queryset(), slug=slug)
+    if not resource.is_video or not resource.file:
+        raise Http404("Vidéo indisponible")
+    return render(request, "surveys/support_watch.html", {"resource": resource})
+
+
 def support_download(request: HttpRequest, slug: str) -> FileResponse:
     resource = get_object_or_404(_published_resources_queryset(), slug=slug)
     if not resource.file:

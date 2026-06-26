@@ -69,14 +69,32 @@ Le modèle stocke :
 - pas de remplacement de fichier, suppression ou édition avancée ;
 - la vidéo locale reste hors périmètre.
 
-## 9. Limites F038M/F039M
+## 9. Vidéo locale F040M
+
+- la route publique vidéo est `/supports/<slug>/watch/` ;
+- seul le format MP4 est accepté pour la lecture vidéo MVP ;
+- la taille maximale d'une vidéo MP4 est fixée à 80 MB ;
+- le lecteur utilise HTML natif : `<video controls preload="metadata">` ;
+- aucun autoplay n'est activé ;
+- les brouillons vidéo restent non publics ;
+- un lien de téléchargement de secours reste disponible ;
+- aucun streaming adaptatif, transcodage ou player JavaScript externe n'est ajouté.
+
+## 10. Limites terrain vidéo
+
+- le Wi-Fi de classe peut devenir lent si la vidéo est lourde ;
+- il faut tester la lecture sur Android et laptop avant séance ;
+- il reste conseillé de compresser les vidéos avant la séance ;
+- le téléchargement local peut être préférable si la lecture directe saccade.
+
+## 11. Limites F038M/F039M/F040M
 
 - pas encore d'UX complète d'upload formateur ;
-- pas encore de vidéo locale ;
 - pas encore de matières scolaires structurées ;
 - l'administration initiale des supports passe encore en partie par l'admin Django.
 
-## 10. Prochaines étapes
+## 12. Prochaines étapes
 
-- F040M : vidéo locale
+- amélioration de l'édition support ;
 - F041M : matières scolaires
+- tests terrain vidéo

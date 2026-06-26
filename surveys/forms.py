@@ -1,10 +1,12 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
 from .models import LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission
 
 
 LEARNING_RESOURCE_MAX_UPLOAD_SIZE = 20 * 1024 * 1024
+LEARNING_RESOURCE_VIDEO_MAX_UPLOAD_SIZE = 80 * 1024 * 1024
 LEARNING_RESOURCE_ALLOWED_EXTENSIONS = {
     ".pdf",
     ".docx",
@@ -13,7 +15,10 @@ LEARNING_RESOURCE_ALLOWED_EXTENSIONS = {
     ".jpg",
     ".jpeg",
     ".txt",
+    ".mp4",
 }
+LEARNING_RESOURCE_VIDEO_EXTENSIONS = {".mp4"}
+LEARNING_RESOURCE_NON_VIDEO_EXTENSIONS = LEARNING_RESOURCE_ALLOWED_EXTENSIONS - LEARNING_RESOURCE_VIDEO_EXTENSIONS
 
 
 class Module2SubmissionForm(forms.Form):
@@ -139,6 +144,17 @@ class Module2SubmissionForm(forms.Form):
 
 
 class LearningResourceForm(forms.ModelForm):
+    resource_type = forms.ChoiceField(
+        choices=[
+            (LearningResource.RESOURCE_TYPE_DOCUMENT, "Document"),
+            (LearningResource.RESOURCE_TYPE_IMAGE, "Image"),
+            (LearningResource.RESOURCE_TYPE_AUDIO, "Audio"),
+            (LearningResource.RESOURCE_TYPE_VIDEO, "Vidéo"),
+            (LearningResource.RESOURCE_TYPE_OTHER, "Autre"),
+        ],
+        label="Type de support",
+    )
+
     class Meta:
         model = LearningResource
         fields = [
@@ -165,7 +181,7 @@ class LearningResourceForm(forms.ModelForm):
             "title": "Titre lisible pour les élèves et le formateur.",
             "description": "Résumé court du contenu du support.",
             "module_number": "Optionnel. Laisse vide pour un support général.",
-            "file": "Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT. Taille maximale : 20 MB.",
+            "file": "Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT et MP4. Taille maximale : 20 MB, ou 80 MB pour une vidéo MP4.",
             "source": "Exemple : TAfHSSiM, professeur, manuel local.",
             "license_label": "Exemple : usage classe, libre diffusion, CC BY.",
             "is_published": "Décoche pour garder ce support en brouillon.",
@@ -187,6 +203,7 @@ class LearningResourceForm(forms.ModelForm):
 
     def clean_file(self):
         uploaded_file = self.cleaned_data.get("file")
+        resource_type = self.cleaned_data.get("resource_type")
         if not uploaded_file:
             raise forms.ValidationError("Ajoute un fichier avant d'enregistrer ce support.")
 
@@ -200,10 +217,22 @@ class LearningResourceForm(forms.ModelForm):
             raise forms.ValidationError("Le fichier doit avoir une extension reconnue.")
         if extension not in LEARNING_RESOURCE_ALLOWED_EXTENSIONS:
             raise forms.ValidationError(
-                "Format non autorisé. Utilise un fichier PDF, DOCX, PPTX, PNG, JPG, JPEG ou TXT."
+                "Format non autorisé. Utilise un fichier PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT ou MP4."
             )
-        if uploaded_file.size > LEARNING_RESOURCE_MAX_UPLOAD_SIZE:
-            raise forms.ValidationError("Le fichier dépasse la taille maximale autorisée de 20 MB.")
+
+        if resource_type == LearningResource.RESOURCE_TYPE_VIDEO:
+            if extension not in LEARNING_RESOURCE_VIDEO_EXTENSIONS:
+                raise forms.ValidationError("Pour une vidéo, utilise uniquement un fichier MP4.")
+            content_type = getattr(uploaded_file, "content_type", "") or ""
+            if content_type and not content_type.startswith("video/") and content_type not in {"application/mp4", "application/octet-stream"}:
+                raise forms.ValidationError("Le fichier vidéo envoyé n'est pas reconnu comme un MP4 valide.")
+            if uploaded_file.size > LEARNING_RESOURCE_VIDEO_MAX_UPLOAD_SIZE:
+                raise forms.ValidationError("La vidéo dépasse la taille maximale autorisée de 80 MB.")
+        else:
+            if extension in LEARNING_RESOURCE_VIDEO_EXTENSIONS:
+                raise forms.ValidationError("Choisis le type « Vidéo » pour envoyer un fichier MP4.")
+            if uploaded_file.size > LEARNING_RESOURCE_MAX_UPLOAD_SIZE:
+                raise forms.ValidationError("Le fichier dépasse la taille maximale autorisée de 20 MB.")
         return uploaded_file
 
     def clean_title(self):
@@ -229,6 +258,23 @@ class LearningResourceForm(forms.ModelForm):
                 index += 1
             self.instance.slug = slug
         return cleaned_data
+
+    def _post_clean(self):
+        opts = self._meta
+        exclude = self._get_validation_exclusions()
+        exclude.add("resource_type")
+        try:
+            self.instance = forms.models.construct_instance(self, self.instance, opts.fields, opts.exclude)
+        except ValidationError as e:
+            self._update_errors(e)
+
+        try:
+            self.instance.full_clean(exclude=exclude, validate_unique=False)
+        except ValidationError as e:
+            self._update_errors(e)
+
+        if self._validate_unique:
+            self.validate_unique()
 
 
 class Module4SubmissionForm(forms.Form):

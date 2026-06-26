@@ -1102,6 +1102,7 @@ class LearningResource(models.Model):
     RESOURCE_TYPE_DOCUMENT = "document"
     RESOURCE_TYPE_IMAGE = "image"
     RESOURCE_TYPE_AUDIO = "audio"
+    RESOURCE_TYPE_VIDEO = "video"
     RESOURCE_TYPE_OTHER = "other"
     RESOURCE_TYPE_CHOICES = [
         (RESOURCE_TYPE_DOCUMENT, "Document"),
@@ -1137,3 +1138,7 @@ class LearningResource(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+    @property
+    def is_video(self) -> bool:
+        return self.resource_type == self.RESOURCE_TYPE_VIDEO

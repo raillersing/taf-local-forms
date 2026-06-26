@@ -1954,6 +1954,29 @@ tbody tr:last-child td {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.video-watch-panel {
+    gap: 1.25rem;
+}
+
+.video-player-shell {
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+}
+
+.local-video-player {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-lg);
+    background: var(--navy-deep);
+}
+
+.video-watch-help {
+    margin: 0;
+}
+
 /* Responsive */
 @media (max-width: 760px) {
     .page-shell {
