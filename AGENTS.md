@@ -121,6 +121,15 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 - `taf-security-privacy-review` — auth, secret safety, CSV injection, data minimisation.
 - `taf-graphify` — read-only architecture visualisation with Graphviz DOT diagrams.
 
+## Graphify / Ponytail
+
+- Lire `docs/ai-agents/tooling/graphify-ponytail.md` avant les tâches d’architecture, refonte ou intégration prototype.
+- Si `graphify-out/GRAPH_REPORT.md` existe et a été validé, consulter ce rapport avant de chercher partout dans le repo.
+- Utiliser Graphify pour comprendre le code, pas pour remplacer la revue humaine.
+- Appliquer Ponytail : réutiliser l’existant, réduire le scope, éviter les nouvelles dépendances.
+- Ponytail ne doit jamais réduire sécurité, tests, accessibilité, backup, protection données, auth ou anti-doublon.
+- Ne jamais scanner ou committer `.env`, backups, dumps, bases locales, logs sensibles ou médias runtime.
+
 ## Task queue
 
 | ID | Description | Status |
