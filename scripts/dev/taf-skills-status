@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "TAf local agent skills status"
+
+required_skills=(
+  taf-project-governance
+  taf-django-local-app
+  taf-data-safety-backup
+  taf-ui-ux-prototype-6
+  taf-lan-field-operations
+  taf-media-library
+  taf-testing-release-quality
+  taf-docs-spec-traceability
+  taf-agent-orchestration-graphify-ponytail
+  taf-accessibility-mobile-classroom
+)
+
+missing=0
+
+for skill in "${required_skills[@]}"; do
+  path=".agents/skills/${skill}/SKILL.md"
+  if [ -f "$path" ]; then
+    echo "OK   $path"
+  else
+    echo "MISS $path"
+    missing=1
+  fi
+done
+
+if [ "$missing" -ne 0 ]; then
+  echo "Some local TAf skills are missing."
+  exit 1
+fi
+
+echo "All required local TAf skills are present."
