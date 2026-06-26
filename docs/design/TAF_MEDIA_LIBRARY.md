@@ -12,6 +12,7 @@ un dashboard formateur minimal.
 - `/supports/<slug>/`
 - `/supports/<slug>/download/`
 - `/dashboard/supports/`
+- `/dashboard/supports/upload/`
 
 ## 3. Modèle `LearningResource`
 
@@ -50,15 +51,32 @@ Le modèle stocke :
 - les champs source et licence sont prévus pour tracer l'origine des documents ;
 - aucun secret ne doit être stocké dans les fichiers médias.
 
-## 7. Limites F038M
+## 7. Upload formateur F039M
+
+- la route `/dashboard/supports/upload/` est protégée par login ;
+- le formulaire crée directement un `LearningResource` sans nouvelle migration ;
+- les formats autorisés sont : PDF, DOCX, PPTX, PNG, JPG, JPEG et TXT ;
+- la taille maximale par fichier est fixée à 20 MB ;
+- le fichier est obligatoire ;
+- le support peut être enregistré en brouillon ou publié ;
+- le slug est généré automatiquement à partir du titre avec suffixe unique si besoin ;
+- les extensions dangereuses ou inconnues sont refusées côté serveur.
+
+## 8. Limites sécurité F039M
+
+- pas de scan antivirus externe dans cette phase ;
+- pas de détection MIME avancée avec dépendance externe ;
+- pas de remplacement de fichier, suppression ou édition avancée ;
+- la vidéo locale reste hors périmètre.
+
+## 9. Limites F038M/F039M
 
 - pas encore d'UX complète d'upload formateur ;
 - pas encore de vidéo locale ;
 - pas encore de matières scolaires structurées ;
-- l'administration initiale des supports passe surtout par l'admin Django.
+- l'administration initiale des supports passe encore en partie par l'admin Django.
 
-## 8. Prochaines étapes
+## 10. Prochaines étapes
 
-- F039M : upload formateur
 - F040M : vidéo locale
 - F041M : matières scolaires

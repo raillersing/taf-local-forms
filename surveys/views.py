@@ -13,7 +13,16 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import Module2SubmissionForm, Module3SubmissionForm, Module4SubmissionForm, Module5SubmissionForm, Module6SubmissionForm, Module7SubmissionForm, Module8SubmissionForm
+from .forms import (
+    LearningResourceForm,
+    Module2SubmissionForm,
+    Module3SubmissionForm,
+    Module4SubmissionForm,
+    Module5SubmissionForm,
+    Module6SubmissionForm,
+    Module7SubmissionForm,
+    Module8SubmissionForm,
+)
 from .models import (
     FormPresence,
     LearningResource,
@@ -312,6 +321,21 @@ def dashboard_supports(request: HttpRequest) -> HttpResponse:
         "draft_count": resources.filter(is_published=False).count(),
     }
     return render(request, "surveys/dashboard_supports.html", context)
+
+
+@login_required
+def dashboard_support_upload(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = LearningResourceForm(request.POST, request.FILES)
+        if form.is_valid():
+            resource = form.save()
+            status_label = "publié" if resource.is_published else "enregistré en brouillon"
+            messages.success(request, f"Le support « {resource.title} » a été {status_label}.")
+            return redirect("surveys:dashboard_supports")
+    else:
+        form = LearningResourceForm()
+
+    return render(request, "surveys/dashboard_support_upload.html", {"form": form})
 
 
 MODULE_5_SUMMARY = (
