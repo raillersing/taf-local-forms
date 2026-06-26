@@ -7,6 +7,9 @@
 {% endblock %}
 {% block content %}
 <main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% url 'surveys:student_modules' as modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 7 indisponible" %}
     <section class="card empty-state">
         <h2>Module 7 — Securite en ligne</h2>
         <p>Le formulaire n'est pas disponible pour le moment.</p>

@@ -2,10 +2,12 @@
     <ul class="nav-list">
         <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
         <li><a href="{% url 'surveys:dashboard_home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_home' %} class="nav-active"{% endif %}>Cockpit</a></li>
+        <li><a href="{% url 'surveys:dashboard_home' %}#modules"{% if request.resolver_match and 'dashboard_module_' in request.resolver_match.view_name %} class="nav-active"{% endif %}>Modules</a></li>
+        <li><a href="{% url 'surveys:dashboard_home' %}#exports">Exports</a></li>
         <li><a href="{% url 'surveys:dashboard_network' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' %} class="nav-active"{% endif %}>Réseau</a></li>
         <li><a href="{% url 'surveys:dashboard_network_control' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network_control' %} class="nav-active"{% endif %}>Contrôle LAN</a></li>
-        <li><a href="{% url 'surveys:dashboard_backup' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_backup' %} class="nav-active"{% endif %}>Sauvegarde</a></li>
         <li><a href="{% url 'surveys:dashboard_settings' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_settings' %} class="nav-active"{% endif %}>Configuration</a></li>
+        <li><a href="{% url 'surveys:dashboard_backup' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_backup' %} class="nav-active"{% endif %}>Sauvegarde</a></li>
         <li><a href="{% url 'admin:index' %}">Admin avancé</a></li>
     </ul>
 </nav>

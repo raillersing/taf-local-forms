@@ -11,12 +11,8 @@
 
 {% block content %}
 <main id="content" class="content-grid">
-
-    <nav class="breadcrumbs" aria-label="fil d'ariane">
-        <a href="{% url 'surveys:dashboard_home' %}">Cockpit</a>
-        <span class="sep">›</span>
-        <span class="current">Accès réseau</span>
-    </nav>
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Accès réseau" %}
 
     {% if lan_host_stale %}
     <section class="card alert-warning">

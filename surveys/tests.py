@@ -5481,3 +5481,33 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_module_2"))
         self.assertContains(response, "--w:")
         self.assertContains(response, "progress-bar")
+
+    def test_student_navigation_shows_supports_placeholder(self):
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertContains(response, "Supports bientôt")
+        self.assertNotContains(response, 'href="/supports/')
+
+    def test_student_module_detail_has_breadcrumbs(self):
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, reverse("surveys:home"))
+        self.assertContains(response, reverse("surveys:student_modules"))
+        self.assertContains(response, "Module 2")
+
+    def test_student_questionnaire_has_breadcrumbs(self):
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, "Questionnaire")
+
+    def test_trainer_navigation_includes_modules_and_exports(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, reverse("surveys:dashboard_home") + "#modules")
+        self.assertContains(response, reverse("surveys:dashboard_home") + "#exports")
+        self.assertContains(response, "Admin avancé")
+
+    def test_dashboard_home_has_breadcrumbs(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, "Cockpit")

@@ -10,6 +10,9 @@
 
 {% block content %}
 <main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% url 'surveys:student_modules' as modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Confirmation" %}
     <section class="card success-card" role="status" aria-live="polite">
         <h2>Merci. Ta réponse a bien été enregistrée.</h2>
         <p>Avant de croire une information, pense à vérifier : qui publie, quand, avec quelles preuves, et si d'autres sources disent la même chose.</p>

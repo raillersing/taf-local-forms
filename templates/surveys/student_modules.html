@@ -11,6 +11,8 @@
 
 {% block content %}
 <main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Modules" %}
     <section class="card intro-card" aria-labelledby="welcome-heading">
         <h2 id="welcome-heading">Bienvenue</h2>
         <p>Cette application te permet de répondre aux questionnaires de formation TAfHSSiM.</p>

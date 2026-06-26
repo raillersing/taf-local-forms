@@ -6,6 +6,9 @@
 
 {% block content %}
 <main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% url 'surveys:student_modules' as modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 3 indisponible" %}
     <p class="empty-state muted">
         Le formulaire n'est pas disponible maintenant.<br>
         Demande au formateur d'activer la séance Module 3.

@@ -11,6 +11,8 @@
 
 {% block content %}
 <main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Cockpit" %}
     <!-- Dashboard sub-navigation -->
     <nav class="sub-nav" aria-label="Sections du tableau de bord">
         <a href="#overview" class="sub-nav-link">Vue d'ensemble</a>
