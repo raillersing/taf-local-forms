@@ -11,23 +11,44 @@
 <body>
     <a href="#content" class="skip-link">Aller au contenu</a>
     <div class="page-shell">
-        <header class="site-header">
-            <div class="brand-mark">
-                {% brand_logo_exists as logo_exists %}
-                {% if logo_exists %}
-                    <a href="{% url 'surveys:home' %}">
-                        <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
-                    </a>
-                {% else %}
-                    <a href="{% url 'surveys:home' %}" class="brand-fallback-link">
-                        <div class="brand-fallback">Internet Society – Chapitre Madagascar</div>
-                    </a>
-                {% endif %}
+        <header class="site-header shell-header">
+            <div class="shell-header-bar">
+                <div class="brand-mark">
+                    {% brand_logo_exists as logo_exists %}
+                    {% if logo_exists %}
+                        <a href="{% url 'surveys:home' %}">
+                            <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
+                        </a>
+                    {% else %}
+                        <a href="{% url 'surveys:home' %}" class="brand-fallback-link">
+                            <div class="brand-fallback">Internet Society – Chapitre Madagascar</div>
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="shell-header-status" aria-label="Statut de l'application">
+                    <span class="shell-status-pill">Application locale</span>
+                    <span class="shell-status-pill shell-status-pill-soft">CSS local uniquement</span>
+                </div>
             </div>
-            <div class="brand-copy">
-                <p class="eyebrow">TAfHSSiM</p>
-                <h1>{% block hero_title %}TAfHSSiM{% endblock %}</h1>
-                <p class="hero-text">{% block hero_text %}Application locale pour les séances de formation TAfHSSiM.{% endblock %}</p>
+            <div class="shell-hero">
+                <div class="brand-copy">
+                    <p class="eyebrow">TAfHSSiM</p>
+                    <h1>{% block hero_title %}TAfHSSiM{% endblock %}</h1>
+                    <p class="hero-text">{% block hero_text %}Application locale pour les séances de formation TAfHSSiM.{% endblock %}</p>
+                    {% block hero_actions %}{% endblock %}
+                </div>
+                <aside class="shell-aside">
+                    {% block hero_meta %}
+                    <div class="shell-aside-card">
+                        <p class="shell-aside-title">Mode terrain</p>
+                        <ul class="shell-meta-list">
+                            <li>Navigation claire pour élèves et formateur</li>
+                            <li>Pages locales sans dépendance externe</li>
+                            <li>Données gardées sur le laptop du formateur</li>
+                        </ul>
+                    </div>
+                    {% endblock %}
+                </aside>
             </div>
         </header>
         {% block main_nav %}

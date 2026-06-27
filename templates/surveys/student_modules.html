@@ -1,9 +1,19 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}TAfHSSiM — Modules de formation{% endblock %}
 {% block hero_title %}Modules de formation{% endblock %}
-{% block hero_text %}Choisis un module et réponds aux questions.{% endblock %}
+{% block hero_text %}Choisis un module, vérifie s’il est ouvert et entre dans un parcours clair pour répondre ou consulter selon la séance.{% endblock %}
+
+{% block hero_meta %}
+<div class="shell-aside-card">
+    <p class="shell-aside-title">Repères élèves</p>
+    <ul class="shell-meta-list">
+        <li>Modules ouverts clairement signalés</li>
+        <li>Consultation possible si les réponses sont fermées</li>
+        <li>Navigation simple sur téléphone</li>
+    </ul>
+</div>
+{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
@@ -13,44 +23,61 @@
 <main id="content" class="content-grid">
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Modules" %}
-    <section class="card intro-card" aria-labelledby="welcome-heading">
-        <h2 id="welcome-heading">Bienvenue</h2>
-        <p>Cette application te permet de répondre aux questionnaires de formation TAfHSSiM.</p>
-        <p>Connecte-toi au Wi-Fi de la classe et choisis ton module ci-dessous.</p>
+
+    <section class="card intro-card intro-card-strong" aria-labelledby="welcome-heading">
+        <div class="section-row">
+            <div>
+                <span class="taf-pill">Parcours étudiant</span>
+                <h2 id="welcome-heading">Choisis un module adapté à la séance</h2>
+            </div>
+            <a class="text-link" href="{% url 'surveys:support_list' %}">Voir les supports publiés</a>
+        </div>
+        <p>Connecte-toi au Wi-Fi de la classe, puis ouvre un module ci-dessous. Si les réponses sont fermées, tu peux parfois consulter le contenu sans envoyer de réponse.</p>
     </section>
 
-    {% for item in module_data %}
-    <section class="card" aria-labelledby="module-title-{{ forloop.counter }}">
-        <div class="section-row">
-            <h2 id="module-title-{{ forloop.counter }}">{{ item.module.title }}</h2>
-            <div class="badge-group">
+    <section class="module-grid module-grid-enhanced" aria-label="Catalogue des modules">
+        {% for item in module_data %}
+        <article class="module-card module-card-enhanced" aria-labelledby="module-title-{{ forloop.counter }}">
+            <div class="module-card-header">
+                <div>
+                    <p class="module-card-kicker">Module {{ forloop.counter|add:1 }}</p>
+                    <h2 id="module-title-{{ forloop.counter }}">{{ item.module.title }}</h2>
+                </div>
+                <div class="badge-group">
+                    {% if item.has_active_session %}
+                        {% if item.active_session.accepting_responses %}
+                            <span class="badge badge-success">Réponses ouvertes</span>
+                        {% else %}
+                            <span class="badge badge-warning">Consultation seulement</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge badge-muted">Indisponible</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <p class="muted">{{ item.module.description|default:"Ce module fait partie du parcours de formation TAfHSSiM." }}</p>
+
+            <div class="module-card-foot">
                 {% if item.has_active_session %}
                     {% if item.active_session.accepting_responses %}
-                        <span class="badge badge-success">Réponses ouvertes</span>
+                        <p class="module-card-note">La session est active. Tu peux entrer et répondre maintenant.</p>
                     {% else %}
-                        <span class="badge badge-warning">Consultation seulement</span>
+                        <p class="module-card-note">Le contenu reste consultable, mais l’envoi des réponses est fermé.</p>
                     {% endif %}
+                    <a class="taf-button taf-button-primary taf-button-block" href="{{ item.detail_url }}">Voir le module</a>
                 {% else %}
-                    <span class="badge badge-muted">Indisponible</span>
+                    <p class="module-card-note">Aucune session active pour ce module. Reviens plus tard ou demande au formateur.</p>
+                    <span class="taf-button taf-button-secondary taf-button-block nav-disabled">Module indisponible</span>
                 {% endif %}
             </div>
-        </div>
-
-        <p class="muted">{{ item.module.description|default:"" }}</p>
-
-        <div class="module-card-actions">
-            {% if item.has_active_session %}
-                <a class="primary-button" href="{{ item.detail_url }}">Voir le module</a>
-            {% else %}
-                <p class="muted">Aucune session active pour ce module. Reviens plus tard.</p>
-            {% endif %}
-        </div>
+        </article>
+        {% empty %}
+        <section class="card empty-state" aria-labelledby="no-modules">
+            <h2 id="no-modules" class="empty-state-title">Aucun module disponible</h2>
+            <p>Aucun module de formation n'est ouvert pour le moment.</p>
+        </section>
+        {% endfor %}
     </section>
-    {% empty %}
-    <section class="card empty-state" aria-labelledby="no-modules">
-        <h2 id="no-modules" class="empty-state-title">Aucun module disponible</h2>
-        <p>Aucun module de formation n'est ouvert pour le moment.</p>
-    </section>
-    {% endfor %}
 </main>
 {% endblock %}
