@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 
-from .models import FormPresence, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import Chapter, FormPresence, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 admin.site.site_header = getattr(settings, "ADMIN_SITE_HEADER", "TAf Local Forms")
 admin.site.site_title = getattr(settings, "ADMIN_SITE_TITLE", "TAf Admin")
@@ -136,10 +136,28 @@ class FormPresenceAdmin(admin.ModelAdmin):
     readonly_fields = ("started_at", "last_seen_at")
 
 
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = ("name", "class_level", "sort_order", "is_active")
+    list_filter = ("class_level", "is_active")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(Chapter)
+class ChapterAdmin(admin.ModelAdmin):
+    list_display = ("title", "subject", "sort_order", "is_active")
+    list_filter = ("subject", "is_active")
+    search_fields = ("title", "description", "subject__name")
+    autocomplete_fields = ("subject",)
+    prepopulated_fields = {"slug": ("title",)}
+
+
 @admin.register(LearningResource)
 class LearningResourceAdmin(admin.ModelAdmin):
-    list_display = ("title", "resource_type", "module_number", "is_published", "updated_at")
-    list_filter = ("is_published", "resource_type", "module_number")
-    search_fields = ("title", "description", "source")
+    list_display = ("title", "subject", "chapter", "resource_type", "module_number", "is_published", "updated_at")
+    list_filter = ("is_published", "resource_type", "module_number", "subject")
+    search_fields = ("title", "description", "source", "subject__name", "chapter__title")
     prepopulated_fields = {"slug": ("title",)}
     readonly_fields = ("created_at", "updated_at")
+    autocomplete_fields = ("subject", "chapter")

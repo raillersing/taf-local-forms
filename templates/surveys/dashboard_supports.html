@@ -38,6 +38,7 @@
                 <thead>
                     <tr>
                         <th>Titre</th>
+                        <th>Matière / chapitre</th>
                         <th>Type</th>
                         <th>Module</th>
                         <th>Visibilité</th>
@@ -60,6 +61,14 @@
                                 <a class="text-link" href="{% url 'surveys:support_download' resource.slug %}">Télécharger</a>
                                 {% endif %}
                             </div>
+                        </td>
+                        <td>
+                            {% if resource.subject %}
+                            <span>{{ resource.subject.name }}</span>
+                            {% if resource.chapter %}<br><span class="muted">{{ resource.chapter.title }}</span>{% endif %}
+                            {% else %}
+                            <span class="muted">Non classé</span>
+                            {% endif %}
                         </td>
                         <td>{% if resource.is_video %}Vidéo{% else %}{{ resource.get_resource_type_display }}{% endif %}</td>
                         <td>{% if resource.module_number %}Module {{ resource.module_number }}{% else %}<span class="muted">Général</span>{% endif %}</td>
