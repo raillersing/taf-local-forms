@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${1:-${TAF_SMOKE_BASE_URL:-http://127.0.0.1:8010}}"
+LAN_URL="${2:-${TAF_SMOKE_LAN_URL:-http://127.0.0.1:8011}}"
+TRAINER_USERNAME="${TAF_SMOKE_USERNAME:-}"
+TRAINER_PASSWORD="${TAF_SMOKE_PASSWORD:-}"
+SUPPORT_SLUG="${TAF_SMOKE_SUPPORT_SLUG:-}"
+VIDEO_SLUG="${TAF_SMOKE_VIDEO_SLUG:-}"
+
+TMP_DIR="$(mktemp -d)"
+COOKIE_JAR="$TMP_DIR/cookies.txt"
+BODY_FILE="$TMP_DIR/body.txt"
+HEADER_FILE="$TMP_DIR/headers.txt"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+PASS_COUNT=0
+FAIL_COUNT=0
+SKIP_COUNT=0
+
+say() {
+  printf '%s\n' "$*"
+}
+
+pass() {
+  PASS_COUNT=$((PASS_COUNT + 1))
+  say "PASS $*"
+}
+
+fail() {
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  say "FAIL $*"
+}
+
+skip() {
+  SKIP_COUNT=$((SKIP_COUNT + 1))
+  say "SKIP $*"
+}
+
+require_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    say "ERREUR: commande requise absente: $1"
+    exit 1
+  fi
+}
+
+status_only() {
+  curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 20 "$1"
+}
+
+fetch() {
+  local url="$1"
+  shift
+  curl -sS -L -D "$HEADER_FILE" -o "$BODY_FILE" \
+    --connect-timeout 5 \
+    --max-time 20 \
+    "$@" \
+    "$url"
+}
+
+check_status() {
+  local label="$1"
+  local url="$2"
+  local expected="$3"
+  local code
+  code="$(status_only "$url" || true)"
+  if [[ " $expected " == *" $code "* ]]; then
+    pass "$label -> $code"
+  else
+    fail "$label -> attendu [$expected], obtenu [$code]"
+  fi
+}
+
+check_body_contains() {
+  local label="$1"
+  local url="$2"
+  local needle="$3"
+  shift 3
+  if fetch "$url" "$@"; then
+    if grep -Fq "$needle" "$BODY_FILE"; then
+      pass "$label -> contenu trouvé: $needle"
+    else
+      fail "$label -> contenu absent: $needle"
+    fi
+  else
+    fail "$label -> requête impossible"
+  fi
+}
+
+login_if_configured() {
+  if [[ -z "$TRAINER_USERNAME" || -z "$TRAINER_PASSWORD" ]]; then
+    skip "Routes protégées en 200 non vérifiées: définir TAF_SMOKE_USERNAME et TAF_SMOKE_PASSWORD"
+    return 1
+  fi
+
+  local login_url="$BASE_URL/admin/login/"
+  local csrftoken
+
+  fetch "$login_url" -c "$COOKIE_JAR"
+  csrftoken="$(grep -E 'csrftoken[[:space:]]' "$COOKIE_JAR" | tail -n 1 | awk '{print $7}')"
+  if [[ -z "$csrftoken" ]]; then
+    fail "Connexion formateur -> csrftoken introuvable"
+    return 1
+  fi
+
+  fetch "$login_url" \
+    -b "$COOKIE_JAR" \
+    -c "$COOKIE_JAR" \
+    -e "$login_url" \
+    --data-urlencode "username=$TRAINER_USERNAME" \
+    --data-urlencode "password=$TRAINER_PASSWORD" \
+    --data-urlencode "csrfmiddlewaretoken=$csrftoken" \
+    --data-urlencode "next=/dashboard/"
+
+  if grep -Fq "/dashboard/" "$BODY_FILE" || grep -Fq "Cockpit" "$BODY_FILE"; then
+    pass "Connexion formateur"
+    return 0
+  fi
+
+  fail "Connexion formateur -> échec"
+  return 1
+}
+
+say "============================================"
+say "  TAf Local Forms — Field Smoke Check"
+say "============================================"
+say "  BASE_URL : $BASE_URL"
+say "  LAN_URL  : $LAN_URL"
+say "  Mode     : READ-ONLY / NON DESTRUCTIF"
+say "============================================"
+
+require_cmd curl
+require_cmd docker
+
+if docker compose config >/dev/null; then
+  pass "docker compose config"
+else
+  fail "docker compose config"
+fi
+
+if docker compose ps --status running >/dev/null 2>&1; then
+  pass "docker compose ps --status running"
+else
+  skip "docker compose ps --status running indisponible ou Docker non démarré"
+fi
+
+check_status "Page d'accueil publique" "$BASE_URL/" "200"
+check_status "Catalogue modules" "$BASE_URL/modules/" "200"
+check_status "Catalogue supports public" "$BASE_URL/supports/" "200"
+check_status "Admin login accessible" "$BASE_URL/admin/login/" "200"
+check_status "Module 2 public" "$BASE_URL/module-2/" "200 503"
+
+check_status "Dashboard protégé sans login" "$BASE_URL/dashboard/" "302"
+check_status "Réseau protégé sans login" "$BASE_URL/dashboard/network/" "302"
+check_status "Projection protégée sans login" "$BASE_URL/dashboard/projection/" "302"
+check_status "Supports dashboard protégés sans login" "$BASE_URL/dashboard/supports/" "302"
+check_status "Upload dashboard protégé sans login" "$BASE_URL/dashboard/supports/upload/" "302"
+
+check_status "LAN home" "$LAN_URL/" "000 200 302 403 404 502"
+check_status "LAN module 2" "$LAN_URL/module-2/" "000 200 302 403 404 503 502"
+
+if login_if_configured; then
+  check_status "Dashboard formateur connecté" "$BASE_URL/dashboard/" "200"
+  check_status "Réseau formateur connecté" "$BASE_URL/dashboard/network/" "200"
+  check_status "Projection formateur connectée" "$BASE_URL/dashboard/projection/" "200"
+  check_status "Supports dashboard connecté" "$BASE_URL/dashboard/supports/" "200"
+  check_status "Upload support connecté" "$BASE_URL/dashboard/supports/upload/" "200"
+
+  check_body_contains "Projection contient QR" "$BASE_URL/dashboard/projection/" "data-qr-target" -b "$COOKIE_JAR"
+  check_body_contains "Projection contient URL élève" "$BASE_URL/dashboard/projection/" "projection-url" -b "$COOKIE_JAR"
+fi
+
+if [[ -n "$SUPPORT_SLUG" ]]; then
+  check_status "Support public détail ($SUPPORT_SLUG)" "$BASE_URL/supports/$SUPPORT_SLUG/" "200"
+  check_status "Support public téléchargement ($SUPPORT_SLUG)" "$BASE_URL/supports/$SUPPORT_SLUG/download/" "200"
+else
+  skip "Support public détaillé non vérifié: définir TAF_SMOKE_SUPPORT_SLUG"
+fi
+
+if [[ -n "$VIDEO_SLUG" ]]; then
+  check_status "Vidéo publique watch ($VIDEO_SLUG)" "$BASE_URL/supports/$VIDEO_SLUG/watch/" "200"
+  check_status "Vidéo publique download ($VIDEO_SLUG)" "$BASE_URL/supports/$VIDEO_SLUG/download/" "200"
+  check_body_contains "Lecteur vidéo HTML5 ($VIDEO_SLUG)" "$BASE_URL/supports/$VIDEO_SLUG/watch/" "<video" 
+else
+  skip "Vidéo runtime non vérifiée: définir TAF_SMOKE_VIDEO_SLUG"
+fi
+
+say "============================================"
+say "  Résumé"
+say "============================================"
+say "  PASS : $PASS_COUNT"
+say "  FAIL : $FAIL_COUNT"
+say "  SKIP : $SKIP_COUNT"
+say "============================================"
+
+if [[ "$FAIL_COUNT" -gt 0 ]]; then
+  exit 1
+fi
