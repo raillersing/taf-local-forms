@@ -19,6 +19,39 @@
             <span class="badge badge-info">{{ resources|length }} support{{ resources|length|pluralize }}</span>
         </div>
         <p class="muted">Seuls les supports publiés apparaissent ici.</p>
+        <form method="get" class="field-grid" aria-label="Filtres du catalogue">
+            <div class="field">
+                <label for="id_subject">Matière</label>
+                <select id="id_subject" name="subject" class="taf-select">
+                    <option value="">Toutes les matières</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.slug }}"{% if selected_subject == subject.slug %} selected{% endif %}>{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="id_level">Niveau</label>
+                <select id="id_level" name="level" class="taf-select">
+                    <option value="">Tous les niveaux</option>
+                    {% for value, label in level_choices %}
+                    <option value="{{ value }}"{% if selected_level == value %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="id_module">Module</label>
+                <select id="id_module" name="module" class="taf-select">
+                    <option value="">Tous les modules</option>
+                    {% for module_number in module_choices %}
+                    <option value="{{ module_number }}"{% if selected_module == module_number|stringformat:"s" %} selected{% endif %}>Module {{ module_number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="section-row">
+                <button type="submit" class="btn btn-primary">Filtrer</button>
+                <a class="text-link" href="{% url 'surveys:support_list' %}">Réinitialiser</a>
+            </div>
+        </form>
     </section>
 
     {% if resources %}
@@ -31,6 +64,9 @@
                     <span class="badge badge-info">{% if resource.is_video %}Vidéo{% else %}{{ resource.get_resource_type_display }}{% endif %}</span>
                     {% if resource.module_number %}
                     <span class="badge badge-muted">Module {{ resource.module_number }}</span>
+                    {% endif %}
+                    {% if resource.subject %}
+                    <span class="badge badge-muted">{{ resource.subject.name }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -45,6 +81,12 @@
                 {% endif %}
                 {% if resource.license_label %}
                 <div><dt>Licence</dt><dd>{{ resource.license_label }}</dd></div>
+                {% endif %}
+                {% if resource.subject %}
+                <div><dt>Matière</dt><dd>{{ resource.subject.name }}</dd></div>
+                {% endif %}
+                {% if resource.chapter %}
+                <div><dt>Chapitre</dt><dd>{{ resource.chapter.title }}</dd></div>
                 {% endif %}
                 <div><dt>Mise à jour</dt><dd>{{ resource.updated_at|date:"d/m/Y" }}</dd></div>
             </dl>

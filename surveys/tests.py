@@ -14,7 +14,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import FormPresence, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission, TrainingModule, TrainingSession
+from .models import Chapter, FormPresence, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 
 class SeedModule2CommandTests(TestCase):
@@ -5566,12 +5566,35 @@ class LearningResourceViewTests(TestCase):
             username="formateur",
             password="motdepasse-solide-123",
         )
+        self.math_subject = Subject.objects.create(
+            name="Mathématiques",
+            slug="mathematiques",
+            class_level=Student.CLASS_LEVEL_SECONDE,
+            sort_order=1,
+            is_active=True,
+        )
+        self.geometry_chapter = Chapter.objects.create(
+            subject=self.math_subject,
+            title="Géométrie",
+            slug="geometrie",
+            sort_order=1,
+            is_active=True,
+        )
+        self.history_subject = Subject.objects.create(
+            name="Histoire-Géographie",
+            slug="histoire-geographie",
+            class_level=Student.CLASS_LEVEL_PREMIERE,
+            sort_order=2,
+            is_active=True,
+        )
         self.published = LearningResource.objects.create(
             title="Guide PDF Module 2",
             slug="guide-pdf-module-2",
             description="Support public pour les élèves.",
             resource_type=LearningResource.RESOURCE_TYPE_DOCUMENT,
             module_number=2,
+            subject=self.math_subject,
+            chapter=self.geometry_chapter,
             file=SimpleUploadedFile("guide-module-2.pdf", b"%PDF-1.4 test content", content_type="application/pdf"),
             source="TAfHSSiM",
             license_label="Usage classe",
@@ -5592,6 +5615,7 @@ class LearningResourceViewTests(TestCase):
             description="Capsule vidéo locale.",
             resource_type="video",
             module_number=2,
+            subject=self.history_subject,
             file=SimpleUploadedFile("video-module-2.mp4", b"\x00\x00\x00\x18ftypmp42video", content_type="video/mp4"),
             source="TAfHSSiM",
             license_label="Usage classe",
@@ -5626,6 +5650,8 @@ class LearningResourceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.published.title)
+        self.assertContains(response, "Mathématiques")
+        self.assertContains(response, "Géométrie")
 
     def test_support_detail_draft_returns_404(self):
         response = self.client.get(reverse("surveys:support_detail", args=[self.draft.slug]))
@@ -5684,6 +5710,8 @@ class LearningResourceViewTests(TestCase):
         self.assertContains(response, self.draft.title)
         self.assertContains(response, "Publié")
         self.assertContains(response, "Brouillon")
+        self.assertContains(response, "Mathématiques")
+        self.assertContains(response, "Géométrie")
 
     def test_student_navigation_contains_supports_without_dashboard_links(self):
         response = self.client.get(reverse("surveys:support_list"))
@@ -5714,6 +5742,8 @@ class LearningResourceViewTests(TestCase):
         self.assertContains(response, "Ajouter un support")
         self.assertContains(response, "20 MB")
         self.assertContains(response, "80 MB")
+        self.assertContains(response, "Matière")
+        self.assertContains(response, "Chapitre")
 
     def test_dashboard_support_upload_valid_pdf_creates_draft_resource(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5725,6 +5755,8 @@ class LearningResourceViewTests(TestCase):
                 "description": "Support de test.",
                 "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
                 "module_number": 4,
+                "subject": self.math_subject.pk,
+                "chapter": self.geometry_chapter.pk,
                 "file": SimpleUploadedFile("guide-module-4.pdf", b"%PDF-1.4 upload content", content_type="application/pdf"),
                 "source": "TAfHSSiM",
                 "license_label": "Usage classe",
@@ -5736,6 +5768,8 @@ class LearningResourceViewTests(TestCase):
         resource = LearningResource.objects.get(title="Nouveau guide module 4")
         self.assertFalse(resource.is_published)
         self.assertEqual(resource.slug, "nouveau-guide-module-4")
+        self.assertEqual(resource.subject, self.math_subject)
+        self.assertEqual(resource.chapter, self.geometry_chapter)
 
     def test_upload_created_as_draft_does_not_appear_in_public_catalog(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5778,6 +5812,27 @@ class LearningResourceViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Support publié module 6")
 
+    def test_support_list_can_filter_by_subject(self):
+        response = self.client.get(reverse("surveys:support_list"), {"subject": self.math_subject.slug})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.published.title)
+        self.assertNotContains(response, self.video_published.title)
+
+    def test_support_list_can_filter_by_level(self):
+        response = self.client.get(reverse("surveys:support_list"), {"level": Student.CLASS_LEVEL_PREMIERE})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.video_published.title)
+        self.assertNotContains(response, self.published.title)
+
+    def test_support_list_can_filter_by_module(self):
+        response = self.client.get(reverse("surveys:support_list"), {"module": "2"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.published.title)
+        self.assertContains(response, self.video_published.title)
+
     def test_dashboard_support_upload_valid_mp4_creates_video_resource(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
 
@@ -5799,6 +5854,25 @@ class LearningResourceViewTests(TestCase):
         resource = LearningResource.objects.get(title="Vidéo locale module 4")
         self.assertEqual(resource.resource_type, "video")
         self.assertTrue(resource.is_published)
+
+    def test_dashboard_support_upload_rejects_chapter_from_other_subject(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Support incohérent",
+                "description": "Doit échouer.",
+                "resource_type": LearningResource.RESOURCE_TYPE_DOCUMENT,
+                "subject": self.history_subject.pk,
+                "chapter": self.geometry_chapter.pk,
+                "file": SimpleUploadedFile("incoherent.pdf", b"%PDF-1.4 invalid", content_type="application/pdf"),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Choisis un chapitre de la matière sélectionnée.")
+        self.assertFalse(LearningResource.objects.filter(title="Support incohérent").exists())
 
     def test_dashboard_support_upload_rejects_oversized_mp4(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")

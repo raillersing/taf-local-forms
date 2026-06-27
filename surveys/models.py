@@ -1098,6 +1098,49 @@ class FormPresence(models.Model):
         return f"{self.client_id} @ {self.module_code} ({self.status})"
 
 
+class Subject(models.Model):
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(unique=True)
+    class_level = models.CharField(
+        max_length=20,
+        choices=Student.CLASS_LEVEL_CHOICES,
+        blank=True,
+    )
+    description = models.TextField(blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        verbose_name = "Matiere"
+        verbose_name_plural = "Matieres"
+
+    def __str__(self) -> str:
+        if self.class_level:
+            return f"{self.name} ({self.get_class_level_display()})"
+        return self.name
+
+
+class Chapter(models.Model):
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="chapters")
+    title = models.CharField(max_length=160)
+    slug = models.SlugField()
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["subject__sort_order", "sort_order", "title"]
+        verbose_name = "Chapitre"
+        verbose_name_plural = "Chapitres"
+        constraints = [
+            models.UniqueConstraint(fields=["subject", "slug"], name="unique_chapter_slug_per_subject"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.subject.name} - {self.title}"
+
+
 class LearningResource(models.Model):
     RESOURCE_TYPE_DOCUMENT = "document"
     RESOURCE_TYPE_IMAGE = "image"
@@ -1124,6 +1167,20 @@ class LearningResource(models.Model):
         null=True,
         validators=[MinValueValidator(2), MaxValueValidator(8)],
     )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="learning_resources",
+    )
+    chapter = models.ForeignKey(
+        Chapter,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="learning_resources",
+    )
     file = models.FileField(upload_to="learning_resources/%Y/%m/")
     source = models.CharField(max_length=255, blank=True)
     license_label = models.CharField(max_length=100, blank=True)
@@ -1142,3 +1199,12 @@ class LearningResource(models.Model):
     @property
     def is_video(self) -> bool:
         return self.resource_type == self.RESOURCE_TYPE_VIDEO
+
+    def clean(self) -> None:
+        super().clean()
+        if self.chapter and not self.subject:
+            self.subject = self.chapter.subject
+        if self.chapter and self.subject_id != self.chapter.subject_id:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError({"chapter": "Choisis un chapitre de la meme matiere."})

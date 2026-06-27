@@ -33,6 +33,7 @@ from .models import (
     Module7Submission,
     Module8Submission,
     Student,
+    Subject,
     Submission,
     TrainingModule,
     TrainingSession,
@@ -72,7 +73,7 @@ def home(request: HttpRequest) -> HttpResponse:
 
 
 def _published_resources_queryset():
-    return LearningResource.objects.filter(is_published=True)
+    return LearningResource.objects.filter(is_published=True).select_related("subject", "chapter")
 
 
 def _build_cockpit_context(request: HttpRequest) -> dict:
@@ -185,8 +186,35 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
 
 
 def support_list(request: HttpRequest) -> HttpResponse:
-    resources = _published_resources_queryset().order_by("module_number", "title")
-    return render(request, "surveys/support_list.html", {"resources": resources})
+    resources = _published_resources_queryset().order_by(
+        "module_number",
+        "subject__sort_order",
+        "chapter__sort_order",
+        "title",
+    )
+    subjects = Subject.objects.filter(is_active=True).order_by("sort_order", "name")
+    selected_subject = request.GET.get("subject", "").strip()
+    selected_level = request.GET.get("level", "").strip()
+    selected_module = request.GET.get("module", "").strip()
+    if selected_subject:
+        resources = resources.filter(subject__slug=selected_subject)
+    if selected_level:
+        resources = resources.filter(subject__class_level=selected_level)
+    if selected_module.isdigit():
+        resources = resources.filter(module_number=int(selected_module))
+    return render(
+        request,
+        "surveys/support_list.html",
+        {
+            "resources": resources,
+            "subjects": subjects,
+            "level_choices": Student.CLASS_LEVEL_CHOICES,
+            "module_choices": range(2, 9),
+            "selected_subject": selected_subject,
+            "selected_level": selected_level,
+            "selected_module": selected_module,
+        },
+    )
 
 
 def support_detail(request: HttpRequest, slug: str) -> HttpResponse:
@@ -321,7 +349,7 @@ def dashboard_projection(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def dashboard_supports(request: HttpRequest) -> HttpResponse:
-    resources = LearningResource.objects.order_by("-updated_at", "title")
+    resources = LearningResource.objects.select_related("subject", "chapter").order_by("-updated_at", "title")
     context = {
         "resources": resources,
         "published_count": resources.filter(is_published=True).count(),

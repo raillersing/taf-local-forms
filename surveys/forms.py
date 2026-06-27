@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
-from .models import LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Submission
+from .models import Chapter, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission
 
 
 LEARNING_RESOURCE_MAX_UPLOAD_SIZE = 20 * 1024 * 1024
@@ -162,6 +162,8 @@ class LearningResourceForm(forms.ModelForm):
             "description",
             "resource_type",
             "module_number",
+            "subject",
+            "chapter",
             "file",
             "source",
             "license_label",
@@ -172,6 +174,8 @@ class LearningResourceForm(forms.ModelForm):
             "description": "Description",
             "resource_type": "Type de support",
             "module_number": "Module lié",
+            "subject": "Matière",
+            "chapter": "Chapitre",
             "file": "Fichier",
             "source": "Source",
             "license_label": "Licence",
@@ -181,6 +185,8 @@ class LearningResourceForm(forms.ModelForm):
             "title": "Titre lisible pour les élèves et le formateur.",
             "description": "Résumé court du contenu du support.",
             "module_number": "Optionnel. Laisse vide pour un support général.",
+            "subject": "Optionnel. Classe le support par matière si utile.",
+            "chapter": "Optionnel. Choisis un chapitre de la matière sélectionnée.",
             "file": "Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT et MP4. Taille maximale : 20 MB, ou 80 MB pour une vidéo MP4.",
             "source": "Exemple : TAfHSSiM, professeur, manuel local.",
             "license_label": "Exemple : usage classe, libre diffusion, CC BY.",
@@ -192,14 +198,28 @@ class LearningResourceForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["subject"].queryset = Subject.objects.filter(is_active=True).order_by("sort_order", "name")
+        self.fields["chapter"].queryset = Chapter.objects.none()
         self.fields["resource_type"].widget.attrs["class"] = "taf-select"
         self.fields["module_number"].widget.attrs["class"] = "taf-input"
+        self.fields["subject"].widget.attrs["class"] = "taf-select"
+        self.fields["chapter"].widget.attrs["class"] = "taf-select"
         self.fields["title"].widget.attrs["class"] = "taf-input"
         self.fields["source"].widget.attrs["class"] = "taf-input"
         self.fields["license_label"].widget.attrs["class"] = "taf-input"
         self.fields["description"].widget.attrs["class"] = "taf-textarea"
         self.fields["file"].widget.attrs["class"] = "taf-input"
         self.fields["file"].widget.attrs["accept"] = ",".join(sorted(LEARNING_RESOURCE_ALLOWED_EXTENSIONS))
+        subject_id = None
+        if self.is_bound:
+            subject_id = self.data.get("subject") or None
+        elif self.instance.pk and self.instance.subject_id:
+            subject_id = str(self.instance.subject_id)
+        if subject_id:
+            self.fields["chapter"].queryset = Chapter.objects.filter(
+                subject_id=subject_id,
+                is_active=True,
+            ).order_by("sort_order", "title")
 
     def clean_file(self):
         uploaded_file = self.cleaned_data.get("file")
@@ -244,6 +264,13 @@ class LearningResourceForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         title = cleaned_data.get("title", "")
+        subject = cleaned_data.get("subject")
+        chapter = cleaned_data.get("chapter")
+        if chapter and not subject:
+            cleaned_data["subject"] = chapter.subject
+            subject = chapter.subject
+        if chapter and subject and chapter.subject_id != subject.id:
+            self.add_error("chapter", "Choisis un chapitre de la matière sélectionnée.")
         if title:
             base_slug = slugify(title)
             if not base_slug:

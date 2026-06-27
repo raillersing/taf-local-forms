@@ -98,3 +98,12 @@ Le modèle stocke :
 - amélioration de l'édition support ;
 - F041M : matières scolaires
 - tests terrain vidéo
+
+## 13. Fondation matières scolaires F042M
+
+- deux modèles minimaux structurent la médiathèque : `Subject` et `Chapter` ;
+- `LearningResource` peut être lié optionnellement à une matière et un chapitre ;
+- le catalogue public `/supports/` garde la règle publié seulement ;
+- le dashboard formateur affiche matière et chapitre pour tous les supports ;
+- le formulaire d'upload permet un classement simple par matière et chapitre ;
+- le catalogue public peut filtrer par matière, niveau et module.

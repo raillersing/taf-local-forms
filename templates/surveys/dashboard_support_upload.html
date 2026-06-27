@@ -45,6 +45,10 @@
                 {% include "surveys/partials/field.html" with field=form.module_number %}
                 {% include "surveys/partials/field.html" with field=form.file %}
             </div>
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.subject %}
+                {% include "surveys/partials/field.html" with field=form.chapter %}
+            </div>
             {% include "surveys/partials/field.html" with field=form.description %}
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.source %}

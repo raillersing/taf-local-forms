@@ -22,6 +22,9 @@
                 {% if resource.module_number %}
                 <span class="badge badge-muted">Module {{ resource.module_number }}</span>
                 {% endif %}
+                {% if resource.subject %}
+                <span class="badge badge-muted">{{ resource.subject.name }}</span>
+                {% endif %}
             </div>
         </div>
 
@@ -37,6 +40,12 @@
             {% endif %}
             {% if resource.license_label %}
             <div><dt>Licence</dt><dd>{{ resource.license_label }}</dd></div>
+            {% endif %}
+            {% if resource.subject %}
+            <div><dt>Matière</dt><dd>{{ resource.subject.name }}</dd></div>
+            {% endif %}
+            {% if resource.chapter %}
+            <div><dt>Chapitre</dt><dd>{{ resource.chapter.title }}</dd></div>
             {% endif %}
             <div><dt>Publié</dt><dd>{{ resource.updated_at|date:"d/m/Y" }}</dd></div>
         </dl>
