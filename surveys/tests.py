@@ -5586,6 +5586,26 @@ class LearningResourceViewTests(TestCase):
             file=SimpleUploadedFile("brouillon.pdf", b"%PDF-1.4 draft content", content_type="application/pdf"),
             is_published=False,
         )
+        self.video_published = LearningResource.objects.create(
+            title="Vidéo module 2",
+            slug="video-module-2",
+            description="Capsule vidéo locale.",
+            resource_type="video",
+            module_number=2,
+            file=SimpleUploadedFile("video-module-2.mp4", b"\x00\x00\x00\x18ftypmp42video", content_type="video/mp4"),
+            source="TAfHSSiM",
+            license_label="Usage classe",
+            is_published=True,
+        )
+        self.video_draft = LearningResource.objects.create(
+            title="Vidéo brouillon",
+            slug="video-brouillon",
+            description="Ne doit pas sortir en public.",
+            resource_type="video",
+            module_number=3,
+            file=SimpleUploadedFile("video-brouillon.mp4", b"\x00\x00\x00\x18ftypmp42draft", content_type="video/mp4"),
+            is_published=False,
+        )
 
     def test_support_list_returns_200(self):
         response = self.client.get(reverse("surveys:support_list"))
@@ -5597,7 +5617,9 @@ class LearningResourceViewTests(TestCase):
         response = self.client.get(reverse("surveys:support_list"))
 
         self.assertContains(response, self.published.title)
+        self.assertContains(response, self.video_published.title)
         self.assertNotContains(response, self.draft.title)
+        self.assertNotContains(response, self.video_draft.title)
 
     def test_support_detail_published_returns_200(self):
         response = self.client.get(reverse("surveys:support_detail", args=[self.published.slug]))
@@ -5607,6 +5629,23 @@ class LearningResourceViewTests(TestCase):
 
     def test_support_detail_draft_returns_404(self):
         response = self.client.get(reverse("surveys:support_detail", args=[self.draft.slug]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_support_watch_published_video_returns_200(self):
+        response = self.client.get(reverse("surveys:support_watch", args=[self.video_published.slug]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<video", html=False)
+        self.assertContains(response, 'preload="metadata"', html=False)
+
+    def test_support_watch_draft_video_returns_404(self):
+        response = self.client.get(reverse("surveys:support_watch", args=[self.video_draft.slug]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_support_watch_document_returns_404(self):
+        response = self.client.get(reverse("surveys:support_watch", args=[self.published.slug]))
 
         self.assertEqual(response.status_code, 404)
 
@@ -5621,6 +5660,12 @@ class LearningResourceViewTests(TestCase):
         response = self.client.get(reverse("surveys:support_download", args=[self.draft.slug]))
 
         self.assertEqual(response.status_code, 404)
+
+    def test_support_download_published_video_returns_file(self):
+        response = self.client.get(reverse("surveys:support_download", args=[self.video_published.slug]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "video/mp4")
 
     def test_dashboard_supports_requires_login(self):
         response = self.client.get(reverse("surveys:dashboard_supports"))
@@ -5668,6 +5713,7 @@ class LearningResourceViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Ajouter un support")
         self.assertContains(response, "20 MB")
+        self.assertContains(response, "80 MB")
 
     def test_dashboard_support_upload_valid_pdf_creates_draft_resource(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5731,6 +5777,79 @@ class LearningResourceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Support publié module 6")
+
+    def test_dashboard_support_upload_valid_mp4_creates_video_resource(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Vidéo locale module 4",
+                "description": "Capsule vidéo.",
+                "resource_type": "video",
+                "module_number": 4,
+                "file": SimpleUploadedFile("module-4.mp4", b"\x00\x00\x00\x18ftypmp42upload", content_type="video/mp4"),
+                "source": "TAfHSSiM",
+                "license_label": "Usage classe",
+                "is_published": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        resource = LearningResource.objects.get(title="Vidéo locale module 4")
+        self.assertEqual(resource.resource_type, "video")
+        self.assertTrue(resource.is_published)
+
+    def test_dashboard_support_upload_rejects_oversized_mp4(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={
+                "title": "Vidéo trop lourde",
+                "description": "Doit échouer.",
+                "resource_type": "video",
+                "file": SimpleUploadedFile(
+                    "trop-lourd.mp4",
+                    b"x" * (80 * 1024 * 1024 + 1),
+                    content_type="video/mp4",
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "80 MB")
+        self.assertFalse(LearningResource.objects.filter(title="Vidéo trop lourde").exists())
+
+    def test_dashboard_support_upload_rejects_non_mvp_video_extensions(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        for filename in ["video.mov", "video.avi", "video.mkv", "video.webm"]:
+            response = self.client.post(
+                reverse("surveys:dashboard_support_upload"),
+                data={
+                    "title": f"Vidéo interdite {filename}",
+                    "description": "Doit échouer.",
+                    "resource_type": "video",
+                    "file": SimpleUploadedFile(filename, b"fake-video", content_type="video/quicktime"),
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "Format non autorisé")
+
+    def test_support_detail_shows_watch_link_for_published_video(self):
+        response = self.client.get(reverse("surveys:support_detail", args=[self.video_published.slug]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("surveys:support_watch", args=[self.video_published.slug]))
+        self.assertContains(response, "Regarder la vidéo")
+
+    def test_support_list_shows_watch_link_for_published_video(self):
+        response = self.client.get(reverse("surveys:support_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("surveys:support_watch", args=[self.video_published.slug]))
+        self.assertContains(response, "Regarder")
 
     def test_dashboard_support_upload_rejects_forbidden_extension(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")

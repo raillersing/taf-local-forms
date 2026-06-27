@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Regarder {{ resource.title }}{% endblock %}
+{% block hero_title %}{{ resource.title }}{% endblock %}
+{% block hero_text %}Lecture locale d’une vidéo pédagogique publiée par le formateur, avec téléchargement de secours si la lecture réseau reste lente.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    {% url 'surveys:home' as home_url %}
+    {% url 'surveys:support_list' as support_list_url %}
+    {% url 'surveys:support_detail' resource.slug as support_detail_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Supports" crumb_2_url=support_list_url crumb_3_label=resource.title crumb_3_url=support_detail_url current_label="Regarder" %}
+
+    <section class="card resource-detail-panel video-watch-panel">
+        <div class="section-row">
+            <h2>{{ resource.title }}</h2>
+            <div class="badge-group">
+                <span class="badge badge-info">Vidéo</span>
+                {% if resource.module_number %}
+                <span class="badge badge-muted">Module {{ resource.module_number }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if resource.description %}
+        <p>{{ resource.description }}</p>
+        {% endif %}
+
+        <div class="video-player-shell">
+            <video controls preload="metadata" class="local-video-player">
+                <source src="{{ resource.file.url }}" type="video/mp4">
+                Ton navigateur ne peut pas lire cette vidéo. <a href="{% url 'surveys:support_download' resource.slug %}">Télécharge le fichier MP4</a>.
+            </video>
+        </div>
+
+        <div class="alert alert-info video-watch-help">
+            Si la vidéo charge lentement, rapprochez-vous du Wi-Fi ou téléchargez le fichier.
+        </div>
+
+        <div class="module-card-actions">
+            <a class="taf-button taf-button-primary" href="{% url 'surveys:support_download' resource.slug %}">Télécharger la vidéo</a>
+            <a class="text-link" href="{% url 'surveys:support_detail' resource.slug %}">&larr; Retour au détail</a>
+        </div>
+    </section>
+</main>
+{% endblock %}

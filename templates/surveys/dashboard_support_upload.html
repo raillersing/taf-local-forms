@@ -2,7 +2,7 @@
 
 {% block title %}Ajouter un support — Dashboard{% endblock %}
 {% block hero_title %}Ajouter un support{% endblock %}
-{% block hero_text %}Dépose un document pédagogique local avec un statut brouillon ou publié, sans exposer les fichiers non validés aux élèves.{% endblock %}
+{% block hero_text %}Dépose un document ou une vidéo pédagogique locale avec un statut brouillon ou publié, sans exposer les fichiers non validés aux élèves.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
@@ -18,13 +18,13 @@
         <div class="section-row">
             <div>
                 <h2>Formulaire d’upload</h2>
-                <p class="muted">Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG et TXT. Taille maximale : 20 MB.</p>
+                <p class="muted">Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT et MP4. Taille maximale : 20 MB, ou 80 MB pour une vidéo MP4.</p>
             </div>
             <a class="btn btn-secondary" href="{% url 'surveys:dashboard_supports' %}">Retour aux supports</a>
         </div>
 
         <div class="alert alert-info support-upload-note">
-            Le support reste privé tant que la case de publication n’est pas cochée. Vérifie la source et la licence avant de publier.
+            Le support reste privé tant que la case de publication n’est pas cochée. Choisis le type “Vidéo” pour un MP4 et vérifie la source et la licence avant de publier.
         </div>
 
         {% if form.non_field_errors %}
