@@ -2,7 +2,18 @@
 
 {% block title %}Supports pédagogiques{% endblock %}
 {% block hero_title %}Supports pédagogiques{% endblock %}
-{% block hero_text %}Consulte les documents et vidéos publiés par le formateur pour continuer à apprendre hors questionnaire.{% endblock %}
+{% block hero_text %}Consulte les documents et vidéos publiés par le formateur pour prolonger l’apprentissage hors questionnaire, avec des filtres simples et une lecture plus claire.{% endblock %}
+
+{% block hero_meta %}
+<div class="shell-aside-card">
+    <p class="shell-aside-title">Catalogue public</p>
+    <ul class="shell-meta-list">
+        <li>Brouillons exclus du parcours élève</li>
+        <li>Filtres par matière, niveau et module</li>
+        <li>Documents et vidéos publiés seulement</li>
+    </ul>
+</div>
+{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
@@ -13,13 +24,16 @@
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Supports" %}
 
-    <section class="card">
+    <section class="card card-elevated support-filter-card">
         <div class="section-row">
-            <h2>Catalogue public</h2>
+            <div>
+                <span class="taf-pill">Médiathèque locale</span>
+                <h2>Catalogue public</h2>
+            </div>
             <span class="badge badge-info">{{ resources|length }} support{{ resources|length|pluralize }}</span>
         </div>
-        <p class="muted">Seuls les supports publiés apparaissent ici.</p>
-        <form method="get" class="field-grid" aria-label="Filtres du catalogue">
+        <p class="muted">Seuls les supports publiés apparaissent ici. Utilise les filtres si tu cherches une matière, un niveau ou un module précis.</p>
+        <form method="get" class="field-grid support-filter-grid" aria-label="Filtres du catalogue">
             <div class="field">
                 <label for="id_subject">Matière</label>
                 <select id="id_subject" name="subject" class="taf-select">
@@ -47,7 +61,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="section-row">
+            <div class="section-row support-filter-actions">
                 <button type="submit" class="btn btn-primary">Filtrer</button>
                 <a class="text-link" href="{% url 'surveys:support_list' %}">Réinitialiser</a>
             </div>
@@ -57,9 +71,12 @@
     {% if resources %}
     <section class="resource-grid" aria-label="Liste des supports">
         {% for resource in resources %}
-        <article class="card resource-card">
+        <article class="card resource-card resource-card-enhanced">
             <div class="section-row">
-                <h2 class="resource-title"><a href="{% url 'surveys:support_detail' resource.slug %}">{{ resource.title }}</a></h2>
+                <div>
+                    <p class="resource-kicker">Support publié</p>
+                    <h2 class="resource-title"><a href="{% url 'surveys:support_detail' resource.slug %}">{{ resource.title }}</a></h2>
+                </div>
                 <div class="badge-group">
                     <span class="badge badge-info">{% if resource.is_video %}Vidéo{% else %}{{ resource.get_resource_type_display }}{% endif %}</span>
                     {% if resource.module_number %}

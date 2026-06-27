@@ -1,42 +1,125 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}TAfHSSiM — Accueil{% endblock %}
-{% block hero_title %}TAfHSSiM{% endblock %}
-{% block hero_text %}Technology Access for High School Students in Madagascar{% endblock %}
+{% block hero_title %}Formation numérique locale pour la classe{% endblock %}
+{% block hero_text %}Un shell plus clair pour entrer rapidement dans l’espace étudiant, piloter la séance côté formateur et retrouver les supports utiles sans changer la logique métier.{% endblock %}
+
+{% block hero_actions %}
+<div class="shell-hero-actions">
+    <a class="taf-button taf-button-primary taf-button-lg" href="{% url 'surveys:student_modules' %}">Entrer côté étudiant</a>
+    <a class="taf-button taf-button-secondary taf-button-lg" href="{% url 'surveys:dashboard_home' %}">Ouvrir le cockpit formateur</a>
+</div>
+{% endblock %}
+
+{% block hero_meta %}
+<div class="shell-aside-card">
+    <p class="shell-aside-title">Séance locale</p>
+    <ul class="shell-meta-list">
+        <li>Fonctionne sur le laptop du formateur</li>
+        <li>Navigation mobile plus lisible pour les élèves</li>
+        <li>Aucune donnée envoyée hors de la salle de classe</li>
+    </ul>
+</div>
+{% endblock %}
 
 {% block content %}
 <main id="content" class="content-grid">
-    <section class="card landing-choice" aria-labelledby="landing-heading">
-        <h2 id="landing-heading" class="sr-only">Choisir votre espace</h2>
-        <div class="landing-grid">
-            <article class="landing-card landing-student">
+    <section class="home-hero-grid" aria-labelledby="landing-heading">
+        <article class="home-story-card card card-elevated">
+            <span class="taf-pill">Prototype 6 appliqué</span>
+            <h2 id="landing-heading">Choisis ton point d’entrée</h2>
+            <p class="home-story-lead">La plateforme garde ses fonctionnalités existantes, mais l’accueil devient un vrai sas d’entrée avec une hiérarchie plus nette, des cartes plus fortes et une lecture plus simple sur téléphone.</p>
+            <div class="home-story-metrics">
+                <div class="home-metric">
+                    <strong>7</strong>
+                    <span>modules de formation disponibles</span>
+                </div>
+                <div class="home-metric">
+                    <strong>2</strong>
+                    <span>espaces distincts: étudiant et formateur</span>
+                </div>
+                <div class="home-metric">
+                    <strong>100%</strong>
+                    <span>local, sans CDN ni front lourd</span>
+                </div>
+            </div>
+        </article>
+
+        <div class="landing-grid landing-grid-strong">
+            <article class="landing-card landing-student landing-card-strong">
                 <div class="landing-icon" aria-hidden="true">🎓</div>
-                <h3>Je suis étudiant</h3>
-                <p>Accède aux modules de formation et réponds aux questionnaires ouverts par le formateur.</p>
+                <div class="landing-card-copy">
+                    <p class="landing-kicker">Espace étudiant</p>
+                    <h3>Apprendre, répondre, consulter</h3>
+                    <p>Accède aux modules ouverts, lis les consignes et retrouve les supports publiés avec une navigation simple pour smartphone.</p>
+                </div>
+                <ul class="landing-feature-list">
+                    <li>Modules visibles rapidement</li>
+                    <li>Navigation adaptée au lycée</li>
+                    <li>Supports publics seulement</li>
+                </ul>
                 <a class="landing-button landing-button-student" href="{% url 'surveys:student_modules' %}">
-                    Entrer dans l'espace étudiant
+                    Ouvrir l’espace étudiant
                 </a>
             </article>
-            <article class="landing-card landing-trainer">
-                <div class="landing-icon" aria-hidden="true">👨‍🏫</div>
-                <h3>Je suis formateur</h3>
-                <p>Accède au cockpit formateur pour suivre les réponses, gérer les modules, configurer le réseau et exporter les résultats.</p>
+
+            <article id="espace-formateur" class="landing-card landing-trainer landing-card-strong">
+                <div class="landing-icon" aria-hidden="true">🧭</div>
+                <div class="landing-card-copy">
+                    <p class="landing-kicker">Espace formateur</p>
+                    <h3>Piloter la séance locale</h3>
+                    <p>Retrouve le cockpit, la projection, le réseau local, les supports et les exports sans exposer les outils avancés aux élèves.</p>
+                </div>
+                <ul class="landing-feature-list">
+                    <li>Cockpit et projection</li>
+                    <li>Réseau, sauvegarde, configuration</li>
+                    <li>Admin séparé du parcours élève</li>
+                </ul>
                 <a class="landing-button landing-button-trainer" href="{% url 'surveys:dashboard_home' %}">
-                    Entrer dans l'espace formateur
+                    Ouvrir le cockpit formateur
                 </a>
             </article>
         </div>
     </section>
 
-    <section class="card" aria-labelledby="about-heading">
-        <h2 id="about-heading">À propos du projet</h2>
-        <div class="content-grid" style="margin-top:0.75rem;gap:0.75rem">
-            <p><strong>TAfHSSiM</strong> est une application locale de formation au numérique pour les lycéens à Madagascar.</p>
-            <p>Elle fonctionne sur le laptop du formateur. Les élèves se connectent au même Wi-Fi ou hotspot pour répondre aux questionnaires.</p>
-            <p>Toutes les réponses restent stockées localement sur l'ordinateur du formateur — aucune donnée ne quitte la salle de classe.</p>
-            <p>Le projet aide à suivre la progression des élèves pendant les modules : Comprendre Internet, Recherche efficace, Sources fiables, Email, Ressources éducatives, Sécurité en ligne et Synthèse.</p>
+    <section class="card home-steps-card" aria-labelledby="how-it-works-heading">
+        <div class="section-row">
+            <h2 id="how-it-works-heading">Comment une séance se déroule</h2>
+            <span class="badge badge-info">Usage terrain</span>
         </div>
+        <div class="home-step-grid">
+            <article class="home-step-item">
+                <span class="home-step-number">1</span>
+                <h3>Le formateur prépare</h3>
+                <p>Il ouvre le cockpit, vérifie le réseau local et active le bon module avant de démarrer.</p>
+            </article>
+            <article class="home-step-item">
+                <span class="home-step-number">2</span>
+                <h3>Les élèves se connectent</h3>
+                <p>Ils ouvrent l’espace étudiant, choisissent leur module et répondent uniquement aux questionnaires disponibles.</p>
+            </article>
+            <article class="home-step-item">
+                <span class="home-step-number">3</span>
+                <h3>Les supports restent accessibles</h3>
+                <p>Après la séance, les documents et vidéos publiés restent consultables sans exposer les brouillons ni l’admin.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="home-info-grid" aria-labelledby="about-heading">
+        <article class="card">
+            <h2 id="about-heading">À propos du projet</h2>
+            <p><strong>TAfHSSiM</strong> est une application locale de formation au numérique pour les lycéens à Madagascar.</p>
+            <p>Elle tourne sur le laptop du formateur. Les élèves rejoignent le même Wi-Fi ou hotspot pour utiliser l’application pendant la séance.</p>
+        </article>
+        <article class="card">
+            <h2>Ce que cette version améliore</h2>
+            <ul class="home-bullet-list">
+                <li>un accueil moins générique et plus cohérent avec Prototype 6 ;</li>
+                <li>un shell plus lisible pour distinguer contexte, navigation et actions ;</li>
+                <li>des cartes et listes plus homogènes sur `/modules/` et `/supports/`.</li>
+            </ul>
+        </article>
     </section>
 </main>
 {% endblock %}

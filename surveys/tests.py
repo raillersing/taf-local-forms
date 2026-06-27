@@ -239,8 +239,8 @@ class Module2FormViewTests(TestCase):
         response = self.client.get(reverse("surveys:home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Je suis étudiant")
-        self.assertContains(response, "Je suis formateur")
+        self.assertContains(response, "Espace étudiant")
+        self.assertContains(response, "Espace formateur")
         self.assertContains(response, "À propos du projet")
 
     def test_home_page_shows_module_2_when_active(self):
@@ -1740,12 +1740,12 @@ class NavigationTests(TestCase):
 
     def test_home_contains_modules_link(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Je suis étudiant")
+        self.assertContains(response, "Espace étudiant")
         self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_home_contains_espace_formateur_link_to_dashboard(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Je suis formateur")
+        self.assertContains(response, "Espace formateur")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
     def test_logo_links_to_home(self):
@@ -2035,12 +2035,12 @@ class F019NavigationUXTests(TestCase):
 
     def test_home_contains_modules_link(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Je suis étudiant")
+        self.assertContains(response, "Espace étudiant")
         self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_home_contains_espace_formateur(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Je suis formateur")
+        self.assertContains(response, "Espace formateur")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
     def test_logo_points_to_home(self):
@@ -2338,12 +2338,12 @@ class F022RNavigationRewireTests(TestCase):
     # --- Landing page ---
     def test_landing_shows_student_choice(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Je suis étudiant")
+        self.assertContains(response, "Espace étudiant")
         self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_landing_shows_trainer_choice(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Je suis formateur")
+        self.assertContains(response, "Espace formateur")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
     def test_landing_shows_about(self):
