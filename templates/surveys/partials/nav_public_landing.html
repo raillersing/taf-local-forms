@@ -1,7 +1,18 @@
-<nav class="main-nav" aria-label="Navigation principale">
-    <ul class="nav-list">
-        <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
-        <li><a href="{% url 'surveys:student_modules' %}">Espace étudiant</a></li>
-        <li><a href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a></li>
-    </ul>
+<nav class="nav-bar shell-primary-nav" id="public-nav" aria-label="Navigation publique">
+    <div class="taf-container shell-nav-inner">
+        <div class="shell-nav-group">
+            <span class="shell-nav-label">Entrées</span>
+            <ul class="nav-list">
+                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
+                    <a href="{% url 'surveys:home' %}">Accueil</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'surveys:student_modules' %}">Entrer côté étudiant</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'surveys:dashboard_home' %}">Ouvrir le cockpit formateur</a>
+                </li>
+            </ul>
+        </div>
+    </div>
 </nav>

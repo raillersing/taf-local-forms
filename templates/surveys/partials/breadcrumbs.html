@@ -1,25 +1,57 @@
-<nav class="breadcrumbs" aria-label="Fil d'Ariane">
-    {% if crumb_1_label %}
-        {% if crumb_1_url %}
-            <a href="{{ crumb_1_url }}">{{ crumb_1_label }}</a>
-        {% else %}
-            <span>{{ crumb_1_label }}</span>
+<nav class="breadcrumb-shell" aria-label="Fil d'Ariane">
+    <ol class="ldlc-breadcrumb" id="path-breadcrumb">
+        {% if crumb_0_label %}
+            <li class="crumb-item">
+                {% if crumb_0_url %}
+                    <a href="{{ crumb_0_url }}" class="crumb-link">{{ crumb_0_label }}</a>
+                {% else %}
+                    <span class="crumb-current">{{ crumb_0_label }}</span>
+                {% endif %}
+            </li>
         {% endif %}
-    {% endif %}
 
-    {% if crumb_2_label %}
-        <span class="sep">›</span>
-        {% if crumb_2_url %}
-            <a href="{{ crumb_2_url }}">{{ crumb_2_label }}</a>
-        {% else %}
-            <span>{{ crumb_2_label }}</span>
+        {% if crumb_1_label %}
+            <li class="crumb-item">
+                {% if crumb_0_label %}
+                    <span class="crumb-sep">›</span>
+                {% endif %}
+                {% if crumb_1_url %}
+                    <a href="{{ crumb_1_url }}" class="crumb-link">{{ crumb_1_label }}</a>
+                {% else %}
+                    <span class="crumb-current">{{ crumb_1_label }}</span>
+                {% endif %}
+            </li>
         {% endif %}
-    {% endif %}
 
-    {% if current_label %}
-        {% if crumb_1_label or crumb_2_label %}
-            <span class="sep">›</span>
+        {% if crumb_2_label %}
+            <li class="crumb-item">
+                <span class="crumb-sep">›</span>
+                {% if crumb_2_url %}
+                    <a href="{{ crumb_2_url }}" class="crumb-link">{{ crumb_2_label }}</a>
+                {% else %}
+                    <span class="crumb-current">{{ crumb_2_label }}</span>
+                {% endif %}
+            </li>
         {% endif %}
-        <span class="current">{{ current_label }}</span>
-    {% endif %}
+
+        {% if crumb_3_label %}
+            <li class="crumb-item">
+                <span class="crumb-sep">›</span>
+                {% if crumb_3_url %}
+                    <a href="{{ crumb_3_url }}" class="crumb-link">{{ crumb_3_label }}</a>
+                {% else %}
+                    <span class="crumb-current">{{ crumb_3_label }}</span>
+                {% endif %}
+            </li>
+        {% endif %}
+
+        {% if current_label %}
+            {% if crumb_0_label or crumb_1_label or crumb_2_label or crumb_3_label %}
+                <li class="crumb-item"><span class="crumb-sep">›</span></li>
+            {% endif %}
+            <li class="crumb-item">
+                <span class="crumb-current crumb-label">{{ current_label }}</span>
+            </li>
+        {% endif %}
+    </ol>
 </nav>
