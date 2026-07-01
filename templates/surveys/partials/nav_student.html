@@ -1,8 +1,18 @@
-<nav class="main-nav" aria-label="Navigation étudiant">
-    <ul class="nav-list">
-        <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
-        <li><a href="{% url 'surveys:student_modules' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' or request.resolver_match and 'student_module_' in request.resolver_match.view_name or request.resolver_match and request.resolver_match.view_name == 'surveys:module_2' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_2_success' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_3' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_3_success' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_4' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_4_success' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_5' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_5_success' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_6' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_6_success' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_7' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_7_success' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_8' or request.resolver_match and request.resolver_match.view_name == 'surveys:module_8_success' %} class="nav-active"{% endif %}>Modules</a></li>
-        <li><a href="{% url 'surveys:support_list' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:support_list' or request.resolver_match and request.resolver_match.view_name == 'surveys:support_detail' or request.resolver_match and request.resolver_match.view_name == 'surveys:support_watch' %} class="nav-active"{% endif %}>Supports</a></li>
-        <li><a href="{% url 'surveys:home' %}#espace-formateur">Repères de séance</a></li>
-    </ul>
+<nav class="nav-bar" id="student-nav" aria-label="Navigation étudiant">
+    <div class="taf-container">
+        <ul class="nav-list">
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
+                <a href="{% url 'surveys:home' %}">🏠 Accueil</a>
+            </li>
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' or request.resolver_match and 'module' in request.resolver_match.view_name %}active{% endif %}">
+                <a href="{% url 'surveys:student_modules' %}">📚 Modules</a>
+            </li>
+            <li class="nav-item {% if request.resolver_match and 'support' in request.resolver_match.view_name %}active{% endif %}">
+                <a href="{% url 'surveys:support_list' %}">🎒 Supports</a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'surveys:home' %}#espace-formateur">🧭 Repères</a>
+            </li>
+        </ul>
+    </div>
 </nav>

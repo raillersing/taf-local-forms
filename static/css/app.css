@@ -2629,3 +2629,111 @@ tbody tr:last-child td {
         animation: none;
     }
 }
+
+/* ==========================================================================
+   Global Shell Architecture (Prototype 6)
+   ========================================================================== */
+:root {
+  --header-height: 80px;
+  --nav-height: 56px;
+}
+
+.app-header {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border-bottom: 1px solid var(--taf-color-border);
+  height: var(--header-height); display: flex; align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 100%; }
+.brand {
+  display: flex; align-items: center; gap: 14px;
+  text-decoration: none; color: inherit; flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.brand:hover { opacity: 0.9; }
+.brand-logo {
+  height: 50px; width: auto; max-width: 220px;
+  object-fit: contain; object-position: left center;
+  display: block;
+}
+.brand-text {
+  display: flex; flex-direction: column; gap: 0; justify-content: center;
+}
+.brand-title {
+  font-size: 1.45rem; font-weight: 900; letter-spacing: -0.02em;
+  color: var(--navy-deep); line-height: 1.15;
+}
+.brand-subtitle {
+  font-size: 0.74rem; font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted); line-height: 1.25;
+  max-width: 300px;
+}
+@media (max-width: 640px) {
+  .brand-logo { height: 40px; }
+  .brand-title { font-size: 1.15rem; }
+  .brand-subtitle { font-size: 0.65rem; max-width: 180px; }
+}
+
+.nav-bar {
+  background: var(--taf-color-surface);
+  border-bottom: 1px solid var(--taf-color-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: sticky;
+  top: var(--header-height);
+  z-index: 95;
+}
+.nav-list {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+  list-style: none;
+  min-width: max-content;
+  margin: 0;
+}
+.nav-item a {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  font-size: 0.875rem; font-weight: 700; color: var(--muted);
+  background: none; border: none; cursor: pointer; white-space: nowrap;
+  text-decoration: none;
+}
+.nav-item a:hover { background: #F1F5F9; color: var(--text); }
+.nav-item.active a { background: var(--sky); color: var(--navy); }
+
+.topbar {
+  position: sticky; top: calc(var(--header-height) + var(--nav-height)); z-index: 80;
+  background: rgba(241, 245, 249, 0.95); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--taf-color-border); padding: 0;
+}
+.topbar.hidden-on-home { display: none; }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 12px 0; }
+
+.breadcrumb-shell { min-height: 38px; display:flex; align-items:center; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.ldlc-breadcrumb { list-style:none; display:flex; align-items:center; gap:0; min-width:max-content; margin:0; padding:0; color:#1F2937; font-size:.94rem; }
+.crumb-item { display:flex; align-items:center; }
+.crumb-link, .crumb-current { display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:0 8px; border:0; background:transparent; color:#1F2937; text-decoration:none; border-radius:8px; font:inherit; }
+.crumb-link { cursor:pointer; font-weight:500; }
+.crumb-link:hover, .crumb-link:focus { color:var(--navy); background:#E8EFFC; outline:none; }
+.crumb-current { font-weight:800; color:#111827; cursor:default; }
+.crumb-sep { color:#6B7280; padding:0 6px; font-size:1.35rem; line-height:1; user-select:none; }
+.crumb-label { max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+@media (max-width: 980px) {
+  .crumb-label { max-width: 190px; }
+}
+@media (max-width: 640px) {
+  .topbar-inner { flex-direction: column; align-items: flex-start; }
+  .topbar-actions { width: 100%; }
+  .topbar-actions .btn { width: auto; }
+  .breadcrumb-shell { min-height: 32px; }
+  .ldlc-breadcrumb { font-size: 0.86rem; }
+  .crumb-link, .crumb-current { min-height: 32px; padding: 0 6px; }
+  .crumb-sep { padding: 0 4px; }
+  .nav-item a { padding: 8px 10px; font-size: 0.8rem; }
+}
+/* ========================================================================== */

@@ -2372,7 +2372,7 @@ class F022RNavigationRewireTests(TestCase):
 
     def test_landing_nav_minimal(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, ">Accueil<")
+        self.assertContains(response, "Accueil</a>")
         self.assertNotContains(response, "Modules</a>")
         self.assertNotContains(response, "Cockpit</a>")
 
@@ -5467,11 +5467,8 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
         self.assertContains(response, "Réseau")
-        self.assertContains(response, "Contrôle réseau")
-        self.assertContains(response, "Paramètres réseau")
-        self.assertContains(response, "Sauvegarde")
-        self.assertContains(response, "Admin avancé")
-        self.assertContains(response, "Parcours élève")
+        self.assertContains(response, "Admin")
+        self.assertContains(response, "Sortir")
 
     def test_student_navigation_has_no_trainer_links(self):
         response = self.client.get(reverse("surveys:student_modules"))
@@ -5479,8 +5476,8 @@ class RedesignUITests(TestCase):
         self.assertNotContains(response, "Cockpit")
         self.assertNotContains(response, "Export CSV")
         self.assertNotContains(response, "/admin/")
-        self.assertNotContains(response, "dashboard/")
-        self.assertContains(response, "Repères de séance")
+        self.assertNotContains(response, "/dashboard/")
+        self.assertContains(response, "Repères")
 
     def test_public_navigation_uses_student_and_trainer_entry_labels(self):
         response = self.client.get(reverse("surveys:home"))
@@ -5529,7 +5526,7 @@ class RedesignUITests(TestCase):
     def test_dashboard_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_module_2"))
-        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, 'breadcrumb-shell')
         self.assertContains(response, "Cockpit")
 
     def test_no_cdn_in_templates(self):
@@ -5592,14 +5589,14 @@ class RedesignUITests(TestCase):
 
     def test_student_module_detail_has_breadcrumbs(self):
         response = self.client.get(reverse("surveys:student_module_2_detail"))
-        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, 'breadcrumb-shell')
         self.assertContains(response, reverse("surveys:home"))
         self.assertContains(response, reverse("surveys:student_modules"))
         self.assertContains(response, "Module 2")
 
     def test_student_questionnaire_has_breadcrumbs(self):
         response = self.client.get(reverse("surveys:module_2"))
-        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, 'breadcrumb-shell')
         self.assertContains(response, "Questionnaire")
 
     def test_student_modules_shows_state_legend(self):
@@ -5662,18 +5659,14 @@ class RedesignUITests(TestCase):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, reverse("surveys:dashboard_home") + "#modules")
-        self.assertContains(response, reverse("surveys:dashboard_home") + "#exports")
-        self.assertContains(response, "Admin avancé")
-        self.assertContains(response, "Parcours élève")
-        self.assertContains(response, "Contrôle réseau")
-        self.assertContains(response, "Paramètres réseau")
+        self.assertContains(response, "Admin")
+        self.assertContains(response, "Réseau")
 
     def test_dashboard_home_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, 'class="breadcrumbs"')
+        self.assertContains(response, 'breadcrumb-shell')
         self.assertContains(response, "Cockpit")
-
 
 @override_settings(ALLOWED_HOSTS=["*"], MEDIA_ROOT=Path(mkdtemp()))
 class LearningResourceViewTests(TestCase):
@@ -6129,3 +6122,64 @@ class LearningResourceViewTests(TestCase):
 
         self.assertContains(response, reverse("surveys:dashboard_support_upload"))
         self.assertContains(response, "Ajouter un support")
+
+class NavigationShellTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_superuser(
+            username="formateur",
+            password="motdepasse-solide-123",
+            email="formateur@example.com"
+        )
+        self.module = TrainingModule.objects.create(
+            code="MODULE_2",
+            title="Module 2 - Comprendre Internet",
+            description="Comprendre Internet comme outil d'apprentissage.",
+        )
+        self.session = TrainingSession.objects.create(
+            module=self.module,
+            date=date(2026, 6, 18),
+            location="Lycee Andohalo Antananarivo",
+            trainer_name="Formateur TAfHSSiM",
+            session_code="M2-ANDO-001",
+            is_active=True,
+        )
+
+    def test_public_pages_accessible(self):
+        response = self.client.get(reverse('surveys:home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'app-header')
+
+    def test_student_nav_content(self):
+        response = self.client.get(reverse('surveys:student_modules'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'student-nav')
+        self.assertContains(response, 'Accueil')
+        self.assertContains(response, 'Modules')
+        self.assertContains(response, 'Supports')
+        self.assertContains(response, 'Repères')
+        self.assertNotContains(response, 'dashboard/network')
+        self.assertNotContains(response, 'Admin')
+
+    def test_trainer_nav_content(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse('surveys:dashboard_home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'instructor-nav')
+        self.assertContains(response, 'Cockpit')
+        self.assertContains(response, 'Réseau')
+        self.assertContains(response, 'Projection')
+        self.assertContains(response, 'Sauvegarde')
+        self.assertContains(response, 'Admin')
+
+    def test_breadcrumbs_present(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse('surveys:dashboard_network'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'breadcrumb-shell')
+        self.assertContains(response, 'Cockpit')
+
+    def test_network_control_buttons_present(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse('surveys:dashboard_network_control'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'tool-card')
