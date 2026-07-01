@@ -17,6 +17,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 PASS_COUNT=0
 FAIL_COUNT=0
 SKIP_COUNT=0
+WARN_COUNT=0
 
 say() {
   printf '%s\n' "$*"
@@ -37,11 +38,13 @@ skip() {
   say "SKIP $*"
 }
 
-require_cmd() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    say "ERREUR: commande requise absente: $1"
-    exit 1
-  fi
+warn() {
+  WARN_COUNT=$((WARN_COUNT + 1))
+  say "WARN $*"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
 }
 
 status_only() {
@@ -129,19 +132,27 @@ say "  LAN_URL  : $LAN_URL"
 say "  Mode     : READ-ONLY / NON DESTRUCTIF"
 say "============================================"
 
-require_cmd curl
-require_cmd docker
-
-if docker compose config >/dev/null; then
-  pass "docker compose config"
-else
-  fail "docker compose config"
+if ! has_cmd curl; then
+  say "ERREUR: commande requise absente: curl"
+  exit 1
 fi
 
-if docker compose ps --status running >/dev/null 2>&1; then
-  pass "docker compose ps --status running"
+if ! has_cmd docker; then
+  warn "Docker CLI absent dans cet environnement WSL/Linux -> vérifications Docker ignorées, smoke HTTP maintenu"
+elif ! docker compose version >/dev/null 2>&1; then
+  warn "docker compose indisponible -> vérifications Docker ignorées, smoke HTTP maintenu"
 else
-  skip "docker compose ps --status running indisponible ou Docker non démarré"
+  if docker compose config >/dev/null; then
+    pass "docker compose config"
+  else
+    fail "docker compose config"
+  fi
+
+  if docker compose ps --status running >/dev/null 2>&1; then
+    pass "docker compose ps --status running"
+  else
+    skip "docker compose ps --status running indisponible ou Docker non démarré"
+  fi
 fi
 
 check_status "Page d'accueil publique" "$BASE_URL/" "200"
@@ -191,6 +202,7 @@ say "============================================"
 say "  PASS : $PASS_COUNT"
 say "  FAIL : $FAIL_COUNT"
 say "  SKIP : $SKIP_COUNT"
+say "  WARN : $WARN_COUNT"
 say "============================================"
 
 if [[ "$FAIL_COUNT" -gt 0 ]]; then

@@ -27,8 +27,11 @@ On vérifie uniquement :
 
 ## Pré-requis
 
-- Docker Desktop démarré.
-- Stack locale disponible via `docker compose up -d`.
+- Docker Desktop démarré si vous utilisez le runtime Docker du projet.
+- En environnement Windows + WSL, activer Docker Desktop > `Settings` >
+  `Resources` > `WSL Integration` pour votre distribution Ubuntu utilisée.
+- Stack locale disponible via `docker compose up -d`, ou application déjà
+  accessible sur `BASE_URL` si le contrôle porte seulement sur le smoke HTTP.
 - Variables projet déjà configurées via `.env` ou l'interface réseau.
 - Facultatif mais recommandé pour les routes protégées :
   un compte formateur déjà existant.
@@ -68,7 +71,7 @@ scripts/dev/taf-field-smoke-check
 
 ### Toujours vérifié
 
-- `docker compose config`
+- `docker compose config` si Docker CLI + `docker compose` sont disponibles ;
 - page d'accueil publique `/`
 - catalogue modules `/modules/`
 - catalogue supports `/supports/`
@@ -97,6 +100,18 @@ scripts/dev/taf-field-smoke-check
 - lecture `/watch/` d'une vidéo publiée ;
 - téléchargement MP4 de cette vidéo ;
 - présence du lecteur HTML5 `<video>`.
+
+## Interprétation du résumé
+
+- `PASS` : contrôle conforme.
+- `FAIL` : anomalie bloquante sur une route ou une vérification attendue.
+- `SKIP` : contrôle volontairement non exécuté, par exemple faute
+  d'identifiants formateur ou de slug existant.
+- `WARN` : contexte incomplet mais non bloquant, par exemple Docker CLI absent
+  dans WSL alors que `BASE_URL` répond déjà.
+
+Le script doit continuer les tests HTTP tant que `curl` est disponible, même si
+les vérifications Docker sont sautées avec `WARN`.
 
 ## Codes attendus
 
@@ -158,3 +173,8 @@ Puis relancer :
 ```bash
 scripts/dev/taf-field-smoke-check
 ```
+
+Si Docker CLI est absent dans WSL mais que `http://127.0.0.1:8010` répond déjà,
+le script doit maintenant signaler `WARN` pour la partie Docker et poursuivre le
+smoke HTTP. Dans ce cas, vérifier ensuite l'intégration Docker Desktop WSL si
+vous attendiez aussi les contrôles `docker compose`.

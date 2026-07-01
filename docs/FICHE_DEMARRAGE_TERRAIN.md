@@ -101,6 +101,13 @@ git status --short
 
 Le statut doit être vide.
 
+5. [ ] Si vous lancez l'application depuis WSL, vérifiez une fois que
+       **Docker Desktop > Settings > Resources > WSL Integration** est activé
+       pour votre distribution Ubuntu.
+
+Si cette intégration n'est pas active, `docker` peut être absent dans WSL même
+si l'application répond déjà via `http://127.0.0.1:8010/`.
+
 ---
 
 ## Configuration réseau (fichier `.env`)
