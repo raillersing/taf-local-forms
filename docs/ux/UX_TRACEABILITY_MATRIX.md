@@ -16,6 +16,7 @@ Verdict global :
 - `OK` pour la séparation étudiant/formateur, les parcours modules, la médiathèque publique, le cockpit, les exports, la protection login/staff et la plupart des états critiques ;
 - `PARTIAL` pour la traçabilité brute aux PDFs de spécification, car les trois PDFs présents dans `docs/specs/` ne sont pas text-extractibles automatiquement dans cet environnement ;
 - `OK` pour la couverture documentaire de `dashboard_projection` et de `presence_heartbeat`, désormais fichés explicitement ;
+- `OK` pour l’existence d’un pack final d’acceptation UX v1, qui rend les futurs contrôles UI plus normatifs ;
 - `RISK` limité mais réel sur `/dashboard/network-control/`, dont l’UX dépend d’un helper PowerShell externe et d’états LAN non simulés par les tests Django.
 
 Synthèse chiffrée :
@@ -24,6 +25,7 @@ Synthèse chiffrée :
 - `51` actions UX documentées dans `UX_ACTION_CATALOG.md`
 - `24` exigences tracées dans cette matrice
 - `0` route sans fiche d’action UX explicite
+- `4` documents normatifs d’acceptation UX ajoutés
 - `6` actions UX seulement partiellement testées côté interaction réelle
 
 ## Limites de preuve
@@ -50,6 +52,8 @@ Motif :
 - F045A ne formalisait pas assez les trous de couverture sur `dashboard_projection`, `presence_heartbeat` et les interactions helper LAN.
 
 Verdict après F045B : `OK` comme référence UX v1 documentaire, avec garde-fous
+
+Verdict après F047C : `OK` comme référence d’acceptation UX v1 pour les futures PR UI
 
 Conditions :
 
