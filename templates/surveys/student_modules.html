@@ -30,7 +30,7 @@
                 <span class="taf-pill">Parcours étudiant</span>
                 <h2 id="welcome-heading">Choisis un module adapté à la séance</h2>
             </div>
-            <a class="text-link" href="{% url 'surveys:support_list' %}">Voir les supports publiés</a>
+            <a class="text-link" href="{% url 'surveys:support_list' %}">Ouvrir les supports publiés</a>
         </div>
         <p>Connecte-toi au Wi-Fi de la classe, puis ouvre un module ci-dessous. Si les réponses sont fermées, tu peux parfois consulter le contenu sans envoyer de réponse.</p>
     </section>
@@ -65,7 +65,7 @@
                     {% else %}
                         <p class="module-card-note">Le contenu reste consultable, mais l’envoi des réponses est fermé.</p>
                     {% endif %}
-                    <a class="taf-button taf-button-primary taf-button-block" href="{{ item.detail_url }}">Voir le module</a>
+                    <a class="taf-button taf-button-primary taf-button-block" href="{{ item.detail_url }}">Ouvrir le module</a>
                 {% else %}
                     <p class="module-card-note">Aucune session active pour ce module. Reviens plus tard ou demande au formateur.</p>
                     <span class="taf-button taf-button-secondary taf-button-block nav-disabled">Module indisponible</span>

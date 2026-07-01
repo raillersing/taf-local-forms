@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Configuration réseau — Dashboard{% endblock %}
-{% block hero_title %}Configuration réseau{% endblock %}
-{% block hero_text %}Paramètres réseau visibles et modifiables depuis l'interface.{% endblock %}
+{% block title %}Paramètres réseau — Cockpit formateur{% endblock %}
+{% block hero_title %}Paramètres réseau{% endblock %}
+{% block hero_text %}Vérifie et modifie les paramètres réseau utiles à la séance locale depuis l'interface formateur.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
@@ -12,7 +12,7 @@
 {% block content %}
 <main id="content" class="content-grid">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Configuration reseau" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Paramètres réseau" %}
 
     {% if current_request_is_lan %}
     <div class="alert alert-success">

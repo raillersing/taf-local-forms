@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Accès réseau — Dashboard{% endblock %}
-{% block hero_title %}Accès réseau{% endblock %}
-{% block hero_text %}Adresses à donner aux élèves — toutes les pages de l'application.{% endblock %}
+{% block title %}Réseau local — Cockpit formateur{% endblock %}
+{% block hero_title %}Réseau local{% endblock %}
+{% block hero_text %}Vérifie les adresses utiles pour les élèves et les liens internes du formateur, sans modifier la logique applicative.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
@@ -12,7 +12,7 @@
 {% block content %}
 <main id="content" class="content-grid">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Accès réseau" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Réseau local" %}
 
     {% if lan_host_stale %}
     <section class="card alert-warning">

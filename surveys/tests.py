@@ -249,7 +249,7 @@ class Module2FormViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 2 - Comprendre Internet")
         self.assertContains(response, "Réponses ouvertes")
-        self.assertContains(response, "Voir le module")
+        self.assertContains(response, "Ouvrir le module")
 
     def test_home_page_shows_module_2_unavailable_when_no_active_session(self):
         self.session.is_active = False
@@ -948,7 +948,7 @@ class Module3HomeAndCockpitTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 3 - Recherche efficace")
         self.assertContains(response, "Réponses ouvertes")
-        self.assertContains(response, "Voir le module")
+        self.assertContains(response, "Ouvrir le module")
 
     def test_home_page_shows_module_3_unavailable_when_no_active_session(self):
         self.session.is_active = False
@@ -1397,7 +1397,7 @@ class Module4HomeAndCockpitTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Module 4 - Sources fiables")
         self.assertContains(response, "Réponses ouvertes")
-        self.assertContains(response, "Voir le module")
+        self.assertContains(response, "Ouvrir le module")
 
     def test_home_page_shows_module_4_unavailable_when_no_session(self):
         self.session.is_active = False
@@ -1765,7 +1765,7 @@ class NavigationTests(TestCase):
     def test_dashboard_shows_tools(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Accès réseau")
-        self.assertContains(response, "Configuration réseau")
+        self.assertContains(response, "Paramètres réseau")
         self.assertContains(response, "Admin avancé")
 
     def test_dashboard_shows_stats(self):
@@ -2367,9 +2367,9 @@ class F022RNavigationRewireTests(TestCase):
         self.assertContains(response, "Module 3")
         self.assertContains(response, "Module 4")
 
-    def test_student_modules_shows_voir_le_module(self):
+    def test_student_modules_shows_open_module_cta(self):
         response = self.client.get(reverse("surveys:student_modules"))
-        self.assertContains(response, "Voir le module")
+        self.assertContains(response, "Ouvrir le module")
 
     def test_student_modules_no_full_pedagogy(self):
         """Module list should NOT contain the full detailed pedagogy for all modules."""
@@ -2481,7 +2481,7 @@ class F022RNavigationRewireTests(TestCase):
         self.client.login(username="f022ruser", password="secret")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertNotContains(response, "Commencer le questionnaire")
-        self.assertNotContains(response, "Voir le module")
+        self.assertNotContains(response, "Ouvrir le module")
 
     def test_dashboard_has_trainer_nav(self):
         self.client.login(username="f022ruser", password="secret")
@@ -4545,7 +4545,7 @@ class F030NetworkControlTests(TestCase):
         self.client.login(username="ctrlstaff", password="secret")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Controle reseau local")
+        self.assertContains(response, "Contrôle réseau local")
         self.assertContains(response, "127.0.0.1:8019")
         self.assertContains(response, "Configurer et rendre accessible")
         self.assertContains(response, "Redémarrer l'application")
@@ -5444,10 +5444,11 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
         self.assertContains(response, "Réseau")
-        self.assertContains(response, "Contrôle LAN")
-        self.assertContains(response, "Configuration")
+        self.assertContains(response, "Contrôle réseau")
+        self.assertContains(response, "Paramètres réseau")
         self.assertContains(response, "Sauvegarde")
         self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Parcours élève")
 
     def test_student_navigation_has_no_trainer_links(self):
         response = self.client.get(reverse("surveys:student_modules"))
@@ -5456,6 +5457,13 @@ class RedesignUITests(TestCase):
         self.assertNotContains(response, "Export CSV")
         self.assertNotContains(response, "/admin/")
         self.assertNotContains(response, "dashboard/")
+        self.assertContains(response, "Repères de séance")
+
+    def test_public_navigation_uses_student_and_trainer_entry_labels(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Espace étudiant")
+        self.assertContains(response, "Cockpit formateur")
+        self.assertNotContains(response, "Contrôle réseau")
 
     def test_student_module_links_present(self):
         response = self.client.get(reverse("surveys:student_modules"))
@@ -5577,6 +5585,9 @@ class RedesignUITests(TestCase):
         self.assertContains(response, reverse("surveys:dashboard_home") + "#modules")
         self.assertContains(response, reverse("surveys:dashboard_home") + "#exports")
         self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Parcours élève")
+        self.assertContains(response, "Contrôle réseau")
+        self.assertContains(response, "Paramètres réseau")
 
     def test_dashboard_home_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5731,7 +5742,7 @@ class LearningResourceViewTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_supports"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Dashboard supports")
+        self.assertContains(response, "Catalogue formateur des supports")
         self.assertContains(response, self.published.title)
         self.assertContains(response, self.draft.title)
         self.assertContains(response, "Publié")
@@ -5765,7 +5776,7 @@ class LearningResourceViewTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_support_upload"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ajouter un support")
+        self.assertContains(response, "Déposer un support")
         self.assertContains(response, "20 MB")
         self.assertContains(response, "80 MB")
         self.assertContains(response, "Matière")

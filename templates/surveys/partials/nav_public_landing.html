@@ -2,6 +2,6 @@
     <ul class="nav-list">
         <li><a href="{% url 'surveys:home' %}"{% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %} class="nav-active"{% endif %}>Accueil</a></li>
         <li><a href="{% url 'surveys:student_modules' %}">Espace étudiant</a></li>
-        <li><a href="{% url 'surveys:dashboard_home' %}">Espace formateur</a></li>
+        <li><a href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a></li>
     </ul>
 </nav>

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Controle reseau local — Dashboard{% endblock %}
-{% block hero_title %}Controle reseau local{% endblock %}
-{% block hero_text %}Configure, test et desactive l'acces des eleves depuis l'interface.{% endblock %}
+{% block title %}Contrôle réseau local — Cockpit formateur{% endblock %}
+{% block hero_title %}Contrôle réseau local{% endblock %}
+{% block hero_text %}Configure, teste et désactive l'accès des élèves depuis l'interface locale du formateur.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
@@ -12,7 +12,7 @@
 {% block content %}
 <main id="content" class="content-grid">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Controle reseau local" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Contrôle réseau local" %}
 
     {% if not is_localhost %}
     <div class="alert">
