@@ -15,15 +15,15 @@ Verdict global :
 
 - `OK` pour la séparation étudiant/formateur, les parcours modules, la médiathèque publique, le cockpit, les exports, la protection login/staff et la plupart des états critiques ;
 - `PARTIAL` pour la traçabilité brute aux PDFs de spécification, car les trois PDFs présents dans `docs/specs/` ne sont pas text-extractibles automatiquement dans cet environnement ;
-- `PARTIAL` pour la couverture UX de `dashboard_projection` et pour l’explicitation documentaire de `presence_heartbeat` ;
+- `OK` pour la couverture documentaire de `dashboard_projection` et de `presence_heartbeat`, désormais fichés explicitement ;
 - `RISK` limité mais réel sur `/dashboard/network-control/`, dont l’UX dépend d’un helper PowerShell externe et d’états LAN non simulés par les tests Django.
 
 Synthèse chiffrée :
 
 - `53` routes Django inspectées dans `surveys/urls.py`
-- `46` actions UX documentées dans `UX_ACTION_CATALOG.md`
+- `51` actions UX documentées dans `UX_ACTION_CATALOG.md`
 - `24` exigences tracées dans cette matrice
-- `2` routes sans fiche d’action UX explicite
+- `0` route sans fiche d’action UX explicite
 - `6` actions UX seulement partiellement testées côté interaction réelle
 
 ## Limites de preuve
@@ -72,7 +72,7 @@ Conditions :
 | BM-10 | Permettre au staff d’ouvrir/fermer les réponses d’un module | formateur staff | `UX-D004` | `/dashboard/modules/<module_code>/toggle-responses/` | cockpit / dashboards | `toggle_module_responses()` | tests route staff only | `OK` |
 | BM-11 | Donner au formateur les bonnes URLs élèves et les diagnostics LAN | formateur | `UX-N001`, `UX-N002`, `UX-N003` | `/dashboard/network/`, `/dashboard/settings/`, `/dashboard/settings/use-current-address/` | `dashboard_network.html`, `dashboard_settings.html` | `network_access_dashboard()`, `dashboard_settings()`, `dashboard_use_current_address()` | tests réseau/settings/login/staff/messages | `OK` |
 | BM-12 | Fournir une page d’action réseau dédiée au helper local | formateur staff | `UX-N004` à `UX-N007` | `/dashboard/network-control/` | `dashboard_network_control.html` | `network_control()` | tests page, boutons, helper endpoint, localhost warning | `PARTIAL` |
-| BM-13 | Proposer un mode projection salle lisible | formateur | action manquante explicite dans F045A | `/dashboard/projection/` | `dashboard_projection.html` | `dashboard_projection()` | tests login + rendu projection | `PARTIAL` |
+| BM-13 | Proposer un mode projection salle lisible | formateur | `UX-P001`, `UX-P002`, `UX-P003`, `UX-P004` | `/dashboard/projection/` | `dashboard_projection.html` | `dashboard_projection()` | tests login + rendu projection | `OK` |
 | BM-14 | Mettre à disposition des supports publics publiés seulement | étudiant/public | `UX-A003`, `UX-S001` à `UX-S006` | `/supports/`, `/supports/<slug>/`, `/watch/`, `/download/` | `support_list.html`, `support_detail.html`, `support_watch.html` | `support_list()`, `support_detail()`, `support_watch()`, `support_download()` | tests 200/404, watch video, download, filtres | `OK` |
 | BM-15 | Permettre au formateur de gérer des brouillons et publications de supports | formateur | `UX-L001` à `UX-L006` | `/dashboard/supports/`, `/dashboard/supports/upload/` | `dashboard_supports.html`, `dashboard_support_upload.html` | `dashboard_supports()`, `dashboard_support_upload()`, `LearningResourceForm` | tests login, draft/public, tailles, formats, slug, sujet/chapitre | `OK` |
 | BM-16 | Permettre la lecture vidéo locale simple sans streaming lourd | étudiant/public | `UX-S006` | `/supports/<slug>/watch/` | `support_watch.html` | `support_watch()` | tests `<video>` + `preload="metadata"` | `OK` |
@@ -93,7 +93,7 @@ Conditions :
 | BT-08 | Helper LAN localhost-only avec CORS borné | `UX-N004` à `UX-N007` | `network_control()` impose `127.0.0.1:8019`, template avertit hors localhost | tests helper scripts `127.0.0.1`, no wildcard CORS, no `0.0.0.0` | `OK` |
 | BT-09 | Pas d’action destructive Docker documentée ou embarquée | backup, helper LAN | docs field + backup page + scripts helper | tests absence `down -v` / prune | `OK` |
 | BT-10 | Accessibilité mobile minimale : labels, QR local, feedback simple | cockpit, projection, questionnaires, supports | base/app.css, templates avec labels, `aria-live`, skip-link | tests nav/breadcrumbs/projection/copy presence | `PARTIAL` |
-| BT-11 | Présence live en arrière-plan, sans exposer de page sensible publique | `UX-B002` + endpoint interne heartbeat | `/presence/heartbeat/` POST JSON, `/dashboard/presence.json` login | tests 405/400/404/200 + polling intervals 30s/15s | `PARTIAL` |
+| BT-11 | Présence live en arrière-plan, sans exposer de page sensible publique | `UX-B002`, `UX-B003` | `/presence/heartbeat/` POST JSON, `/dashboard/presence.json` login | tests 405/400/404/200 + polling intervals 30s/15s | `OK` |
 | BT-12 | Source de vérité réseau explicite : localhost formateur, 8011 élèves | `UX-N001`, projection, cockpit | `dashboard_network.html`, `dashboard_network_control.html`, `README.md` | tests réseau et messages IP | `OK` |
 
 ## Matrice Prototype 6 -> écran réel -> écart -> priorité
@@ -104,7 +104,7 @@ Conditions :
 | Catalogue modules étudiant lisible mobile | `/modules/`, `/modules/module-X/` | proche, mais moins scénarisé visuellement que le prototype | P1 | `OK` |
 | Questionnaire + confirmation + doublon | `/module-X/`, `/module-X/success/` | structure réelle plus sobre ; état doublon géré mais moins mis en scène | P0 | `PARTIAL` |
 | Cockpit formateur en hub unique | `/dashboard/` | hub réel fonctionnel mais dense | P1 | `PARTIAL` |
-| Projection QR grand format | `/dashboard/projection/` | fonctionnel et testé, mais non fiché explicitement dans F045A | P0 | `PARTIAL` |
+| Projection QR grand format | `/dashboard/projection/` | fonctionnel, testé et maintenant fiché ; reste un futur raffinement visuel possible | P0 | `OK` |
 | Réseau diagnostic | `/dashboard/network/` | réel plus technique, plus proche du terrain que du prototype | P0 | `OK` |
 | Contrôle LAN | `/dashboard/network-control/` | réel beaucoup plus opérationnel que le prototype ; dépendance helper externe | P0 | `RISK` |
 | Gestion supports | `/supports/`, `/dashboard/supports/`, `/dashboard/supports/upload/` | couverture réelle bonne, mais UX d’upload moins guidée | P1 | `PARTIAL` |
@@ -121,30 +121,24 @@ Actions documentées F045A relues et recoupées :
 - section D : `UX-D001` à `UX-D005`
 - section E : `UX-N001` à `UX-N007`
 - section F : `UX-L001` à `UX-L006`
-- section G : `UX-B001` à `UX-B002`
+- section G : `UX-B001` à `UX-B003`
+- section H : `UX-P001` à `UX-P004`
 
-Total vérifié : `46` actions.
+Total vérifié : `51` actions.
 
 ## Liste des actions UX manquantes ou ambiguës
 
 | Action manquante / ambiguë | Route / zone | Motif | Statut |
 |---|---|---|---|
-| Ouvrir le mode projection | `/dashboard/projection/` | route réelle + template + tests, mais pas de fiche action dédiée | `GAP` |
-| Copier l’URL depuis la projection | `/dashboard/projection/` | interaction réelle présente via `taf_projection.js`, non fichée séparément | `GAP` |
-| Passer en plein écran depuis la projection | `/dashboard/projection/` | interaction réelle présente, non fichée séparément | `GAP` |
-| Envoyer le heartbeat de présence côté étudiant | `/presence/heartbeat/` | endpoint réel et testé, mais non traité comme action UX/infrastructure dans F045A | `PARTIAL` |
 | Distinguer “résultat helper réussi” vs “résultat helper exploitable par le formateur” | `/dashboard/network-control/` | la page montre JSON brut + statuts, mais la fiche reste encore trop haut niveau | `PARTIAL` |
 
 ## Liste des routes sans action UX documentée
 
-Routes Django réelles inspectées sans fiche d’action explicite dans F045A :
-
-- `/dashboard/projection/`
-- `/presence/heartbeat/`
+Routes Django réelles inspectées sans fiche d’action explicite : aucune.
 
 Remarque :
 
-- le reste des routes est soit couvert directement, soit couvert par des actions génériques multi-modules (`/module-X/`, `/dashboard/module-X/`, `/dashboard/export/module-X.csv`).
+- certaines routes restent couvertes par des actions génériques multi-modules (`/module-X/`, `/dashboard/module-X/`, `/dashboard/export/module-X.csv`), mais elles ne sont pas orphelines.
 
 ## Liste des actions UX sans test ou avec test seulement partiel
 
@@ -155,18 +149,21 @@ Remarque :
 | `UX-N005` tester l’URL élèves | présence bouton/scripts testée, pas de résultat helper simulé | `PARTIAL` |
 | `UX-N006` redémarrer l’application | présence bouton/scripts testée, pas de résultat helper simulé | `PARTIAL` |
 | `UX-N007` désactiver l’accès LAN | présence confirmation/scripts testée, pas de résultat helper simulé | `PARTIAL` |
+| `UX-P002` copier l’URL depuis la projection | présence DOM et JS partagés, pas de test navigateur réel clipboard | `PARTIAL` |
+| `UX-P003` plein écran projection | présence du bouton et du JS, pas de test navigateur réel fullscreen | `PARTIAL` |
 | `UX-B002` présence live en erreur / endpoint indisponible | endpoint JSON testé, pas de test d’état dégradé visible côté cockpit | `PARTIAL` |
+| `UX-B003` heartbeat étudiant en réseau instable | endpoint et intervalle testés, pas de test de panne navigateur ou fermeture réelle d’onglet | `PARTIAL` |
 | `UX-S001` empty state filtré vs empty state absolu | filtres testés, distinction UX textuelle non testée | `PARTIAL` |
 
 ## Liste des états / erreurs incomplets
 
 | Zone | Manque principal | Statut |
 |---|---|---|
-| Projection | pas de fiche UX dédiée pour `URL non configurée`, `copie impossible`, `plein écran refusé` | `GAP` |
+| Projection | états documentés ; reste à tester plus finement les cas navigateur réels `copie` et `fullscreen` | `PARTIAL` |
 | Network control | hiérarchie des erreurs helper encore très brute pour le formateur | `PARTIAL` |
 | Supports publics | “aucun support publié” et “aucun résultat après filtre” restent trop proches | `PARTIAL` |
 | Dashboards modules | empty states présents mais peu différenciés | `PARTIAL` |
-| Présence live | pas de message UX documenté quand le polling échoue | `PARTIAL` |
+| Présence live | états documentés, mais pas encore visualisés côté cockpit en cas de polling dégradé | `PARTIAL` |
 | Settings réseau | validation visible mais documentation UX encore back-office | `PARTIAL` |
 
 ## Focus spécial `/dashboard/network-control/`
@@ -193,13 +190,12 @@ Remarque :
 
 ## Priorités de correction recommandées
 
-1. `P0` : ajouter une fiche UX explicite pour `/dashboard/projection/` et ses deux interactions majeures (`copie`, `plein écran`).
-2. `P0` : compléter la documentation UX de `presence_heartbeat` comme action technique au service du parcours formateur.
-3. `P0` : pour toute future PR sur `network-control`, définir au moins une matrice de résultats helper (`helper absent`, `timeout`, `sync ok`, `LAN test fail`, `restart fail`).
-4. `P1` : distinguer les empty states du catalogue supports.
-5. `P1` : documenter l’état dégradé de présence live dans le cockpit.
-6. `P1` : lier explicitement futures PR UI au présent audit de traçabilité.
-7. `P3` : conserver les “ressources scolaires complètes” hors périmètre tant qu’aucune route dédiée n’est mergée sur `main`.
+1. `P0` : pour toute future PR sur `network-control`, définir au moins une matrice de résultats helper (`helper absent`, `timeout`, `sync ok`, `LAN test fail`, `restart fail`).
+2. `P1` : distinguer les empty states du catalogue supports.
+3. `P1` : visualiser côté cockpit l’état dégradé de présence live sans bruit pour les élèves.
+4. `P1` : lier explicitement futures PR UI au présent audit de traçabilité.
+5. `P2` : renforcer les tests navigateur réels autour de `copie` et `fullscreen` en projection si un outillage front est ajouté plus tard.
+6. `P3` : conserver les “ressources scolaires complètes” hors périmètre tant qu’aucune route dédiée n’est mergée sur `main`.
 
 ## Décision finale
 
@@ -207,7 +203,7 @@ Décision :
 
 - `F045A seul` n’était pas encore suffisant comme référence UX v1 complète ;
 - `F045A + F045B` forment maintenant une référence UX v1 exploitable pour les prochaines PR UI ;
-- avant de modifier le code de `network-control` ou de la projection, il reste recommandé de compléter d’abord la fiche d’action projection et la matrice de résultats helper.
+- la projection et le heartbeat sont maintenant couverts documentairement ; le prochain manque principal reste la matrice de résultats helper pour `network-control`.
 
 Conclusion de gouvernance :
 

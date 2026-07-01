@@ -30,6 +30,21 @@ Son rôle est :
 - d'expliquer pourquoi les boutons ne fonctionnent pas depuis l'URL LAN ;
 - d'exposer un statut global lisible.
 
+## Frontières avec projection et présence
+
+Cette page ne remplace pas :
+
+- `/dashboard/projection/`, qui sert à montrer l’URL élèves et le QR code dans la salle ;
+- `/presence/heartbeat/`, qui sert à remonter silencieusement la présence depuis les formulaires élèves ;
+- `/dashboard/presence.json`, qui sert à agréger la présence côté cockpit.
+
+Décision UX :
+
+- `network-control` agit ;
+- `projection` affiche ;
+- `heartbeat` télémètre ;
+- ces trois surfaces doivent rester distinctes dans les futures PR UI.
+
 ## Préconditions d’usage
 
 ### Préconditions techniques
