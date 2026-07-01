@@ -42,11 +42,11 @@
                     <span class="muted">Contrôle l'IP LAN et les liens donnés aux élèves.</span>
                 </a>
                 <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_projection' %}">
-                    <strong>Afficher la projection</strong>
+                    <strong>Ouvrir la projection</strong>
                     <span class="muted">Grande URL, QR local et bouton plein écran.</span>
                 </a>
                 <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_supports' %}">
-                    <strong>Voir les supports</strong>
+                    <strong>Ouvrir les supports</strong>
                     <span class="muted">{{ published_resources_count }} publiés, {{ total_resources_count }} au total.</span>
                 </a>
             </div>
@@ -217,7 +217,7 @@
                 <span class="muted">Adresses, diagnostic et ports utiles</span>
             </a>
             <a class="tool-card" href="{% url 'surveys:dashboard_settings' %}">
-                <strong>Configuration réseau</strong>
+                <strong>Paramètres réseau</strong>
                 <span class="muted">IP, port et hôtes autorisés</span>
             </a>
             <a class="tool-card" href="{% url 'surveys:dashboard_projection' %}">
@@ -226,7 +226,7 @@
             </a>
             <a class="tool-card" href="{% url 'surveys:dashboard_supports' %}">
                 <strong>Supports pédagogiques</strong>
-                <span class="muted">Voir les supports publiés et les brouillons</span>
+                <span class="muted">Ouvrir les supports publiés et les brouillons</span>
             </a>
             <a class="tool-card" href="{% url 'admin:index' %}">
                 <strong>Admin avancé</strong>
