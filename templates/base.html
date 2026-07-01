@@ -10,37 +10,71 @@
 </head>
 <body>
     <a href="#content" class="skip-link">Aller au contenu</a>
-
+    <div class="app-shell">
     <header class="app-header" id="main-header">
-        <div class="taf-container header-inner">
-            <a href="{% url 'surveys:home' %}" class="brand">
-                {% brand_logo_exists as logo_exists %}
-                {% if logo_exists %}
-                <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
-                {% endif %}
-                <div class="brand-text">
-                    <span class="brand-title">TAfHSSiM</span>
-                    <span class="brand-subtitle">Application locale</span>
+        <div class="taf-container shell-header-grid">
+            <div class="header-inner shell-header-panel">
+                <a href="{% url 'surveys:home' %}" class="brand">
+                    {% brand_logo_exists as logo_exists %}
+                    {% if logo_exists %}
+                    <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
+                    {% endif %}
+                    <div class="brand-text">
+                        <span class="brand-title">TAfHSSiM</span>
+                        <span class="brand-subtitle">Application locale pour la classe</span>
+                    </div>
+                </a>
+
+                {% with view_name=request.resolver_match.view_name|default:'' %}
+                <div class="shell-context-panel">
+                    <div class="shell-context-copy">
+                        {% if 'dashboard_' in view_name %}
+                        <p class="shell-context-kicker">Contexte formateur</p>
+                        <p class="shell-context-title">Cockpit protégé et outils de séance</p>
+                        <p class="shell-context-text">Réseau, projection, modules, supports et sauvegarde restent séparés du parcours élève.</p>
+                        {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
+                        <p class="shell-context-kicker">Contexte étudiant</p>
+                        <p class="shell-context-title">Parcours simple pour téléphone</p>
+                        <p class="shell-context-text">Modules, supports et repères utiles seulement, sans lien technique.</p>
+                        {% else %}
+                        <p class="shell-context-kicker">Contexte public</p>
+                        <p class="shell-context-title">Choix de l’espace adapté</p>
+                        <p class="shell-context-text">Entrée claire vers l’espace étudiant ou le cockpit formateur.</p>
+                        {% endif %}
+                    </div>
+                    <div class="header-actions shell-role-badges">
+                        {% block header_role %}
+                        {% if 'dashboard_' in view_name %}
+                        <span class="taf-badge taf-badge-info">Formateur</span>
+                        <span class="taf-badge taf-badge-neutral">Protégé</span>
+                        {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
+                        <span class="taf-badge taf-badge-info">Étudiant</span>
+                        <span class="taf-badge taf-badge-neutral">Public</span>
+                        {% else %}
+                        <span class="taf-badge taf-badge-info">Public</span>
+                        {% endif %}
+                        {% endblock %}
+                    </div>
                 </div>
-            </a>
-            <div class="header-actions flex items-center gap-3">
-                {% block header_role %}
-                <span class="taf-badge taf-badge-info">Public</span>
-                {% endblock %}
+                {% endwith %}
             </div>
         </div>
     </header>
 
-    {% block main_nav %}
-        {% include "surveys/partials/nav_public_landing.html" %}
-    {% endblock %}
+    <div class="shell-nav-wrap">
+        {% block main_nav %}
+            {% include "surveys/partials/nav_public_landing.html" %}
+        {% endblock %}
+    </div>
 
     <div class="topbar" id="topbar">
-        <div class="taf-container">
+        <div class="taf-container topbar-shell">
             <div class="topbar-inner">
-                {% block breadcrumbs %}
-                {% include "surveys/partials/breadcrumbs.html" %}
-                {% endblock %}
+                <div class="topbar-breadcrumbs">
+                    {% block breadcrumbs %}
+                    {% include "surveys/partials/breadcrumbs.html" %}
+                    {% endblock %}
+                </div>
                 <div class="topbar-actions" id="topbar-actions">
                     {% block topbar_actions %}{% endblock %}
                 </div>
@@ -48,9 +82,9 @@
         </div>
     </div>
 
-    <main id="content" class="taf-container page-content" style="padding-top: 1.5rem; padding-bottom: 4rem;">
+    <main id="content" class="taf-container page-content shell-main">
         {% if messages %}
-        <div class="messages-container" style="margin-bottom: 1.5rem;">
+        <div class="messages-container shell-messages">
             {% for message in messages %}
             <div class="message-card message-{{ message.tags }}">{{ message }}</div>
             {% endfor %}
@@ -58,26 +92,26 @@
         {% endif %}
 
         {% block page_header %}
-        <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero{% else %}taf-panel-title{% endif %}" style="{% if request.resolver_match.view_name == 'surveys:home' %}margin-bottom: 2rem; background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%); border-radius: var(--radius-2xl); padding: 1.5rem; color: white; box-shadow: var(--shadow-xl);{% else %}margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;{% endif %}">
+        <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero shell-hero-home{% else %}shell-page-header{% endif %}">
             <div class="{% if request.resolver_match.view_name == 'surveys:home' %}brand-copy{% endif %}">
                 {% if request.resolver_match.view_name == 'surveys:home' %}
-                <p class="eyebrow" style="color: #dcecff; margin: 0 0 0.35rem; text-transform: uppercase; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.12em;">TAfHSSiM</p>
+                <p class="eyebrow">TAfHSSiM</p>
                 {% endif %}
-                <h1 style="{% if request.resolver_match.view_name == 'surveys:home' %}margin: 0 0 0.4rem; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.15;{% else %}font-size: 1.5rem; font-weight: 800; margin: 0;{% endif %}">{% block hero_title %}TAfHSSiM{% endblock %}</h1>
-                <p class="{% if request.resolver_match.view_name == 'surveys:home' %}hero-text{% else %}text-secondary{% endif %}" style="{% if request.resolver_match.view_name == 'surveys:home' %}color: #e8f3ff; margin: 0; max-width: 58ch;{% else %}margin: 0.25rem 0 0; color: var(--muted);{% endif %}">{% block hero_text %}{% endblock %}</p>
-                <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero-actions{% else %}hero-actions-container{% endif %}" style="{% if request.resolver_match.view_name == 'surveys:home' %}display: flex; gap: 0.85rem; flex-wrap: wrap; margin-top: 1.2rem;{% else %}display: flex; gap: 0.5rem;{% endif %}">
+                <h1 class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-home-title{% else %}shell-page-title{% endif %}">{% block hero_title %}TAfHSSiM{% endblock %}</h1>
+                <p class="{% if request.resolver_match.view_name == 'surveys:home' %}hero-text{% else %}text-secondary shell-page-intro{% endif %}">{% block hero_text %}{% endblock %}</p>
+                <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero-actions{% else %}hero-actions-container shell-page-actions{% endif %}">
                     {% block hero_actions %}{% endblock %}
                 </div>
             </div>
             {% if request.resolver_match.view_name == 'surveys:home' %}
-            <aside class="shell-aside" style="margin-top: 1.5rem;">
+            <aside class="shell-aside">
                 {% block hero_meta %}
-                <div class="shell-aside-card" style="padding: 1.15rem 1.2rem; border-radius: var(--radius-xl); background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.18);">
-                    <p class="shell-aside-title" style="margin: 0 0 0.7rem; font-size: 0.92rem; font-weight: 800; text-transform: uppercase; color: #dcecff;">Mode terrain</p>
-                    <ul class="shell-meta-list" style="display: grid; gap: 0.6rem; color: #f5faff; list-style: none; padding: 0; margin: 0;">
-                        <li style="position: relative; padding-left: 1rem;">Navigation claire pour élèves et formateur</li>
-                        <li style="position: relative; padding-left: 1rem;">Pages locales sans dépendance externe</li>
-                        <li style="position: relative; padding-left: 1rem;">Données gardées sur le laptop du formateur</li>
+                <div class="shell-aside-card">
+                    <p class="shell-aside-title">Mode terrain</p>
+                    <ul class="shell-meta-list">
+                        <li>Navigation claire pour élèves et formateur</li>
+                        <li>Pages locales sans dépendance externe</li>
+                        <li>Données gardées sur le laptop du formateur</li>
                     </ul>
                 </div>
                 {% endblock %}
@@ -88,6 +122,7 @@
 
         {% block content %}{% endblock %}
     </main>
+    </div>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

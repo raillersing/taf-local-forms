@@ -1,18 +1,21 @@
-<nav class="nav-bar" id="student-nav" aria-label="Navigation étudiant">
-    <div class="taf-container">
-        <ul class="nav-list">
-            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
-                <a href="{% url 'surveys:home' %}">🏠 Accueil</a>
-            </li>
-            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' or request.resolver_match and 'module' in request.resolver_match.view_name %}active{% endif %}">
-                <a href="{% url 'surveys:student_modules' %}">📚 Modules</a>
-            </li>
-            <li class="nav-item {% if request.resolver_match and 'support' in request.resolver_match.view_name %}active{% endif %}">
-                <a href="{% url 'surveys:support_list' %}">🎒 Supports</a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'surveys:home' %}#espace-formateur">🧭 Repères</a>
-            </li>
-        </ul>
+<nav class="nav-bar shell-primary-nav" id="student-nav" aria-label="Navigation étudiant">
+    <div class="taf-container shell-nav-inner">
+        <div class="shell-nav-group">
+            <span class="shell-nav-label">Parcours étudiant</span>
+            <ul class="nav-list">
+                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
+                    <a href="{% url 'surveys:home' %}">Accueil</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' or request.resolver_match and 'module' in request.resolver_match.view_name %}active{% endif %}">
+                    <a href="{% url 'surveys:student_modules' %}">Modules</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match and 'support' in request.resolver_match.view_name %}active{% endif %}">
+                    <a href="{% url 'surveys:support_list' %}">Supports</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'surveys:home' %}#how-it-works-heading">Repères</a>
+                </li>
+            </ul>
+        </div>
     </div>
 </nav>

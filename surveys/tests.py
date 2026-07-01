@@ -6157,8 +6157,11 @@ class NavigationShellTests(TestCase):
         self.assertContains(response, 'Modules')
         self.assertContains(response, 'Supports')
         self.assertContains(response, 'Repères')
+        self.assertContains(response, 'Parcours étudiant')
         self.assertNotContains(response, 'dashboard/network')
         self.assertNotContains(response, 'Admin')
+        self.assertNotContains(response, 'Contrôle LAN')
+        self.assertNotContains(response, 'Paramètres')
 
     def test_trainer_nav_content(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -6168,8 +6171,12 @@ class NavigationShellTests(TestCase):
         self.assertContains(response, 'Cockpit')
         self.assertContains(response, 'Réseau')
         self.assertContains(response, 'Projection')
+        self.assertContains(response, 'Modules')
+        self.assertContains(response, 'Supports')
         self.assertContains(response, 'Sauvegarde')
-        self.assertContains(response, 'Admin')
+        self.assertContains(response, 'Paramètres')
+        self.assertContains(response, 'Contrôle LAN')
+        self.assertContains(response, 'Admin avancé')
 
     def test_breadcrumbs_present(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -6183,3 +6190,21 @@ class NavigationShellTests(TestCase):
         response = self.client.get(reverse('surveys:dashboard_network_control'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'tool-card')
+        self.assertContains(response, 'Configurer et rendre accessible')
+        self.assertContains(response, 'Redémarrer l\'application')
+
+    def test_support_watch_breadcrumb_keeps_support_parent(self):
+        resource = LearningResource.objects.create(
+            title="Video de test",
+            slug="video-test",
+            description="Support publie",
+            resource_type=LearningResource.RESOURCE_TYPE_VIDEO,
+            file=SimpleUploadedFile("video.mp4", b"fake-video", content_type="video/mp4"),
+            is_published=True,
+        )
+
+        response = self.client.get(reverse("surveys:support_watch", args=[resource.slug]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("surveys:support_detail", args=[resource.slug]))
+        self.assertContains(response, "Regarder")
