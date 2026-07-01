@@ -1929,10 +1929,43 @@ tbody tr:last-child td {
     grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
     background: linear-gradient(135deg, rgba(15, 39, 71, 0.06), rgba(166, 213, 255, 0.25));
 }
+.cockpit-hero-copy {
+    display: grid;
+    gap: 0.9rem;
+    align-content: start;
+}
 .cockpit-hero h2,
 .cockpit-access-card h2,
 .projection-stage h2 {
     margin: 0.35rem 0 0.5rem;
+}
+.cockpit-phase-card {
+    display: grid;
+    gap: 1.2rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 247, 255, 0.96));
+}
+.cockpit-phase-head {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+.cockpit-phase-head h2 {
+    margin: 0.35rem 0 0.45rem;
+}
+.cockpit-phase-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.cockpit-stage-card {
+    display: grid;
+    gap: 0.85rem;
+    align-content: start;
+}
+.cockpit-stage-card .taf-button {
+    justify-self: start;
 }
 .cockpit-action-grid,
 .cockpit-links-grid {
@@ -2042,6 +2075,9 @@ tbody tr:last-child td {
 }
 .projection-stage {
     background: linear-gradient(180deg, #ffffff, #f3f8fe);
+}
+.cockpit-access-card {
+    background: linear-gradient(180deg, #ffffff, #f7fbff);
 }
 .projection-topbar {
     display: flex;
@@ -2341,6 +2377,7 @@ tbody tr:last-child td {
         padding: 0.35rem 0.45rem;
     }
     .cockpit-hero,
+    .cockpit-phase-grid,
     .cockpit-access-grid,
     .projection-grid,
     .resource-grid,

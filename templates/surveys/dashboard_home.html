@@ -15,8 +15,10 @@
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Cockpit" %}
 
     <nav class="sub-nav" aria-label="Sections du cockpit">
-        <a href="#overview" class="sub-nav-link">Vue d'ensemble</a>
-        <a href="#access" class="sub-nav-link">Accès élèves</a>
+        <a href="#overview" class="sub-nav-link">Vue séance</a>
+        <a href="#before-session" class="sub-nav-link">Avant la séance</a>
+        <a href="#during-session" class="sub-nav-link">Pendant la séance</a>
+        <a href="#after-session" class="sub-nav-link">Après la séance</a>
         <a href="#modules" class="sub-nav-link">Modules</a>
         <a href="#presence" class="sub-nav-link">Présence</a>
         <a href="#exports" class="sub-nav-link">Exports</a>
@@ -25,29 +27,21 @@
 
     <section id="overview" class="card cockpit-hero">
         <div class="cockpit-hero-copy">
-            <span class="taf-pill">Session formateur</span>
-            <h2>Diffuser l'accès élèves en quelques gestes</h2>
-            <p class="muted">Le cockpit regroupe les liens utiles, l'état des modules et un mode projection lisible pour la salle.</p>
+            <span class="taf-pill">Cockpit de séance</span>
+            <h2>Avant, pendant et après la séance</h2>
+            <p class="muted">Le cockpit regroupe les actions terrain utiles pour préparer l'accès élèves, piloter les modules en direct et terminer la séance sans changer la logique métier.</p>
             <div class="cockpit-action-grid">
-                <a class="tool-card cockpit-action-card" href="#modules">
-                    <strong>Ouvrir les modules</strong>
+                <a class="tool-card cockpit-action-card" href="#before-session">
+                    <strong>Préparer la séance</strong>
+                    <span class="muted">Réseau local, projection et supports à vérifier avant d'ouvrir la classe.</span>
+                </a>
+                <a class="tool-card cockpit-action-card" href="#during-session">
+                    <strong>Piloter en direct</strong>
                     <span class="muted">{{ modules_open }}/{{ module_list|length }} modules acceptent des réponses.</span>
                 </a>
-                <a class="tool-card cockpit-action-card" href="#exports">
-                    <strong>Voir les exports</strong>
-                    <span class="muted">Télécharge les CSV sans quitter le cockpit.</span>
-                </a>
-                <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_network' %}">
-                    <strong>Vérifier le réseau</strong>
-                    <span class="muted">Contrôle l'IP LAN et les liens donnés aux élèves.</span>
-                </a>
-                <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_projection' %}">
-                    <strong>Ouvrir la projection</strong>
-                    <span class="muted">Grande URL, QR local et bouton plein écran.</span>
-                </a>
-                <a class="tool-card cockpit-action-card" href="{% url 'surveys:dashboard_supports' %}">
-                    <strong>Ouvrir les supports</strong>
-                    <span class="muted">{{ published_resources_count }} publiés, {{ total_resources_count }} au total.</span>
+                <a class="tool-card cockpit-action-card" href="#after-session">
+                    <strong>Clôturer la séance</strong>
+                    <span class="muted">Exports CSV, sauvegarde et outils de fin de séance sans dérive fonctionnelle.</span>
                 </a>
             </div>
         </div>
@@ -68,6 +62,42 @@
                 <p class="stat-label">Modules ouverts</p>
                 <p class="stat-value">{{ modules_open }}/{{ module_list|length }}</p>
             </article>
+            <article class="stat-card">
+                <p class="stat-label">Supports publiés</p>
+                <p class="stat-value">{{ published_resources_count }}</p>
+            </article>
+            <article class="stat-card">
+                <p class="stat-label">Accès élèves</p>
+                <p class="stat-value">{% if student_access_ready %}Prêt{% else %}À vérifier{% endif %}</p>
+            </article>
+        </div>
+    </section>
+
+    <section id="before-session" class="card cockpit-phase-card">
+        <div class="cockpit-phase-head">
+            <div>
+                <span class="taf-pill">Avant la séance</span>
+                <h2>Préparer l'accès de la classe</h2>
+                <p class="muted">Vérifie le réseau local, la projection et les supports avant de lancer les réponses.</p>
+            </div>
+            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet &rarr;</a>
+        </div>
+        <div class="cockpit-phase-grid">
+            <article class="tool-card cockpit-stage-card">
+                <strong>Projection salle</strong>
+                <span class="muted">Grande URL, QR local et affichage plein écran pour démarrer rapidement.</span>
+                <a class="taf-button taf-button-primary" href="{% url 'surveys:dashboard_projection' %}">Ouvrir la projection</a>
+            </article>
+            <article class="tool-card cockpit-stage-card">
+                <strong>Réseau local</strong>
+                <span class="muted">Contrôle l'IP utile pour les élèves et vérifie les liens avant de partager l'accès.</span>
+                <a class="taf-button taf-button-secondary" href="{% url 'surveys:dashboard_network' %}">Vérifier le réseau local</a>
+            </article>
+            <article class="tool-card cockpit-stage-card">
+                <strong>Supports pédagogiques</strong>
+                <span class="muted">{{ published_resources_count }} publiés, {{ total_resources_count }} au total, sans exposer les brouillons aux élèves.</span>
+                <a class="taf-button taf-button-secondary" href="{% url 'surveys:dashboard_supports' %}">Ouvrir les supports</a>
+            </article>
         </div>
     </section>
 
@@ -77,9 +107,8 @@
                 <h2>Accès élèves</h2>
                 <p class="muted">Partage uniquement l'URL publique élèves. Les liens formateur restent protégés.</p>
             </div>
-            <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet &rarr;</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_projection' %}">Voir la projection &rarr;</a>
         </div>
-
         <div class="cockpit-access-grid">
             <div class="student-access-panel" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
                 <p class="student-access-label">Adresse à afficher aux élèves</p>
@@ -91,17 +120,17 @@
                     {% elif network.lan_host_source == "settings" %}
                     Adresse configurée dans le cockpit réseau.
                     {% elif network.lan_host_source == "candidate" %}
-                    Adresse détectée automatiquement. À vérifier dans Réseau.
+                    Adresse détectée automatiquement. À vérifier dans Réseau local.
                     {% endif %}
                 </p>
                 {% else %}
                 <p class="student-access-url student-access-url-missing">Disponible après configuration réseau</p>
-                <p class="muted">IP locale non configurée. URL LAN non configurée. Vérifie la page Réseau avant de partager un lien aux élèves.</p>
-                <p><a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer l'IP locale &rarr;</a></p>
+                <p class="muted">IP locale non configurée. URL LAN non configurée. Vérifie la page Réseau local avant de partager un lien aux élèves.</p>
+                <p><a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Ouvrir les paramètres réseau &rarr;</a></p>
                 {% endif %}
                 {% if network.lan_host_stale %}
                 <div class="taf-alert taf-alert-warning">
-                    L'IP configurée diffère de l'adresse actuelle. Mets à jour la configuration dans Réseau.
+                    L'IP configurée diffère de l'adresse actuelle. Mets à jour la configuration dans Réseau local.
                 </div>
                 {% endif %}
                 <div class="student-access-actions">
@@ -109,7 +138,7 @@
                         Copier l'URL élèves
                     </button>
                     <a class="taf-button taf-button-secondary" href="{% url 'surveys:dashboard_projection' %}">
-                        Mode projection
+                        Ouvrir la projection
                     </a>
                 </div>
                 <p class="student-access-feedback" data-copy-feedback aria-live="polite"></p>
@@ -128,9 +157,42 @@
         </div>
     </section>
 
+    <section id="during-session" class="card cockpit-phase-card">
+        <div class="cockpit-phase-head">
+            <div>
+                <span class="taf-pill">Pendant la séance</span>
+                <h2>Piloter modules, présence et accès élèves</h2>
+                <p class="muted">Ouvre ou ferme les réponses, suis la présence en direct et garde les accès clés sous la main.</p>
+            </div>
+            <a class="text-link" href="#presence">Voir la présence &rarr;</a>
+        </div>
+        <div class="cockpit-phase-grid">
+            <article class="tool-card cockpit-stage-card">
+                <strong>Modules</strong>
+                <span class="muted">{{ modules_open }}/{{ module_list|length }} modules acceptent des réponses en ce moment.</span>
+                <a class="taf-button taf-button-primary" href="#modules">Ouvrir les modules</a>
+            </article>
+            <article class="tool-card cockpit-stage-card">
+                <strong>Accès élèves</strong>
+                <span class="muted">Copie l'URL, affiche le QR code et vérifie que les élèves arrivent au bon endroit.</span>
+                <a class="taf-button taf-button-secondary" href="#access">Voir l'accès élèves</a>
+            </article>
+            <article class="tool-card cockpit-stage-card">
+                <strong>Présence en direct</strong>
+                <span class="muted">Compteur indicatif mis à jour toutes les 15 secondes pour suivre la classe.</span>
+                <a class="taf-button taf-button-secondary" href="#presence">Suivre la présence</a>
+            </article>
+        </div>
+    </section>
+
     <section id="modules" class="card">
-        <h2>Modules de formation</h2>
-        <p class="muted">Active ou désactive les réponses et ouvre les dashboards existants sans changer les routes.</p>
+        <div class="cockpit-section-head">
+            <div>
+                <h2>Modules de formation</h2>
+                <p class="muted">Active ou désactive les réponses et ouvre les dashboards existants sans changer les routes.</p>
+            </div>
+            <span class="badge badge-info">{{ module_list|length }} modules suivis</span>
+        </div>
         <div class="module-grid">
             {% for item in module_list %}
                 <div class="module-card">
@@ -201,6 +263,34 @@
             <a class="tool-card" href="{% url 'surveys:export_module_6_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 6</strong></a>
             <a class="tool-card" href="{% url 'surveys:export_module_7_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 7</strong></a>
             <a class="tool-card" href="{% url 'surveys:export_module_8_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 8</strong></a>
+        </div>
+    </section>
+
+    <section id="after-session" class="card cockpit-phase-card">
+        <div class="cockpit-phase-head">
+            <div>
+                <span class="taf-pill">Après la séance</span>
+                <h2>Exporter, sauvegarder et clôturer proprement</h2>
+                <p class="muted">Prépare les CSV, ouvre la page de sauvegarde et garde les outils de clôture à portée de main.</p>
+            </div>
+            <a class="text-link" href="{% url 'surveys:dashboard_backup' %}">Ouvrir la sauvegarde &rarr;</a>
+        </div>
+        <div class="cockpit-phase-grid">
+            <article class="tool-card cockpit-stage-card">
+                <strong>Exports CSV</strong>
+                <span class="muted">Télécharge les résultats module par module sans quitter le cockpit.</span>
+                <a class="taf-button taf-button-primary" href="#exports">Voir les exports</a>
+            </article>
+            <article class="tool-card cockpit-stage-card">
+                <strong>Sauvegarde</strong>
+                <span class="muted">Prépare la sauvegarde des données et conserve les commandes sûres de fin de séance.</span>
+                <a class="taf-button taf-button-secondary" href="{% url 'surveys:dashboard_backup' %}">Ouvrir la sauvegarde</a>
+            </article>
+            <article class="tool-card cockpit-stage-card">
+                <strong>Outils formateur</strong>
+                <span class="muted">Accède aux paramètres réseau, au contrôle réseau local et à l'admin avancé si besoin.</span>
+                <a class="taf-button taf-button-secondary" href="#advanced">Voir les outils</a>
+            </article>
         </div>
     </section>
 
