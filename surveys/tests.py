@@ -233,7 +233,7 @@ class Module2FormViewTests(TestCase):
         response = self.client.get(reverse("surveys:module_2"))
 
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
 
     def test_home_page_returns_200(self):
         response = self.client.get(reverse("surveys:home"))
@@ -814,7 +814,7 @@ class Module3FormViewTests(TestCase):
         response = self.client.get(reverse("surveys:module_3"))
 
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
 
 
 class DashboardModule3Tests(TestCase):
@@ -1249,7 +1249,7 @@ class Module4FormViewTests(TestCase):
         self.session.save()
         response = self.client.get(reverse("surveys:module_4"))
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
 
     def test_score_calculation_single_choice(self):
         submission = Module4Submission.objects.create(
@@ -2456,6 +2456,7 @@ class F022RNavigationRewireTests(TestCase):
     def test_student_module_detail_has_return_link(self):
         response = self.client.get(reverse("surveys:student_module_2_detail"))
         self.assertContains(response, reverse("surveys:student_modules"))
+        self.assertContains(response, "Le bouton ci-dessous correspond à l'état réel de la séance.")
 
     def test_student_module_detail_no_trainer_links(self):
         response = self.client.get(reverse("surveys:student_module_2_detail"))
@@ -2467,6 +2468,8 @@ class F022RNavigationRewireTests(TestCase):
     def test_module_2_form_status_200(self):
         response = self.client.get(reverse("surveys:module_2"))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Entre exactement 2 chiffres. Exemple : 07.")
+        self.assertContains(response, "Une seule réponse")
 
     def test_module_3_form_status_200(self):
         response = self.client.get(reverse("surveys:module_3"))
@@ -3209,7 +3212,7 @@ class Module5FormViewTests(TestCase):
         self.session.save()
         response = self.client.get(reverse("surveys:module_5"))
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
 
     def test_practical_email_message_saved(self):
         self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
@@ -3644,7 +3647,7 @@ class Module6FormViewTests(TestCase):
     def test_module_6_form_get(self):
         response = self.client.get(reverse("surveys:module_6"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Module 6 - Ressources educatives en ligne")
+        self.assertContains(response, "Module 6 - Ressources éducatives en ligne")
         self.assertContains(response, "Envoyer")
 
     def test_valid_submission_creates_student_and_submission(self):
@@ -3687,7 +3690,7 @@ class Module6FormViewTests(TestCase):
         self.session.save()
         response = self.client.get(reverse("surveys:module_6"))
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Le formulaire n'est pas disponible maintenant.", status_code=503)
+        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
 
     def test_practical_what_learned_saved(self):
         self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
@@ -3822,7 +3825,7 @@ class Module6ClosedSubmissionTests(TestCase):
     def test_module_6_get_200_when_closed(self):
         response = self.client.get(reverse("surveys:module_6"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "fermees")
+        self.assertContains(response, "fermées")
 
     def test_module_6_post_rejected_when_closed(self):
         response = self.client.post(
@@ -4165,7 +4168,7 @@ class Module7FormViewTests(TestCase):
         self.session.save(update_fields=["accepting_responses"])
         response = self.client.get(reverse("surveys:module_7"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "fermees")
+        self.assertContains(response, "fermées")
 
     def test_practical_explain_saved(self):
         self.client.post(reverse("surveys:module_7"), data=self.valid_payload())
@@ -4326,7 +4329,7 @@ class Module7ClosedSubmissionTests(TestCase):
     def test_module_7_get_200_when_closed(self):
         response = self.client.get(reverse("surveys:module_7"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "fermees")
+        self.assertContains(response, "fermées")
 
     def test_module_7_post_rejected_when_closed(self):
         response = self.client.post(
@@ -5112,7 +5115,7 @@ class Module8FormViewTests(TestCase):
         self.session.save(update_fields=["accepting_responses"])
         response = self.client.get(reverse("surveys:module_8"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "fermees")
+        self.assertContains(response, "fermées")
 
     def test_practical_synthesis_saved(self):
         self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
@@ -5280,7 +5283,7 @@ class Module8ClosedSubmissionTests(TestCase):
     def test_module_8_get_200_when_closed(self):
         response = self.client.get(reverse("surveys:module_8"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "fermees")
+        self.assertContains(response, "fermées")
 
     def test_module_8_post_rejected_when_closed(self):
         response = self.client.post(
@@ -5598,6 +5601,62 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:module_2"))
         self.assertContains(response, 'class="breadcrumbs"')
         self.assertContains(response, "Questionnaire")
+
+    def test_student_modules_shows_state_legend(self):
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+        response = self.client.get(reverse("surveys:student_modules"))
+        self.assertContains(response, "Comprendre l'état du module avant d'ouvrir")
+        self.assertContains(response, "Réponses ouvertes")
+        self.assertContains(response, "Consultation seulement")
+
+    def test_closed_module_form_hides_submit_and_keeps_consultation_message(self):
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        session.accepting_responses = False
+        session.save(update_fields=["accepting_responses"])
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertContains(response, "Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.")
+        self.assertContains(response, "Lis le questionnaire, puis demande au formateur si tu dois reprendre la séance.")
+        self.assertNotContains(response, 'type="submit"')
+
+    def test_success_page_shows_clear_confirmation_and_return_actions(self):
+        payload = {
+            "school_id_number": "01",
+            "full_name": "Rakoto Aina",
+            "class_level": Student.CLASS_LEVEL_SECONDE,
+            "auto_eval_internet_explained": "un_peu",
+            "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4_selected": ["chercher_une_explication"],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "test",
+            "practical_site_text": "",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "test",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+        self.client.post(reverse("surveys:module_2"), data=payload)
+        submission = Submission.objects.get()
+        response = self.client.get(reverse("surveys:module_2_success", args=[submission.pk]))
+        self.assertContains(response, "Réponse enregistrée. Merci.")
+        self.assertContains(response, "Retour aux modules")
+        self.assertContains(response, "Voir les supports publiés")
+
+    def test_unavailable_page_shows_clear_message_and_student_navigation(self):
+        session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
+        session.is_active = False
+        session.save(update_fields=["is_active"])
+        response = self.client.get(reverse("surveys:module_2"))
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
+        self.assertContains(response, "Retour aux modules", status_code=503)
+        self.assertNotContains(response, "Cockpit", status_code=503)
+        self.assertNotContains(response, "Admin avancé", status_code=503)
 
     def test_trainer_navigation_includes_modules_and_exports(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")

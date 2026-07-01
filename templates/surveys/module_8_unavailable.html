@@ -3,18 +3,24 @@
 {% block hero_title %}Formulaire non disponible{% endblock %}
 {% block hero_text %}Le formulaire n'est pas disponible maintenant.{% endblock %}
 {% block main_nav %}
-    {% include "surveys/partials/nav_public_landing.html" %}
+    {% include "surveys/partials/nav_student.html" %}
 {% endblock %}
 {% block content %}
 <main id="content" class="content-grid">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
+    {% url 'surveys:support_list' as supports_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 8 indisponible" %}
-    <section class="card empty-state">
-        <h2>Module 8 — Synthese et production</h2>
+    <section class="card empty-state student-state-card student-state-card-warning">
+        <div class="student-state-icon" aria-hidden="true">!</div>
+        <span class="taf-pill">Module indisponible</span>
+        <h2>Aucune session active pour ce module.</h2>
         <p>Le formulaire n'est pas disponible pour le moment.</p>
-        <p>Demande au formateur d'activer la seance Module 8.</p>
-        <p><a class="primary-button" href="{% url 'surveys:home' %}">Retour a l'accueil</a></p>
+        <p>Demande au formateur d'activer la séance Module 8.</p>
+        <div class="student-state-actions">
+            <a class="primary-button" href="{{ modules_url }}">Retour aux modules</a>
+            <a class="text-link" href="{{ supports_url }}">Voir les supports publiés</a>
+        </div>
     </section>
 </main>
 {% endblock %}

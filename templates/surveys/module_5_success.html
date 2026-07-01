@@ -12,10 +12,17 @@
 <main id="content" class="content-grid">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
+    {% url 'surveys:support_list' as supports_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Confirmation" %}
-    <section class="card success-card" role="status" aria-live="polite">
-        <h2>Merci. Ta réponse a bien été enregistrée.</h2>
+    <section class="card success-card student-state-card" role="status" aria-live="polite">
+        <div class="student-state-icon" aria-hidden="true">✓</div>
+        <span class="taf-pill">Confirmation</span>
+        <h2>Réponse enregistrée. Merci.</h2>
         <p>Un bon email est clair, poli, complet et relu avant l'envoi.</p>
+        <div class="student-state-actions">
+            <a class="primary-button" href="{{ modules_url }}">Retour aux modules</a>
+            <a class="text-link" href="{{ supports_url }}">Voir les supports publiés</a>
+        </div>
     </section>
 </main>
 {% endblock %}

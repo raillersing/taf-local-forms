@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Module 8 - Synthese et production{% endblock %}
-{% block hero_title %}Module 8 - Synthese et production{% endblock %}
-{% block hero_text %}Utilise la methode de recherche en 6 etapes pour produire une synthese et un message academique.{% endblock %}
+{% block title %}Module 8 - Synthèse et production{% endblock %}
+{% block hero_title %}Module 8 - Synthèse et production{% endblock %}
+{% block hero_text %}Utilise la méthode de recherche en 6 étapes pour produire une synthèse et un message académique.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
@@ -16,26 +16,25 @@
     {% if not accepting_responses %}
     <section class="card alert-warning" role="alert" aria-live="polite">
         <p>
-            Les reponses sont fermees pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de reponse.
+            Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.
         </p>
     </section>
     {% endif %}
 
     <section class="card intro-card" aria-labelledby="intro-heading">
-        <p class="pill">{{ session.session_code }}</p>
-        <h2 id="intro-heading">Module 8 — Synthese et production</h2>
+        <div id="intro-heading">
+            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 8 — Synthèse et production" module_summary=module_8_summary %}
+        </div>
         {% include "surveys/partials/module_8_pedagogy.html" %}
-        <h2 id="intro-before-heading">Avant de commencer</h2>
-        <p>{{ module_8_summary }}</p>
     </section>
 
     <section class="card" aria-labelledby="objectives-heading">
-        <h2 id="objectives-heading">Objectifs de la seance</h2>
+        <h2 id="objectives-heading">Objectifs de la séance</h2>
         <ul>
-            <li>Je sais appliquer les 6 etapes de la methode de recherche.</li>
+            <li>Je sais appliquer les 6 étapes de la méthode de recherche.</li>
             <li>Je sais choisir un sujet et formuler une question de recherche.</li>
-            <li>Je sais evaluer la qualite d'une source.</li>
-            <li>Je sais produire une synthese et un message academique.</li>
+            <li>Je sais évaluer la qualité d'une source.</li>
+            <li>Je sais produire une synthèse et un message académique.</li>
         </ul>
     </section>
 
@@ -57,14 +56,14 @@
         </section>
 
         <section class="form-section" aria-labelledby="before-heading">
-            <h2 id="before-heading">Avant la seance</h2>
+            <h2 id="before-heading">Avant la séance</h2>
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_search %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_source %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_summarize %}
         </section>
 
         <section class="form-section" aria-labelledby="during-heading">
-            <h2 id="during-heading">Pendant la seance</h2>
+            <h2 id="during-heading">Pendant la séance</h2>
             <div class="checkbox-list">
                 {% include "surveys/partials/field.html" with field=form.todo_chose_subject %}
                 {% include "surveys/partials/field.html" with field=form.todo_written_question %}
@@ -107,7 +106,7 @@
         </section>
 
         <section class="form-section" aria-labelledby="end-heading">
-            <h2 id="end-heading">Fin de seance</h2>
+            <h2 id="end-heading">Fin de séance</h2>
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.feedback_best_success %}
                 {% include "surveys/partials/field.html" with field=form.feedback_still_difficult %}
@@ -117,11 +116,13 @@
         </section>
 
         {% if accepting_responses %}
-        <button type="submit" class="primary-button">Envoyer</button>
+        <button type="submit" class="primary-button">Envoyer ma réponse</button>
         <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
         {% include "surveys/partials/presence_heartbeat.html" %}
         {% else %}
-        <p class="muted">Les reponses sont fermees pour ce module. Tu ne peux pas envoyer de reponse pour le moment.</p>
+        <div class="card muted student-form-closed-note">
+            <p>Les réponses sont fermées pour ce module. Lis le questionnaire, puis demande au formateur si tu dois reprendre la séance.</p>
+        </div>
         {% endif %}
     </form>
 </main>

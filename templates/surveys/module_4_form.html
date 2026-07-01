@@ -20,11 +20,10 @@
     {% endif %}
 
     <section class="card intro-card" aria-labelledby="intro-heading">
-        <p class="pill">{{ session.session_code }}</p>
-        <h2 id="intro-heading">Module 4 — Sources fiables</h2>
+        <div id="intro-heading">
+            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 4 — Sources fiables" module_summary=module_4_summary %}
+        </div>
         {% include "surveys/partials/module_4_pedagogy.html" %}
-        <h2 id="intro-before">Avant de commencer</h2>
-        <p>{{ module_4_summary }}</p>
     </section>
 
     <section class="card" aria-labelledby="objectifs-heading">
@@ -116,12 +115,12 @@
         </section>
 
         {% if accepting_responses %}
-        <button type="submit" class="primary-button">Envoyer</button>
+        <button type="submit" class="primary-button">Envoyer ma réponse</button>
         <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
         {% include "surveys/partials/presence_heartbeat.html" %}
         {% else %}
-        <div class="card card-compact muted">
-            <p>Les réponses sont fermées pour ce module. Tu ne peux pas envoyer de réponse pour le moment.</p>
+        <div class="card card-compact muted student-form-closed-note">
+            <p>Les réponses sont fermées pour ce module. Lis le questionnaire, puis demande au formateur si tu dois reprendre la séance.</p>
         </div>
         {% endif %}
     </form>

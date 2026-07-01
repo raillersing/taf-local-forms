@@ -46,6 +46,34 @@
             {% include "surveys/partials/module_8_pedagogy.html" %}
         {% endif %}
 
+        <div class="student-journey-panel">
+            <p class="student-form-summary">
+                {% if has_active_session %}
+                    {% if accepting_responses %}
+                        Lis d'abord le résumé, puis ouvre le questionnaire quand tu es prêt.
+                    {% else %}
+                        La séance continue en lecture seule. Tu peux consulter le questionnaire sans envoyer de réponse.
+                    {% endif %}
+                {% else %}
+                    Ce module réapparaîtra dès qu'une séance active sera ouverte par le formateur.
+                {% endif %}
+            </p>
+            <div class="student-tip-grid">
+                <article class="student-tip-card">
+                    <strong>1. Comprendre</strong>
+                    <p>Lis les repères pédagogiques avant d'ouvrir le questionnaire.</p>
+                </article>
+                <article class="student-tip-card">
+                    <strong>2. Vérifier l'état</strong>
+                    <p>Regarde si les réponses sont ouvertes, fermées ou indisponibles.</p>
+                </article>
+                <article class="student-tip-card">
+                    <strong>3. Répondre ou consulter</strong>
+                    <p>Le bouton ci-dessous correspond à l'état réel de la séance.</p>
+                </article>
+            </div>
+        </div>
+
         <div class="cta-section">
             {% if has_active_session %}
                 {% if accepting_responses %}
@@ -82,7 +110,7 @@
                     {% endif %}
                 {% endif %}
             {% else %}
-                <p class="muted">Aucune session active pour ce module. Reviens plus tard.</p>
+                <p class="muted">Aucune session active pour ce module. Reviens plus tard ou demande au formateur.</p>
             {% endif %}
 
             <a class="text-link" href="{% url 'surveys:student_modules' %}">&larr; Retour aux modules</a>

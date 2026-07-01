@@ -1,0 +1,28 @@
+<div class="student-form-guide">
+    <div class="student-form-guide-head">
+        <p class="pill">{{ session.session_code }}</p>
+        <div class="badge-group">
+            {% if accepting_responses %}
+                <span class="badge badge-success">Réponses ouvertes</span>
+            {% else %}
+                <span class="badge badge-warning">Consultation seulement</span>
+            {% endif %}
+        </div>
+    </div>
+    <h2>{{ module_heading }}</h2>
+    <p class="student-form-summary">{{ module_summary }}</p>
+    <div class="student-tip-grid">
+        <article class="student-tip-card">
+            <strong>Identifiant</strong>
+            <p>Entre exactement 2 chiffres. Exemple : 07.</p>
+        </article>
+        <article class="student-tip-card">
+            <strong>Une seule réponse</strong>
+            <p>Lis les questions puis envoie une seule réponse pendant la séance.</p>
+        </article>
+        <article class="student-tip-card">
+            <strong>En cas d'erreur</strong>
+            <p>Si une réponse existe déjà ou si tu bloques, appelle le formateur.</p>
+        </article>
+    </div>
+</div>

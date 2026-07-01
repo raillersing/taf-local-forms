@@ -35,6 +35,24 @@
         <p>Connecte-toi au Wi-Fi de la classe, puis ouvre un module ci-dessous. Si les réponses sont fermées, tu peux parfois consulter le contenu sans envoyer de réponse.</p>
     </section>
 
+    <section class="card student-status-legend" aria-labelledby="status-legend-heading">
+        <h2 id="status-legend-heading">Comprendre l'état du module avant d'ouvrir</h2>
+        <div class="student-tip-grid">
+            <article class="student-tip-card">
+                <span class="badge badge-success">Réponses ouvertes</span>
+                <p>Tu peux ouvrir le module puis envoyer ta réponse.</p>
+            </article>
+            <article class="student-tip-card">
+                <span class="badge badge-warning">Consultation seulement</span>
+                <p>Tu peux lire le questionnaire, mais l'envoi est fermé.</p>
+            </article>
+            <article class="student-tip-card">
+                <span class="badge badge-muted">Indisponible</span>
+                <p>La séance n'est pas encore active pour ce module.</p>
+            </article>
+        </div>
+    </section>
+
     <section class="module-grid module-grid-enhanced" aria-label="Catalogue des modules">
         {% for item in module_data %}
         <article class="module-card module-card-enhanced" aria-labelledby="module-title-{{ forloop.counter }}">

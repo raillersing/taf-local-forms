@@ -22,11 +22,10 @@
     {% endif %}
 
     <section class="card intro-card" aria-labelledby="intro-title">
-        <p class="pill">{{ session.session_code }}</p>
-        <h2 id="intro-title">Module 2 — Comprendre Internet</h2>
+        <div id="intro-title">
+            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 2 — Comprendre Internet" module_summary=module_2_summary %}
+        </div>
         {% include "surveys/partials/module_2_pedagogy.html" %}
-        <h2 id="intro-start">Avant de commencer</h2>
-        <p>{{ module_2_summary }}</p>
     </section>
 
     <form method="post" class="card form-card">
@@ -95,12 +94,12 @@
         </section>
 
         {% if accepting_responses %}
-        <button type="submit" class="primary-button">Envoyer</button>
+        <button type="submit" class="primary-button">Envoyer ma réponse</button>
         <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
         {% include "surveys/partials/presence_heartbeat.html" %}
         {% else %}
-        <div class="card muted">
-            <p>Les réponses sont fermées pour ce module. Tu ne peux pas envoyer de réponse pour le moment.</p>
+        <div class="card muted student-form-closed-note">
+            <p>Les réponses sont fermées pour ce module. Lis le questionnaire, puis demande au formateur si tu dois reprendre la séance.</p>
         </div>
         {% endif %}
     </form>
