@@ -25,13 +25,13 @@ Chaque action ci-dessous suit le même format :
 
 ## Couverture
 
-Nombre approximatif d'actions documentées : 46.
+Nombre approximatif d'actions documentées : 51.
 
 Répartition :
 
 - étudiant : 19
-- formateur : 22
-- staff/opérations : 5
+- formateur : 26
+- staff/opérations : 6
 
 ---
 
@@ -847,9 +847,116 @@ Répartition :
 - Écart Prototype 6 : discret, pas encore mis en scène
 - Priorité : P2
 
+### UX-B003
+
+- Action ID : `UX-B003`
+- Rôle : étudiant, infrastructure locale
+- Page : heartbeat de présence
+- Objectif utilisateur : signaler silencieusement qu’un élève est encore présent sur un formulaire actif
+- Déclencheur : chargement d’un formulaire module, intervalle 30s, passage en arrière-plan, fermeture de l’onglet
+- Préconditions : formulaire module ouvert, `client_id` disponible en session, `csrfmiddlewaretoken` présent, session module active
+- Bouton/lien visible : aucun, action technique invisible
+- Route Django : `/presence/heartbeat/`
+- Méthode HTTP : `POST`
+- Résultat attendu : mise à jour ou création de présence côté serveur
+- État succès : réponse JSON `ok`, présence visible ensuite dans le cockpit formateur
+- État erreur : `400` payload incomplet, `404` session absente, polling interrompu ou réseau indisponible
+- Message utilisateur : aucun message étudiant direct ; état traité comme télémétrie silencieuse
+- Protection login : non
+- CSRF : oui, via header `X-CSRFToken`
+- Test attendu : `405` sur GET, `400/404/200` sur cas métier, intervalle 30s présent dans le partial
+- Écart Prototype 6 : non visible dans la maquette, mais indispensable au suivi terrain
+- Priorité : P0
+
+## H. Projection salle
+
+### UX-P001
+
+- Action ID : `UX-P001`
+- Rôle : formateur
+- Page : projection
+- Objectif utilisateur : afficher en grand l’URL élèves et le QR code pour la salle
+- Déclencheur : ouverture de `/dashboard/projection/`
+- Préconditions : login formateur, URL élèves calculable ou état LAN explicitement indisponible
+- Bouton/lien visible : `Projection`, `Mode projection`, `Afficher la projection`
+- Route Django : `/dashboard/projection/`
+- Méthode HTTP : `GET`
+- Résultat attendu : page projection avec URL, QR, étapes de connexion et retour cockpit
+- État succès : URL visible, QR rendu, consignes courtes lisibles, warning si IP LAN obsolète
+- État erreur : `URL LAN non configurée`, QR absent si JS ou bibliothèque QR indisponible
+- Message utilisateur : `URL LAN non configurée` ou rappel de vérifier la page Réseau
+- Protection login : oui
+- CSRF : non
+- Test attendu : redirection login sans session, rendu `Mode projection` avec session, absence des liens projection côté étudiant
+- Écart Prototype 6 : aligné sur l’intention, avec un ton plus terrain
+- Priorité : P0
+
+### UX-P002
+
+- Action ID : `UX-P002`
+- Rôle : formateur
+- Page : projection
+- Objectif utilisateur : copier rapidement l’URL élèves depuis l’écran de projection
+- Déclencheur : clic `Copier l'URL`
+- Préconditions : URL élèves disponible ; JS local chargé
+- Bouton/lien visible : `Copier l'URL`
+- Route Django : `/dashboard/projection/`
+- Méthode HTTP : `GET` + action JS locale
+- Résultat attendu : URL copiée dans le presse-papiers
+- État succès : feedback `URL copiée.`
+- État erreur : URL absente ou copie indisponible sur le navigateur
+- Message utilisateur : `URL LAN non configurée.` ou `Copie indisponible sur ce navigateur.`
+- Protection login : oui
+- CSRF : non
+- Test attendu : présence du bouton, bouton désactivé si URL absente, JS partagé chargé
+- Écart Prototype 6 : conforme, mais dépendance navigateur à expliciter
+- Priorité : P0
+
+### UX-P003
+
+- Action ID : `UX-P003`
+- Rôle : formateur
+- Page : projection
+- Objectif utilisateur : passer l’affichage en plein écran puis en sortir pendant la séance
+- Déclencheur : clic `Plein écran`
+- Préconditions : page projection ouverte ; API fullscreen disponible
+- Bouton/lien visible : `Plein écran`
+- Route Django : `/dashboard/projection/`
+- Méthode HTTP : `GET` + action JS locale
+- Résultat attendu : la carte projection occupe l’écran, puis revient à l’état normal à la sortie
+- État succès : entrée ou sortie plein écran sans perte d’information
+- État erreur : appareil ou navigateur sans support, ou refus d’activation
+- Message utilisateur : `Plein écran indisponible sur cet appareil.` ou `Impossible d'activer le plein écran.`
+- Protection login : oui
+- CSRF : non
+- Test attendu : présence du bouton `type="button"` et chargement du JS projection
+- Écart Prototype 6 : conforme, avec contrainte navigateur réelle
+- Priorité : P0
+
+### UX-P004
+
+- Action ID : `UX-P004`
+- Rôle : formateur
+- Page : projection
+- Objectif utilisateur : revenir rapidement au cockpit formateur
+- Déclencheur : clic `Retour cockpit`
+- Préconditions : login formateur
+- Bouton/lien visible : `Retour cockpit`
+- Route Django : `/dashboard/`
+- Méthode HTTP : `GET`
+- Résultat attendu : retour au cockpit sans étape intermédiaire
+- État succès : cockpit affiché
+- État erreur : redirection login si session perdue
+- Message utilisateur : aucun message spécifique
+- Protection login : oui
+- CSRF : non
+- Test attendu : présence du lien retour vers `dashboard_home`
+- Écart Prototype 6 : conforme
+- Priorité : P1
+
 ## Résumé des priorités
 
 - P0 : entrées principales, questionnaires, fermeture/ouverture réponses, URL
-  élèves, contrôle LAN critique
-- P1 : supports, uploads, exports, backup, projection, navigation de confort
-- P2 : guidage avancé, poids média, présence plus lisible, opérations secondaires
+  élèves, contrôle LAN critique, projection, heartbeat technique
+- P1 : supports, uploads, exports, backup, navigation de confort
+- P2 : guidage avancé, poids média, présence cockpit plus lisible, opérations secondaires
