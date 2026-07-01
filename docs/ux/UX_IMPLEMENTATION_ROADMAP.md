@@ -27,6 +27,7 @@ Contenu :
 
 - adoption de `docs/ux/*` comme base pour les futures PR ;
 - usage de `docs/ux/UX_TRACEABILITY_MATRIX.md` comme check documentaire avant toute PR UI sensible ;
+- usage de `UX_FINAL_ACCEPTANCE_CRITERIA.md`, `UX_COMPONENT_CONTRACTS.md`, `UX_COPY_AND_MESSAGES_GUIDE.md` et `UX_ACCESSIBILITY_MOBILE_CHECKLIST.md` comme pack de validation avant merge UI ;
 - projection et `presence/heartbeat` désormais documentés comme surfaces UX de référence ;
 - ajout futur éventuel d’un index UX dans `docs/ai-agents/README.md`.
 
@@ -194,6 +195,19 @@ Priorité : P3
 6. Lot 6
 7. Lot 7
 8. Lot 8
+
+## Prochaine PR UI recommandée
+
+Lot recommandé après F047C :
+
+- `Lot 1 — Navigation et libellés globaux`
+
+Pourquoi :
+
+- impact large avec faible risque ;
+- prépare la cohérence des CTA étudiant/formateur ;
+- s’appuie directement sur le guide de messages et les contrats composants ;
+- évite de commencer par la zone la plus risquée (`network-control`).
 
 ## Stop conditions pour les futures PR UI
 
