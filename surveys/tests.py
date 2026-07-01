@@ -4675,11 +4675,30 @@ class F030NetworkControlTests(TestCase):
         for btn_id in ("btn-check-status", "btn-sync", "btn-restart", "btn-test", "btn-copy-url", "btn-disable"):
             self.assertContains(response, btn_id)
 
+    def test_action_buttons_are_non_submit_buttons(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        for btn_id in ("btn-check-status", "btn-sync", "btn-restart", "btn-test", "btn-copy-url", "btn-disable"):
+            with self.subTest(button=btn_id):
+                self.assertContains(response, f'id="{btn_id}" class="tool-card" type="button"', html=False)
+
     def test_page_buttons_set_loading_state(self):
         self.client.login(username="ctrlstaff", password="secret")
         response = self.client.get(self.url)
         self.assertContains(response, "setButtonLoading")
         self.assertContains(response, "En cours...")
+
+    def test_page_has_status_slot_for_django_ip_check(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'id="status-django"', html=False)
+        self.assertContains(response, "setStatus('status-django'", html=False)
+
+    def test_page_uses_get_element_by_id_for_student_url_step(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "document.getElementById('step-student-url')", html=False)
+        self.assertNotContains(response, "document.getElement('step-student-url')", html=False)
 
     def test_page_copies_student_url(self):
         self.client.login(username="ctrlstaff", password="secret")
@@ -4692,6 +4711,13 @@ class F030NetworkControlTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, "confirm(")
         self.assertContains(response, "Desactiver")
+
+    def test_advanced_diagnostics_are_grouped_in_details(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "<details", html=False)
+        self.assertContains(response, "Diagnostics avances")
+        self.assertContains(response, "Resultat technique")
 
     # ---- F030B: LAN Helper reliability ----
 
