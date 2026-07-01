@@ -304,6 +304,109 @@ class LearningResourceForm(forms.ModelForm):
             self.validate_unique()
 
 
+class SubjectForm(forms.ModelForm):
+    class Meta:
+        model = Subject
+        fields = ["name", "class_level", "description", "sort_order", "is_active"]
+        labels = {
+            "name": "Nom de la matière",
+            "class_level": "Niveau conseillé",
+            "description": "Description",
+            "sort_order": "Ordre d'affichage",
+            "is_active": "Matière active",
+        }
+        help_texts = {
+            "class_level": "Optionnel. Indique le niveau principalement concerné.",
+            "description": "Optionnel. Quelques mots pour aider le formateur.",
+            "sort_order": "Les plus petits nombres apparaissent d'abord.",
+            "is_active": "Décoche pour masquer la matière sans la supprimer.",
+        }
+        widgets = {"description": forms.Textarea(attrs={"rows": 4})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["name"].widget.attrs["class"] = "taf-input"
+        self.fields["class_level"].widget.attrs["class"] = "taf-select"
+        self.fields["description"].widget.attrs["class"] = "taf-textarea"
+        self.fields["sort_order"].widget.attrs["class"] = "taf-input"
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        if not name:
+            raise forms.ValidationError("Entre un nom de matière.")
+        return name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get("name", "")
+        if name:
+            base_slug = slugify(name)
+            if not base_slug:
+                raise forms.ValidationError("Le nom doit permettre de générer un slug valide.")
+            slug = base_slug
+            index = 2
+            queryset = Subject.objects.all()
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            while queryset.filter(slug=slug).exists():
+                slug = f"{base_slug}-{index}"
+                index += 1
+            self.instance.slug = slug
+        return cleaned_data
+
+
+class ChapterForm(forms.ModelForm):
+    class Meta:
+        model = Chapter
+        fields = ["subject", "title", "description", "sort_order", "is_active"]
+        labels = {
+            "subject": "Matière liée",
+            "title": "Titre du chapitre",
+            "description": "Description",
+            "sort_order": "Ordre d'affichage",
+            "is_active": "Chapitre actif",
+        }
+        help_texts = {
+            "description": "Optionnel. Résumé court pour guider le classement.",
+            "sort_order": "Les plus petits nombres apparaissent d'abord dans la matière.",
+            "is_active": "Décoche pour masquer ce chapitre sans le supprimer.",
+        }
+        widgets = {"description": forms.Textarea(attrs={"rows": 4})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].queryset = Subject.objects.order_by("sort_order", "name")
+        self.fields["subject"].widget.attrs["class"] = "taf-select"
+        self.fields["title"].widget.attrs["class"] = "taf-input"
+        self.fields["description"].widget.attrs["class"] = "taf-textarea"
+        self.fields["sort_order"].widget.attrs["class"] = "taf-input"
+
+    def clean_title(self):
+        title = self.cleaned_data["title"].strip()
+        if not title:
+            raise forms.ValidationError("Entre un titre de chapitre.")
+        return title
+
+    def clean(self):
+        cleaned_data = super().clean()
+        subject = cleaned_data.get("subject")
+        title = cleaned_data.get("title", "")
+        if subject and title:
+            base_slug = slugify(title)
+            if not base_slug:
+                raise forms.ValidationError("Le titre doit permettre de générer un slug valide.")
+            slug = base_slug
+            index = 2
+            queryset = Chapter.objects.filter(subject=subject)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            while queryset.filter(slug=slug).exists():
+                slug = f"{base_slug}-{index}"
+                index += 1
+            self.instance.slug = slug
+        return cleaned_data
+
+
 class Module4SubmissionForm(forms.Form):
     school_id_number = forms.CharField(
         label="Numéro à l'école",

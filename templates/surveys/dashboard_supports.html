@@ -21,11 +21,13 @@
                     <span class="badge badge-success">{{ published_count }} publié{{ published_count|pluralize }}</span>
                     <span class="badge badge-warning">{{ draft_count }} brouillon{{ draft_count|pluralize }}</span>
                 </div>
+                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_subjects' %}">Gérer matières et chapitres</a>
                 <a class="btn btn-primary" href="{% url 'surveys:dashboard_support_upload' %}">Ajouter un support</a>
             </div>
         </div>
         <p class="muted">Cette page liste tous les supports. Utilise le bouton d’ajout pour envoyer un nouveau fichier, puis l’admin Django si une correction avancée reste nécessaire.</p>
         <div class="back-links">
+            <a class="text-link" href="{% url 'surveys:dashboard_subjects' %}">Gérer les matières et chapitres &rarr;</a>
             <a class="text-link" href="{% url 'admin:surveys_learningresource_changelist' %}">Gérer dans l'admin &rarr;</a>
             <a class="text-link" href="{% url 'surveys:support_list' %}" target="_blank" rel="noopener noreferrer">Voir le catalogue public &rarr;</a>
         </div>

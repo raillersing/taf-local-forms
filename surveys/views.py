@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
+    ChapterForm,
     LearningResourceForm,
     Module2SubmissionForm,
     Module3SubmissionForm,
@@ -22,8 +23,10 @@ from .forms import (
     Module6SubmissionForm,
     Module7SubmissionForm,
     Module8SubmissionForm,
+    SubjectForm,
 )
 from .models import (
+    Chapter,
     FormPresence,
     LearningResource,
     Module3Submission,
@@ -371,6 +374,130 @@ def dashboard_support_upload(request: HttpRequest) -> HttpResponse:
         form = LearningResourceForm()
 
     return render(request, "surveys/dashboard_support_upload.html", {"form": form})
+
+
+def _subject_dashboard_queryset():
+    return Subject.objects.prefetch_related("chapters").order_by("sort_order", "name")
+
+
+@login_required
+def dashboard_subjects(request: HttpRequest) -> HttpResponse:
+    subjects = _subject_dashboard_queryset()
+    chapters = Chapter.objects.select_related("subject").order_by("subject__sort_order", "sort_order", "title")
+    context = {
+        "subjects": subjects,
+        "active_subject_count": subjects.filter(is_active=True).count(),
+        "inactive_subject_count": subjects.filter(is_active=False).count(),
+        "active_chapter_count": chapters.filter(is_active=True).count(),
+        "inactive_chapter_count": chapters.filter(is_active=False).count(),
+    }
+    return render(request, "surveys/dashboard_subjects.html", context)
+
+
+@login_required
+def dashboard_subject_create(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = SubjectForm(request.POST)
+        if form.is_valid():
+            subject = form.save()
+            messages.success(request, f"La matière « {subject.name} » a été enregistrée.")
+            return redirect("surveys:dashboard_subjects")
+    else:
+        form = SubjectForm(initial={"is_active": True})
+    return render(
+        request,
+        "surveys/dashboard_subject_form.html",
+        {"form": form, "page_title": "Créer une matière", "submit_label": "Enregistrer la matière"},
+    )
+
+
+@login_required
+def dashboard_subject_edit(request: HttpRequest, subject_id: int) -> HttpResponse:
+    subject = get_object_or_404(Subject, pk=subject_id)
+    if request.method == "POST":
+        form = SubjectForm(request.POST, instance=subject)
+        if form.is_valid():
+            subject = form.save()
+            messages.success(request, f"La matière « {subject.name} » a été mise à jour.")
+            return redirect("surveys:dashboard_subjects")
+    else:
+        form = SubjectForm(instance=subject)
+    return render(
+        request,
+        "surveys/dashboard_subject_form.html",
+        {
+            "form": form,
+            "subject": subject,
+            "page_title": f"Modifier la matière : {subject.name}",
+            "submit_label": "Enregistrer les changements",
+        },
+    )
+
+
+@login_required
+@require_POST
+def dashboard_subject_toggle(request: HttpRequest, subject_id: int) -> HttpResponse:
+    subject = get_object_or_404(Subject, pk=subject_id)
+    subject.is_active = not subject.is_active
+    subject.save(update_fields=["is_active"])
+    state = "activée" if subject.is_active else "désactivée"
+    messages.success(request, f"La matière « {subject.name} » a été {state}.")
+    return redirect("surveys:dashboard_subjects")
+
+
+@login_required
+def dashboard_chapter_create(request: HttpRequest) -> HttpResponse:
+    initial = {"is_active": True}
+    subject_id = request.GET.get("subject")
+    if subject_id and subject_id.isdigit():
+        initial["subject"] = int(subject_id)
+    if request.method == "POST":
+        form = ChapterForm(request.POST)
+        if form.is_valid():
+            chapter = form.save()
+            messages.success(request, f"Le chapitre « {chapter.title} » a été enregistré.")
+            return redirect("surveys:dashboard_subjects")
+    else:
+        form = ChapterForm(initial=initial)
+    return render(
+        request,
+        "surveys/dashboard_chapter_form.html",
+        {"form": form, "page_title": "Créer un chapitre", "submit_label": "Enregistrer le chapitre"},
+    )
+
+
+@login_required
+def dashboard_chapter_edit(request: HttpRequest, chapter_id: int) -> HttpResponse:
+    chapter = get_object_or_404(Chapter.objects.select_related("subject"), pk=chapter_id)
+    if request.method == "POST":
+        form = ChapterForm(request.POST, instance=chapter)
+        if form.is_valid():
+            chapter = form.save()
+            messages.success(request, f"Le chapitre « {chapter.title} » a été mis à jour.")
+            return redirect("surveys:dashboard_subjects")
+    else:
+        form = ChapterForm(instance=chapter)
+    return render(
+        request,
+        "surveys/dashboard_chapter_form.html",
+        {
+            "form": form,
+            "chapter": chapter,
+            "page_title": f"Modifier le chapitre : {chapter.title}",
+            "submit_label": "Enregistrer les changements",
+        },
+    )
+
+
+@login_required
+@require_POST
+def dashboard_chapter_toggle(request: HttpRequest, chapter_id: int) -> HttpResponse:
+    chapter = get_object_or_404(Chapter.objects.select_related("subject"), pk=chapter_id)
+    chapter.is_active = not chapter.is_active
+    chapter.save(update_fields=["is_active"])
+    state = "activé" if chapter.is_active else "désactivé"
+    messages.success(request, f"Le chapitre « {chapter.title} » a été {state}.")
+    return redirect("surveys:dashboard_subjects")
 
 
 MODULE_5_SUMMARY = (

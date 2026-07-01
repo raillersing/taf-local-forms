@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Matières et chapitres — Dashboard{% endblock %}
+{% block hero_title %}Matières et chapitres{% endblock %}
+{% block hero_text %}Classe les supports pédagogiques par matière et chapitre depuis le dashboard formateur, sans passer par l’admin pour les gestes simples.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Matières et chapitres" %}
+
+    <section class="card">
+        <div class="section-row">
+            <div>
+                <h2>Organisation pédagogique</h2>
+                <p class="muted">Active, désactive, crée ou corrige les matières et chapitres utilisés dans la médiathèque locale.</p>
+            </div>
+            <div class="dashboard-support-actions">
+                <div class="badge-group">
+                    <span class="badge badge-success">{{ active_subject_count }} matière{{ active_subject_count|pluralize }} active{{ active_subject_count|pluralize }}</span>
+                    <span class="badge badge-warning">{{ inactive_subject_count }} matière{{ inactive_subject_count|pluralize }} inactive{{ inactive_subject_count|pluralize }}</span>
+                    <span class="badge badge-success">{{ active_chapter_count }} chapitre{{ active_chapter_count|pluralize }} actif{{ active_chapter_count|pluralize }}</span>
+                    <span class="badge badge-warning">{{ inactive_chapter_count }} chapitre{{ inactive_chapter_count|pluralize }} inactif{{ inactive_chapter_count|pluralize }}</span>
+                </div>
+                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_chapter_create' %}">Ajouter un chapitre</a>
+                <a class="btn btn-primary" href="{% url 'surveys:dashboard_subject_create' %}">Ajouter une matière</a>
+            </div>
+        </div>
+        <div class="back-links">
+            <a class="text-link" href="{% url 'surveys:dashboard_supports' %}">Retour aux supports &rarr;</a>
+            <a class="text-link" href="{% url 'surveys:dashboard_support_upload' %}">Aller à l’upload support &rarr;</a>
+            <a class="text-link" href="{% url 'admin:surveys_subject_changelist' %}">Admin matières &rarr;</a>
+        </div>
+    </section>
+
+    {% if subjects %}
+    <section class="dashboard-subject-grid">
+        {% for subject in subjects %}
+        <article class="card subject-card">
+            <div class="section-row subject-card-head">
+                <div>
+                    <h2>{{ subject.name }}</h2>
+                    <div class="badge-group">
+                        {% if subject.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-warning">Inactive</span>
+                        {% endif %}
+                        {% if subject.class_level %}
+                        <span class="badge badge-muted">{{ subject.get_class_level_display }}</span>
+                        {% endif %}
+                        <span class="badge badge-muted">Ordre {{ subject.sort_order }}</span>
+                    </div>
+                </div>
+                <div class="resource-action-links">
+                    <a class="text-link" href="{% url 'surveys:dashboard_subject_edit' subject.pk %}">Modifier</a>
+                    <a class="text-link" href="{% url 'surveys:dashboard_chapter_create' %}?subject={{ subject.pk }}">Ajouter un chapitre</a>
+                    <form method="post" action="{% url 'surveys:dashboard_subject_toggle' subject.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary btn-inline">
+                            {% if subject.is_active %}Désactiver{% else %}Activer{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {% if subject.description %}
+            <p class="muted">{{ subject.description }}</p>
+            {% endif %}
+
+            {% if subject.chapters.all %}
+            <div class="taf-table-wrap">
+                <table class="taf-table">
+                    <thead>
+                        <tr>
+                            <th>Chapitre</th>
+                            <th>Ordre</th>
+                            <th>État</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chapter in subject.chapters.all %}
+                        <tr>
+                            <td>
+                                <strong>{{ chapter.title }}</strong>
+                                {% if chapter.description %}
+                                <br><span class="muted">{{ chapter.description }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ chapter.sort_order }}</td>
+                            <td>
+                                {% if chapter.is_active %}
+                                <span class="badge badge-success">Actif</span>
+                                {% else %}
+                                <span class="badge badge-warning">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="resource-action-links">
+                                    <a class="text-link" href="{% url 'surveys:dashboard_chapter_edit' chapter.pk %}">Modifier</a>
+                                    <form method="post" action="{% url 'surveys:dashboard_chapter_toggle' chapter.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-secondary btn-inline">
+                                            {% if chapter.is_active %}Désactiver{% else %}Activer{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="subject-empty-state">
+                <p class="muted">Aucun chapitre enregistré pour cette matière.</p>
+                <p><a class="btn btn-secondary" href="{% url 'surveys:dashboard_chapter_create' %}?subject={{ subject.pk }}">Créer le premier chapitre</a></p>
+            </div>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="card empty-state">
+        <h2 class="empty-state-title">Aucune matière enregistrée</h2>
+        <p>Crée une première matière pour classer les supports pédagogiques.</p>
+        <p><a class="btn btn-primary" href="{% url 'surveys:dashboard_subject_create' %}">Ajouter une matière</a></p>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

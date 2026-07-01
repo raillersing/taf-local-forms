@@ -1157,6 +1157,10 @@ tbody tr:last-child td {
     margin: 0;
 }
 
+.support-upload-meta-link {
+    margin: 0;
+}
+
 .support-publish-field {
     padding: 1rem;
     border: 1px solid var(--line);
@@ -1173,6 +1177,32 @@ tbody tr:last-child td {
 
 .support-checkbox-label input[type="checkbox"] {
     margin-right: 0;
+}
+
+.dashboard-subject-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.subject-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.subject-card-head {
+    align-items: flex-start;
+}
+
+.subject-empty-state {
+    padding: 1rem;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+}
+
+.btn-inline {
+    min-height: auto;
+    padding: 0.55rem 0.9rem;
 }
 
 /* Network */

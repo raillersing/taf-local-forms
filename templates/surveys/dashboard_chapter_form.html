@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — Dashboard{% endblock %}
+{% block hero_title %}{{ page_title }}{% endblock %}
+{% block hero_text %}Associe un chapitre à une matière existante pour mieux classer les supports pédagogiques.{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% url 'surveys:dashboard_subjects' as dashboard_subjects_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Matières et chapitres" crumb_2_url=dashboard_subjects_url current_label=page_title %}
+
+    <section class="card card-elevated form-card support-upload-card">
+        <div class="section-row">
+            <div>
+                <h2>{{ page_title }}</h2>
+                <p class="muted">Le slug est généré automatiquement à partir du titre, avec unicité par matière.</p>
+            </div>
+            <a class="btn btn-secondary" href="{% url 'surveys:dashboard_subjects' %}">Retour à la liste</a>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert">
+            {% for error in form.non_field_errors %}
+                <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="form-section">
+            {% csrf_token %}
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.subject %}
+                {% include "surveys/partials/field.html" with field=form.title %}
+            </div>
+            {% include "surveys/partials/field.html" with field=form.description %}
+            <div class="field-grid">
+                {% include "surveys/partials/field.html" with field=form.sort_order %}
+                <div class="field support-publish-field">
+                    <label for="{{ form.is_active.id_for_label }}" class="support-checkbox-label">
+                        {{ form.is_active }}
+                        <span>{{ form.is_active.label }}</span>
+                    </label>
+                    {% if form.is_active.help_text %}
+                    <p class="help-text">{{ form.is_active.help_text }}</p>
+                    {% endif %}
+                    {% for error in form.is_active.errors %}
+                    <p class="error-text">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="section-row">
+                <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+                <span class="muted">La désactivation est réversible depuis le dashboard.</span>
+            </div>
+        </form>
+    </section>
+</main>
+{% endblock %}

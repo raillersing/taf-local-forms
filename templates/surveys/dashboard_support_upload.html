@@ -20,12 +20,16 @@
                 <h2>Formulaire d’upload</h2>
                 <p class="muted">Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT et MP4. Taille maximale : 20 MB, ou 80 MB pour une vidéo MP4.</p>
             </div>
-            <a class="btn btn-secondary" href="{% url 'surveys:dashboard_supports' %}">Retour aux supports</a>
+            <div class="dashboard-support-actions">
+                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_subjects' %}">Gérer matières et chapitres</a>
+                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_supports' %}">Retour aux supports</a>
+            </div>
         </div>
 
         <div class="alert alert-info support-upload-note">
             Le support reste privé tant que la case de publication n’est pas cochée. Choisis le type “Vidéo” pour un MP4 et vérifie la source et la licence avant de publier.
         </div>
+        <p class="muted support-upload-meta-link">Besoin d’ajouter une nouvelle matière ou un nouveau chapitre avant l’upload ? <a class="text-link" href="{% url 'surveys:dashboard_subjects' %}">Ouvre la gestion dédiée</a>.</p>
 
         {% if form.non_field_errors %}
         <div class="alert">

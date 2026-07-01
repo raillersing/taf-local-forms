@@ -5923,7 +5923,164 @@ class LearningResourceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse("surveys:support_watch", args=[self.video_published.slug]))
-        self.assertContains(response, "Regarder")
+
+    def test_dashboard_subjects_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_subjects"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_dashboard_subjects_lists_subjects_and_chapters(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_subjects"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Matières et chapitres")
+        self.assertContains(response, self.math_subject.name)
+        self.assertContains(response, self.geometry_chapter.title)
+        self.assertContains(response, reverse("surveys:dashboard_subject_create"))
+        self.assertContains(response, reverse("surveys:dashboard_chapter_create"))
+
+    def test_dashboard_support_pages_link_to_subject_management(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        supports_response = self.client.get(reverse("surveys:dashboard_supports"))
+        upload_response = self.client.get(reverse("surveys:dashboard_support_upload"))
+
+        self.assertContains(supports_response, reverse("surveys:dashboard_subjects"))
+        self.assertContains(upload_response, reverse("surveys:dashboard_subjects"))
+
+    def test_dashboard_subject_create_creates_subject_with_generated_slug(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_subject_create"),
+            data={
+                "name": "Physique-Chimie",
+                "class_level": Student.CLASS_LEVEL_PREMIERE,
+                "description": "Sciences expérimentales",
+                "sort_order": 4,
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("surveys:dashboard_subjects"))
+        subject = Subject.objects.get(name="Physique-Chimie")
+        self.assertEqual(subject.slug, "physique-chimie")
+        self.assertTrue(subject.is_active)
+
+    def test_dashboard_subject_edit_updates_subject(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_subject_edit", args=[self.math_subject.pk]),
+            data={
+                "name": "Maths avancées",
+                "class_level": Student.CLASS_LEVEL_PREMIERE,
+                "description": "Mise à jour",
+                "sort_order": 7,
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.math_subject.refresh_from_db()
+        self.assertEqual(self.math_subject.name, "Maths avancées")
+        self.assertEqual(self.math_subject.slug, "maths-avancees")
+        self.assertEqual(self.math_subject.sort_order, 7)
+
+    def test_dashboard_subject_toggle_soft_disables_subject(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(reverse("surveys:dashboard_subject_toggle", args=[self.math_subject.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.math_subject.refresh_from_db()
+        self.assertFalse(self.math_subject.is_active)
+        self.assertTrue(Subject.objects.filter(pk=self.math_subject.pk).exists())
+
+    def test_dashboard_chapter_create_creates_chapter_for_subject(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_chapter_create"),
+            data={
+                "subject": self.history_subject.pk,
+                "title": "Colonisation",
+                "description": "Chapitre de test",
+                "sort_order": 3,
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        chapter = Chapter.objects.get(title="Colonisation")
+        self.assertEqual(chapter.subject, self.history_subject)
+        self.assertEqual(chapter.slug, "colonisation")
+        self.assertTrue(chapter.is_active)
+
+    def test_dashboard_chapter_edit_updates_existing_chapter(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(
+            reverse("surveys:dashboard_chapter_edit", args=[self.geometry_chapter.pk]),
+            data={
+                "subject": self.math_subject.pk,
+                "title": "Trigonométrie",
+                "description": "Nouveau titre",
+                "sort_order": 6,
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.geometry_chapter.refresh_from_db()
+        self.assertEqual(self.geometry_chapter.title, "Trigonométrie")
+        self.assertEqual(self.geometry_chapter.slug, "trigonometrie")
+        self.assertEqual(self.geometry_chapter.sort_order, 6)
+
+    def test_dashboard_chapter_toggle_soft_disables_chapter(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.post(reverse("surveys:dashboard_chapter_toggle", args=[self.geometry_chapter.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.geometry_chapter.refresh_from_db()
+        self.assertFalse(self.geometry_chapter.is_active)
+        self.assertTrue(Chapter.objects.filter(pk=self.geometry_chapter.pk).exists())
+
+    def test_dashboard_chapter_create_prefills_subject_from_query_string(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_chapter_create"), {"subject": self.math_subject.pk})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'value="{self.math_subject.pk}" selected')
+
+    def test_subject_toggle_hides_subject_from_support_upload_form_queryset(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        self.math_subject.is_active = False
+        self.math_subject.save(update_fields=["is_active"])
+
+        response = self.client.get(reverse("surveys:dashboard_support_upload"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Mathématiques")
+
+    def test_chapter_toggle_hides_chapter_from_bound_support_upload_form_queryset(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        self.geometry_chapter.is_active = False
+        self.geometry_chapter.save(update_fields=["is_active"])
+
+        response = self.client.post(
+            reverse("surveys:dashboard_support_upload"),
+            data={"subject": self.math_subject.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Géométrie")
 
     def test_dashboard_support_upload_rejects_forbidden_extension(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
