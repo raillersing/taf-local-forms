@@ -1464,6 +1464,87 @@ tbody tr:last-child td {
     color: var(--muted);
 }
 
+.student-status-legend,
+.student-journey-panel,
+.student-form-guide,
+.student-state-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.student-form-guide-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.student-form-summary {
+    margin: 0;
+    color: var(--text-light);
+}
+
+.student-tip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.9rem;
+}
+
+.student-tip-card {
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5fb 100%);
+}
+
+.student-tip-card strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--navy);
+}
+
+.student-tip-card p {
+    margin: 0;
+    color: var(--text-light);
+}
+
+.student-state-card {
+    justify-items: start;
+}
+
+.student-state-card-warning {
+    border-color: #f2c38a;
+    background: linear-gradient(180deg, #fff8ef 0%, #fffdf7 100%);
+}
+
+.student-state-icon {
+    width: 3rem;
+    height: 3rem;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.student-state-card-warning .student-state-icon {
+    background: #a35a00;
+}
+
+.student-state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    align-items: center;
+}
+
+.student-form-closed-note {
+    margin-top: 1rem;
+}
+
 /* Consultation pill */
 .consultation-pill {
     background: var(--warning-bg);
@@ -2345,6 +2426,7 @@ tbody tr:last-child td {
     .stats-grid,
     .filter-grid,
     .pedagogy-grid,
+    .student-tip-grid,
     .taf-grid-2,
     .taf-grid-3,
     .taf-grid-4 {
@@ -2388,8 +2470,11 @@ tbody tr:last-child td {
         grid-template-columns: 1fr 1fr;
     }
     .student-access-actions,
-    .projection-actions {
+    .projection-actions,
+    .student-state-actions,
+    .student-form-guide-head {
         flex-direction: column;
+        align-items: stretch;
     }
     .student-qr-shell,
     .projection-qr-frame {

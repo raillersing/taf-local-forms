@@ -4,14 +4,26 @@
 {% block hero_title %}Session indisponible{% endblock %}
 {% block hero_text %}Le questionnaire n'est pas ouvert pour le moment.{% endblock %}
 
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
 {% block content %}
 <main id="content" class="content-grid">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
+    {% url 'surveys:support_list' as supports_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 3 indisponible" %}
-    <p class="empty-state muted">
-        Le formulaire n'est pas disponible maintenant.<br>
-        Demande au formateur d'activer la séance Module 3.
-    </p>
+    <section class="card empty-state student-state-card student-state-card-warning">
+        <div class="student-state-icon" aria-hidden="true">!</div>
+        <span class="taf-pill">Module indisponible</span>
+        <h2>Aucune session active pour ce module.</h2>
+        <p>Le questionnaire n'est pas ouvert pour le moment.</p>
+        <p>Demande au formateur d'activer la séance Module 3.</p>
+        <div class="student-state-actions">
+            <a class="primary-button" href="{{ modules_url }}">Retour aux modules</a>
+            <a class="text-link" href="{{ supports_url }}">Voir les supports publiés</a>
+        </div>
+    </section>
 </main>
 {% endblock %}

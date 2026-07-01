@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Module 7 - Securite en ligne{% endblock %}
-{% block hero_title %}Module 7 - Securite en ligne{% endblock %}
-{% block hero_text %}Apprends a eviter les risques numeriques et a proteger tes informations personnelles.{% endblock %}
+{% block title %}Module 7 - Sécurité en ligne{% endblock %}
+{% block hero_title %}Module 7 - Sécurité en ligne{% endblock %}
+{% block hero_text %}Apprends à éviter les risques numériques et à protéger tes informations personnelles.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
@@ -16,26 +16,25 @@
     {% if not accepting_responses %}
     <section class="card alert-warning" role="alert" aria-live="polite">
         <p>
-            Les reponses sont fermees pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de reponse.
+            Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.
         </p>
     </section>
     {% endif %}
 
     <section class="card intro-card" aria-labelledby="intro-title">
-        <p class="pill">{{ session.session_code }}</p>
-        <h2 id="intro-title">Module 7 — Securite en ligne</h2>
+        <div id="intro-title">
+            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 7 — Sécurité en ligne" module_summary=module_7_summary %}
+        </div>
         {% include "surveys/partials/module_7_pedagogy.html" %}
-        <h2 id="before-start">Avant de commencer</h2>
-        <p>{{ module_7_summary }}</p>
     </section>
 
     <section class="card" aria-labelledby="objectives-title">
-        <h2 id="objectives-title">Objectifs de la seance</h2>
+        <h2 id="objectives-title">Objectifs de la séance</h2>
         <ul>
-            <li>Je comprends les risques numeriques courants.</li>
-            <li>Je sais creer un mot de passe plus sur.</li>
-            <li>Je sais reconnaitre un message suspect.</li>
-            <li>Je sais quelles informations personnelles proteger.</li>
+            <li>Je comprends les risques numériques courants.</li>
+            <li>Je sais créer un mot de passe plus sûr.</li>
+            <li>Je sais reconnaître un message suspect.</li>
+            <li>Je sais quelles informations personnelles protéger.</li>
         </ul>
     </section>
 
@@ -57,14 +56,14 @@
         </section>
 
         <section class="form-section" aria-labelledby="before-title">
-            <h2 id="before-title">Avant la seance</h2>
+            <h2 id="before-title">Avant la séance</h2>
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_password %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_suspect %}
             {% include "surveys/partials/choice_fieldset.html" with field=form.auto_eval_personal_info %}
         </section>
 
         <section class="form-section" aria-labelledby="during-title">
-            <h2 id="during-title">Pendant la seance</h2>
+            <h2 id="during-title">Pendant la séance</h2>
             <div class="checkbox-list">
                 {% include "surveys/partials/field.html" with field=form.todo_identified_weak_password %}
                 {% include "surveys/partials/field.html" with field=form.todo_written_password_rules %}
@@ -101,7 +100,7 @@
         </section>
 
         <section class="form-section" aria-labelledby="end-title">
-            <h2 id="end-title">Fin de seance</h2>
+            <h2 id="end-title">Fin de séance</h2>
             <div class="field-grid">
                 {% include "surveys/partials/field.html" with field=form.feedback_understood_today %}
                 {% include "surveys/partials/field.html" with field=form.feedback_still_difficult %}
@@ -110,13 +109,13 @@
         </section>
 
         {% if accepting_responses %}
-        <button type="submit" class="primary-button">Envoyer</button>
+        <button type="submit" class="primary-button">Envoyer ma réponse</button>
         <input type="hidden" name="taf_client_id" id="taf-client-id" value="">
         {% include "surveys/partials/presence_heartbeat.html" %}
         {% else %}
-        <p class="empty-state muted">
-            Les reponses sont fermees pour ce module. Tu ne peux pas envoyer de reponse pour le moment.
-        </p>
+        <div class="card muted student-form-closed-note">
+            <p>Les réponses sont fermées pour ce module. Lis le questionnaire, puis demande au formateur si tu dois reprendre la séance.</p>
+        </div>
         {% endif %}
     </form>
 </main>
