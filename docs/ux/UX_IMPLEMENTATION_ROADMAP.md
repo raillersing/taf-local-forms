@@ -26,6 +26,7 @@ Objectif :
 Contenu :
 
 - adoption de `docs/ux/*` comme base pour les futures PR ;
+- usage de `docs/ux/UX_TRACEABILITY_MATRIX.md` comme check documentaire avant toute PR UI sensible ;
 - ajout futur éventuel d’un index UX dans `docs/ai-agents/README.md`.
 
 Priorité : P0
