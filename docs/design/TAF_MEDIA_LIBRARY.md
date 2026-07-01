@@ -107,3 +107,16 @@ Le modèle stocke :
 - le dashboard formateur affiche matière et chapitre pour tous les supports ;
 - le formulaire d'upload permet un classement simple par matière et chapitre ;
 - le catalogue public peut filtrer par matière, niveau et module.
+
+## 14. Gestion formateur matières / chapitres F045M
+
+- la route dashboard dédiée est `/dashboard/subjects/` ;
+- la page est protégée par authentification formateur ;
+- le formateur peut créer et modifier une matière ;
+- le formateur peut créer et modifier un chapitre ;
+- l'activation et la désactivation passent uniquement par `is_active` ;
+- aucune suppression destructive n'est ajoutée ;
+- aucune migration ni changement de structure de données n'est nécessaire ;
+- des liens directs vers cette gestion sont visibles depuis :
+  - `/dashboard/supports/`
+  - `/dashboard/supports/upload/`
