@@ -296,11 +296,11 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cockpit formateur")
         self.assertContains(response, "Modules de formation")
-        self.assertContains(response, "Accès réseau")
+        self.assertContains(response, "Réseau local")
         self.assertContains(response, "Admin avancé")
         self.assertContains(response, "Guide dépannage réseau")
         self.assertContains(response, "Accès élèves")
-        self.assertContains(response, "Mode projection")
+        self.assertContains(response, "Ouvrir la projection")
         self.assertNotContains(response, "https://cdnjs.cloudflare.com")
 
     def test_projection_requires_login(self):
@@ -1764,7 +1764,7 @@ class NavigationTests(TestCase):
 
     def test_dashboard_shows_tools(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Accès réseau")
+        self.assertContains(response, "Réseau local")
         self.assertContains(response, "Paramètres réseau")
         self.assertContains(response, "Admin avancé")
 
@@ -2057,7 +2057,16 @@ class F019NavigationUXTests(TestCase):
 
     def test_dashboard_shows_all_subnav_tabs(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        for tab in ["Vue d'ensemble", "Modules", "Présence", "Réseau", "Exports", "Admin"]:
+        for tab in [
+            "Vue séance",
+            "Avant la séance",
+            "Pendant la séance",
+            "Après la séance",
+            "Modules",
+            "Présence",
+            "Exports",
+            "Outils",
+        ]:
             self.assertContains(response, tab)
 
     def test_dashboard_shows_overview_stats(self):
@@ -2066,6 +2075,16 @@ class F019NavigationUXTests(TestCase):
         self.assertContains(response, "Total élèves")
         self.assertContains(response, "Score moyen")
         self.assertContains(response, "Modules ouverts")
+        self.assertContains(response, "Supports publiés")
+
+    def test_dashboard_shows_session_phase_blocks(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Avant la séance")
+        self.assertContains(response, "Pendant la séance")
+        self.assertContains(response, "Après la séance")
+        self.assertContains(response, "Préparer l'accès de la classe")
+        self.assertContains(response, "Piloter modules, présence et accès élèves")
+        self.assertContains(response, "Exporter, sauvegarder et clôturer proprement")
 
     def test_dashboard_shows_presence_section(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2076,7 +2095,7 @@ class F019NavigationUXTests(TestCase):
 
     def test_dashboard_shows_network_section(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Accès réseau")
+        self.assertContains(response, "Réseau local")
         self.assertContains(response, "Diagnostic réseau complet")
 
     def test_dashboard_shows_exports_section(self):
@@ -2091,6 +2110,7 @@ class F019NavigationUXTests(TestCase):
         self.assertContains(response, "Outils formateur")
         self.assertContains(response, "Admin avancé")
         self.assertContains(response, "Guide dépannage réseau")
+        self.assertContains(response, "Sauvegarde")
 
     def test_dashboard_links_have_target_blank(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2160,7 +2180,7 @@ class F019NetworkIPTests(TestCase):
 
     def test_dashboard_shows_config_link_when_no_ip(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Configurer l'IP locale")
+        self.assertContains(response, "Ouvrir les paramètres réseau")
         self.assertContains(response, reverse("surveys:dashboard_settings"))
 
 
