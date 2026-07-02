@@ -5466,8 +5466,9 @@ class RedesignUITests(TestCase):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
-        self.assertContains(response, "Réseau")
-        self.assertContains(response, "Admin")
+        self.assertContains(response, "Projection")
+        self.assertContains(response, "Outils")
+        self.assertContains(response, "Admin avancé")
         self.assertContains(response, "Sortir")
 
     def test_student_navigation_has_no_trainer_links(self):
@@ -6169,13 +6170,12 @@ class NavigationShellTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'instructor-nav')
         self.assertContains(response, 'Cockpit')
-        self.assertContains(response, 'Réseau')
         self.assertContains(response, 'Projection')
         self.assertContains(response, 'Modules')
         self.assertContains(response, 'Supports')
+        self.assertContains(response, 'Outils')
+        self.assertContains(response, 'Réseau')
         self.assertContains(response, 'Sauvegarde')
-        self.assertContains(response, 'Paramètres')
-        self.assertContains(response, 'Contrôle LAN')
         self.assertContains(response, 'Admin avancé')
 
     def test_breadcrumbs_present(self):

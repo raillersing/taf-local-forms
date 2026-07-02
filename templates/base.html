@@ -31,7 +31,7 @@
                         {% if 'dashboard_' in view_name %}
                         <p class="shell-context-kicker">Contexte formateur</p>
                         <p class="shell-context-title">Cockpit protégé et outils de séance</p>
-                        <p class="shell-context-text">Réseau, projection, modules, supports et sauvegarde restent séparés du parcours élève.</p>
+                        <p class="shell-context-text">Projection, modules, supports et outils réseau restent séparés du parcours élève.</p>
                         {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
                         <p class="shell-context-kicker">Contexte étudiant</p>
                         <p class="shell-context-title">Parcours simple pour téléphone</p>
@@ -92,7 +92,7 @@
         {% endif %}
 
         {% block page_header %}
-        <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero shell-hero-home{% else %}shell-page-header{% endif %}">
+        <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero shell-hero-home{% else %}shell-page-header shell-page-header-compact{% endif %}">
             <div class="{% if request.resolver_match.view_name == 'surveys:home' %}brand-copy{% endif %}">
                 {% if request.resolver_match.view_name == 'surveys:home' %}
                 <p class="eyebrow">TAfHSSiM</p>
