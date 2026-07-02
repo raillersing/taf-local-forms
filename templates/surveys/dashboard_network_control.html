@@ -9,6 +9,11 @@
     {% include "surveys/partials/nav_trainer.html" %}
 {% endblock %}
 
+{% block topbar_actions %}
+    <a class="shell-inline-action" href="{% url 'surveys:dashboard_network' %}">Réseau</a>
+    <a class="shell-inline-action" href="{% url 'surveys:dashboard_settings' %}">Paramètres</a>
+{% endblock %}
+
 {% block content %}
 <main id="content" class="content-grid">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
@@ -23,9 +28,24 @@
     </div>
     {% endif %}
 
-    <div class="card">
-        <h2>Assistant configuration LAN</h2>
-        <div class="steps" aria-label="Étapes de configuration LAN">
+    <section class="card card-compact network-control-shell">
+        <div class="network-control-head">
+            <div>
+                <span class="taf-pill">Outil local</span>
+                <h2>Assistant LAN local</h2>
+                <p class="muted">Cette page pilote le helper Windows local sur <code>{{ helper_url }}</code>. Ouvre-la depuis <code>localhost:8010</code> pour utiliser les boutons.</p>
+            </div>
+            <div class="network-control-meta">
+                <span class="badge badge-info">Localhost requis</span>
+                <span class="badge badge-muted">Port helper {{ helper_port }}</span>
+            </div>
+        </div>
+
+        <div class="alert alert-info" role="status" aria-live="polite" id="global-status-card">
+            <strong id="global-status-text">Vérification en cours...</strong>
+        </div>
+
+        <div class="steps network-steps-grid" aria-label="Étapes de configuration LAN">
             <div id="step-helper" class="step">1. Helper local</div>
             <div id="step-local-app" class="step">2. Application locale</div>
             <div id="step-lan-ip" class="step">3. IP Wi-Fi</div>
@@ -34,20 +54,32 @@
             <div id="step-django" class="step">6. Django autorise l'IP</div>
             <div id="step-student-url" class="step">7. URL élèves accessible</div>
         </div>
-
-        <div class="alert alert-info" role="status" aria-live="polite" id="global-status-card">
-            <strong id="global-status-text">Vérification en cours...</strong>
-        </div>
-    </div>
-
-    <section id="helper-status" class="card">
-        <h2>Statut du helper LAN</h2>
-        <div id="helper-status-content">
-            <p class="muted">Verification en cours...</p>
-        </div>
     </section>
 
-    <section id="network-status" class="card">
+    <section class="network-control-grid">
+        <section id="helper-status" class="card card-compact">
+            <h2>Statut du helper LAN</h2>
+            <div id="helper-status-content">
+                <p class="muted">Vérification en cours...</p>
+            </div>
+            <div class="network-helper-tip">
+                <p><strong>Si le helper ne répond pas :</strong> lance <code>taf-lan-helper-start.ps1</code> dans PowerShell administrateur sur Windows, puis relance <em>Actualiser l'état</em>.</p>
+            </div>
+        </section>
+
+        <section class="card card-compact network-helper-start">
+            <h2>Démarrage rapide</h2>
+            <p class="muted">Le helper n'est pas embarqué dans Django. Il doit tourner localement sur Windows pour que les actions LAN fonctionnent.</p>
+            <ol class="network-helper-list">
+                <li>Ouvre PowerShell en administrateur.</li>
+                <li>Place-toi dans le dépôt du projet.</li>
+                <li>Lance <code>.\scripts\windows\taf-lan-helper-start.ps1</code>.</li>
+                <li>Reviens ici puis clique sur <strong>Actualiser l'état</strong>.</li>
+            </ol>
+        </section>
+    </section>
+
+    <section id="network-status" class="card card-compact">
         <h2>Etat du reseau</h2>
         <dl class="setting-list" id="network-status-content">
             <dt class="muted setting-label">Application locale (port {{ docker_port }})</dt>
@@ -73,12 +105,12 @@
         </dl>
     </section>
 
-    <section id="helper-actions" class="card">
+    <section id="helper-actions" class="card card-compact">
         <h2>Actions</h2>
         <p class="muted">
-            Les actions suivantes communiquent avec le helper LAN sur <code>{{ helper_url }}</code>.
+            Les actions suivantes communiquent avec le helper LAN sur <code>{{ helper_url }}</code>. Si le helper est absent, la page doit afficher une consigne exploitable, pas un message technique brut.
         </p>
-        <div class="tools-grid">
+        <div class="tools-grid network-tools-grid">
 
         <button id="btn-sync" class="tool-card" type="button">
             <strong>Configurer et rendre accessible</strong>
@@ -115,16 +147,16 @@
         <div id="helper-message" class="messages-container"></div>
     </section>
 
-    <details id="helper-diagnostics" class="pedagogy-details" open>
+    <details id="helper-diagnostics" class="pedagogy-details">
         <summary class="pedagogy-summary">Diagnostics avances</summary>
         <div class="pedagogy-content">
             <section id="helper-not-found" class="card" hidden>
                 <h2>Helper LAN non disponible</h2>
                 <div class="alert">
-                    <strong>Le TAf LAN Helper n'est pas en cours d'execution.</strong>
+                    <strong>Le helper LAN n'est pas joignable.</strong>
                 </div>
                 <p>
-                    Tu peux utiliser les scripts PowerShell manuellement :
+                    Cette page reste correcte côté Django, mais les actions LAN dépendent d'un processus Windows local. Utilise les scripts PowerShell suivants :
                 </p>
                 <pre class="code-block">
 .\scripts\windows\taf-lan-sync.ps1          # Configurer l'acces LAN
@@ -415,8 +447,6 @@
             callHelper('disable', 'POST', 'Desactivation', 'btn-disable');
         }
     });
-
-    document.getElementById('helper-not-found').hidden = false;
 
     // Auto-check on load
     if (isLocalhost) {

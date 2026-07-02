@@ -6,9 +6,6 @@
                 <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_home' %}active{% endif %}">
                     <a href="{% url 'surveys:dashboard_home' %}">Cockpit</a>
                 </li>
-                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' or request.resolver_match.view_name == 'surveys:dashboard_network_control' %}active{% endif %}">
-                    <a href="{% url 'surveys:dashboard_network' %}">Réseau</a>
-                </li>
                 <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_projection' %}active{% endif %}">
                     <a href="{% url 'surveys:dashboard_projection' %}">Projection</a>
                 </li>
@@ -18,23 +15,27 @@
                 <li class="nav-item {% if request.resolver_match and 'dashboard_support' in request.resolver_match.view_name %}active{% endif %}">
                     <a href="{% url 'surveys:dashboard_supports' %}">Supports</a>
                 </li>
-                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_backup' %}active{% endif %}">
-                    <a href="{% url 'surveys:dashboard_backup' %}">Sauvegarde</a>
-                </li>
-                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_settings' %}active{% endif %}">
-                    <a href="{% url 'surveys:dashboard_settings' %}">Paramètres</a>
+                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' or request.resolver_match.view_name == 'surveys:dashboard_network_control' or request.resolver_match.view_name == 'surveys:dashboard_settings' or request.resolver_match.view_name == 'surveys:dashboard_backup' %}active{% endif %}">
+                    <a href="{% url 'surveys:dashboard_network' %}">Outils</a>
                 </li>
             </ul>
         </div>
-        <div class="shell-nav-context-links" aria-label="Accès complémentaires formateur">
-            <a class="shell-nav-side-link" href="{% url 'surveys:dashboard_network_control' %}">Contrôle LAN</a>
-            <a class="shell-nav-side-link" href="{% url 'admin:index' %}">Admin avancé</a>
-            {% if request.user.is_authenticated %}
-            <form method="post" action="{% url 'admin:logout' %}" class="shell-nav-logout">
-                {% csrf_token %}
-                <button type="submit" class="shell-nav-side-link shell-nav-logout-button">Sortir</button>
-            </form>
-            {% endif %}
-        </div>
+        <details class="shell-tools-menu" {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' or request.resolver_match.view_name == 'surveys:dashboard_network_control' or request.resolver_match.view_name == 'surveys:dashboard_settings' or request.resolver_match.view_name == 'surveys:dashboard_backup' %}open{% endif %}>
+            <summary class="shell-tools-summary">Outils</summary>
+            <div class="shell-tools-panel" aria-label="Accès secondaires formateur">
+                <a class="shell-tools-link" href="{% url 'surveys:dashboard_network' %}">Réseau</a>
+                <a class="shell-tools-link" href="{% url 'surveys:dashboard_network_control' %}">Contrôle LAN</a>
+                <a class="shell-tools-link" href="{% url 'surveys:dashboard_home' %}#exports">Exports</a>
+                <a class="shell-tools-link" href="{% url 'surveys:dashboard_backup' %}">Sauvegarde</a>
+                <a class="shell-tools-link" href="{% url 'surveys:dashboard_settings' %}">Paramètres</a>
+                <a class="shell-tools-link" href="{% url 'admin:index' %}">Admin avancé</a>
+                {% if request.user.is_authenticated %}
+                <form method="post" action="{% url 'admin:logout' %}" class="shell-nav-logout">
+                    {% csrf_token %}
+                    <button type="submit" class="shell-tools-link shell-nav-logout-button">Sortir</button>
+                </form>
+                {% endif %}
+            </div>
+        </details>
     </div>
 </nav>
