@@ -29,6 +29,12 @@
         <div class="shell-nav-context-links" aria-label="Accès complémentaires formateur">
             <a class="shell-nav-side-link" href="{% url 'surveys:dashboard_network_control' %}">Contrôle LAN</a>
             <a class="shell-nav-side-link" href="{% url 'admin:index' %}">Admin avancé</a>
+            {% if request.user.is_authenticated %}
+            <form method="post" action="{% url 'admin:logout' %}" class="shell-nav-logout">
+                {% csrf_token %}
+                <button type="submit" class="shell-nav-side-link shell-nav-logout-button">Sortir</button>
+            </form>
+            {% endif %}
         </div>
     </div>
 </nav>
