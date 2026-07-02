@@ -542,6 +542,15 @@ body {
     font-size: 0.92rem;
 }
 
+.shell-nav-logout {
+    margin: 0;
+}
+
+.shell-nav-logout-button {
+    cursor: pointer;
+    font: inherit;
+}
+
 .shell-nav-side-link:hover,
 .shell-nav-side-link:focus-visible {
     background: rgba(15, 39, 71, 0.12);
