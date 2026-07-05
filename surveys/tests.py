@@ -2368,13 +2368,18 @@ class F022RNavigationRewireTests(TestCase):
 
     def test_landing_shows_about(self):
         response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Le projet")
         self.assertContains(response, "À propos du projet")
 
     def test_landing_nav_minimal(self):
         response = self.client.get(reverse("surveys:home"))
         self.assertContains(response, "Accueil</a>")
-        self.assertNotContains(response, "Modules</a>")
-        self.assertNotContains(response, "Cockpit</a>")
+        self.assertContains(response, "Le projet</a>")
+        self.assertContains(response, "Modules</a>")
+        self.assertContains(response, "Supports</a>")
+        self.assertContains(response, "Cockpit formateur</a>")
+        self.assertNotContains(response, "Outils</a>")
+        self.assertNotContains(response, "Contrôle LAN")
 
     # --- Student module list ---
     def test_student_modules_status_200(self):
@@ -2389,7 +2394,7 @@ class F022RNavigationRewireTests(TestCase):
 
     def test_student_modules_shows_open_module_cta(self):
         response = self.client.get(reverse("surveys:student_modules"))
-        self.assertContains(response, "Ouvrir le module")
+        self.assertContains(response, "Ouvrir")
 
     def test_student_modules_no_full_pedagogy(self):
         """Module list should NOT contain the full detailed pedagogy for all modules."""

@@ -14,8 +14,8 @@
     {% url 'surveys:dashboard_supports' as dashboard_supports_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Supports" crumb_2_url=dashboard_supports_url current_label="Déposer un support" %}
 
-    <section class="card card-elevated form-card support-upload-card">
-        <div class="section-row">
+    <section class="panel form-card support-upload-card">
+        <div class="panel-title">
             <div>
                 <h2>Formulaire de dépôt</h2>
                 <p class="muted">Formats autorisés : PDF, DOCX, PPTX, PNG, JPG, JPEG, TXT et MP4. Taille maximale : 20 MB, ou 80 MB pour une vidéo MP4.</p>

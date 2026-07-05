@@ -14,9 +14,12 @@
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label=module.title %}
-    <section class="card" aria-labelledby="module-detail-heading">
-        <div class="section-row">
-            <h2 id="module-detail-heading">{{ module.title }}</h2>
+    <section class="panel" aria-labelledby="module-detail-heading">
+        <div class="panel-title">
+            <div>
+                <h2 id="module-detail-heading">{{ module.title }}</h2>
+                <p class="text-secondary">Lis d’abord les repères du module, puis ouvre le questionnaire si la séance l’autorise.</p>
+            </div>
             <div class="badge-group">
                 {% if has_active_session %}
                     {% if accepting_responses %}
@@ -58,16 +61,16 @@
                     Ce module réapparaîtra dès qu'une séance active sera ouverte par le formateur.
                 {% endif %}
             </p>
-            <div class="student-tip-grid">
-                <article class="student-tip-card">
+            <div class="grid cols-3 student-tip-grid">
+                <article class="step">
                     <strong>1. Comprendre</strong>
                     <p>Lis les repères pédagogiques avant d'ouvrir le questionnaire.</p>
                 </article>
-                <article class="student-tip-card">
+                <article class="step">
                     <strong>2. Vérifier l'état</strong>
                     <p>Regarde si les réponses sont ouvertes, fermées ou indisponibles.</p>
                 </article>
-                <article class="student-tip-card">
+                <article class="step">
                     <strong>3. Répondre ou consulter</strong>
                     <p>Le bouton ci-dessous correspond à l'état réel de la séance.</p>
                 </article>

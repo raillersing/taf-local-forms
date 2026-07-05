@@ -10,10 +10,10 @@
 </head>
 <body>
     <a href="#content" class="skip-link">Aller au contenu</a>
+    {% with view_name=request.resolver_match.view_name|default:'' %}
     <div class="app-shell">
-    <header class="app-header" id="main-header">
-        <div class="taf-container shell-header-grid">
-            <div class="header-inner shell-header-panel">
+        <header class="app-header" id="main-header">
+            <div class="container header-inner shell-header-compact">
                 <a href="{% url 'surveys:home' %}" class="brand">
                     {% brand_logo_exists as logo_exists %}
                     {% if logo_exists %}
@@ -25,104 +25,85 @@
                     </div>
                 </a>
 
-                {% with view_name=request.resolver_match.view_name|default:'' %}
-                <div class="shell-context-panel">
-                    <div class="shell-context-copy">
+                <div class="shell-header-meta">
+                    <div class="shell-header-status">
                         {% if 'dashboard_' in view_name %}
-                        <p class="shell-context-kicker">Contexte formateur</p>
-                        <p class="shell-context-title">Cockpit protégé et outils de séance</p>
-                        <p class="shell-context-text">Projection, modules, supports et outils réseau restent séparés du parcours élève.</p>
+                        <span class="badge badge-info">Formateur</span>
+                        <span class="pill ok">Cockpit protégé</span>
                         {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
-                        <p class="shell-context-kicker">Contexte étudiant</p>
-                        <p class="shell-context-title">Parcours simple pour téléphone</p>
-                        <p class="shell-context-text">Modules, supports et repères utiles seulement, sans lien technique.</p>
+                        <span class="badge badge-info">Étudiant</span>
+                        <span class="pill">Parcours public</span>
                         {% else %}
-                        <p class="shell-context-kicker">Contexte public</p>
-                        <p class="shell-context-title">Choix de l’espace adapté</p>
-                        <p class="shell-context-text">Entrée claire vers l’espace étudiant ou le cockpit formateur.</p>
+                        <span class="badge badge-neutral">Public</span>
+                        <span class="pill">Mode local</span>
                         {% endif %}
                     </div>
-                    <div class="header-actions shell-role-badges">
-                        {% block header_role %}
+                    <p class="shell-header-note">
                         {% if 'dashboard_' in view_name %}
-                        <span class="taf-badge taf-badge-info">Formateur</span>
-                        <span class="taf-badge taf-badge-neutral">Protégé</span>
+                        Projection, réseau, modules et supports restent regroupés côté formateur.
                         {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
-                        <span class="taf-badge taf-badge-info">Étudiant</span>
-                        <span class="taf-badge taf-badge-neutral">Public</span>
+                        Modules, supports et repères utiles seulement, sans liens techniques.
                         {% else %}
-                        <span class="taf-badge taf-badge-info">Public</span>
+                        Entrée simple vers l’espace étudiant, les supports et le cockpit formateur.
                         {% endif %}
-                        {% endblock %}
-                    </div>
+                    </p>
                 </div>
-                {% endwith %}
             </div>
-        </div>
-    </header>
+        </header>
 
-    <div class="shell-nav-wrap">
         {% block main_nav %}
             {% include "surveys/partials/nav_public_landing.html" %}
         {% endblock %}
-    </div>
 
-    <div class="topbar" id="topbar">
-        <div class="taf-container topbar-shell">
-            <div class="topbar-inner">
-                <div class="topbar-breadcrumbs">
-                    {% block breadcrumbs %}
-                    {% include "surveys/partials/breadcrumbs.html" %}
-                    {% endblock %}
+        <div class="topbar" id="topbar">
+            <div class="container topbar-inner topbar-inner-compact">
+                <div class="topbar-copy">
+                    {% if 'dashboard_' in view_name %}
+                    <span class="route-chip">Cockpit formateur</span>
+                    {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
+                    <span class="route-chip">Parcours étudiant</span>
+                    {% else %}
+                    <span class="route-chip">Accueil public</span>
+                    {% endif %}
                 </div>
                 <div class="topbar-actions" id="topbar-actions">
                     {% block topbar_actions %}{% endblock %}
                 </div>
             </div>
         </div>
-    </div>
 
-    <main id="content" class="taf-container page-content shell-main">
-        {% if messages %}
-        <div class="messages-container shell-messages">
-            {% for message in messages %}
-            <div class="message-card message-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
+        <div class="container shell-main">
+            {% if messages %}
+            <div class="messages-container shell-messages">
+                {% for message in messages %}
+                <div class="message-card message-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
-        {% block page_header %}
-        <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero shell-hero-home{% else %}shell-page-header shell-page-header-compact{% endif %}">
-            <div class="{% if request.resolver_match.view_name == 'surveys:home' %}brand-copy{% endif %}">
-                {% if request.resolver_match.view_name == 'surveys:home' %}
-                <p class="eyebrow">TAfHSSiM</p>
-                {% endif %}
-                <h1 class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-home-title{% else %}shell-page-title{% endif %}">{% block hero_title %}TAfHSSiM{% endblock %}</h1>
-                <p class="{% if request.resolver_match.view_name == 'surveys:home' %}hero-text{% else %}text-secondary shell-page-intro{% endif %}">{% block hero_text %}{% endblock %}</p>
-                <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero-actions{% else %}hero-actions-container shell-page-actions{% endif %}">
+            {% block page_header %}
+            <section class="page-intro{% if view_name == 'surveys:home' %} page-intro-home{% endif %}">
+                <div class="page-intro-copy">
+                    {% if 'dashboard_' in view_name %}
+                    <span class="eyebrow">Cockpit formateur</span>
+                    {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
+                    <span class="eyebrow">Parcours étudiant</span>
+                    {% else %}
+                    <span class="eyebrow">Formation numérique locale</span>
+                    {% endif %}
+                    <h1 class="page-intro-title">{% block hero_title %}TAfHSSiM{% endblock %}</h1>
+                    <p class="page-intro-text">{% block hero_text %}{% endblock %}</p>
+                </div>
+                <div class="page-intro-actions">
                     {% block hero_actions %}{% endblock %}
                 </div>
-            </div>
-            {% if request.resolver_match.view_name == 'surveys:home' %}
-            <aside class="shell-aside">
-                {% block hero_meta %}
-                <div class="shell-aside-card">
-                    <p class="shell-aside-title">Mode terrain</p>
-                    <ul class="shell-meta-list">
-                        <li>Navigation claire pour élèves et formateur</li>
-                        <li>Pages locales sans dépendance externe</li>
-                        <li>Données gardées sur le laptop du formateur</li>
-                    </ul>
-                </div>
-                {% endblock %}
-            </aside>
-            {% endif %}
-        </div>
-        {% endblock %}
+            </section>
+            {% endblock %}
 
-        {% block content %}{% endblock %}
-    </main>
+            {% block content %}{% endblock %}
+        </div>
     </div>
+    {% endwith %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -13,8 +13,8 @@
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Supports" %}
 
-    <section class="card">
-        <div class="section-row">
+    <section class="panel">
+        <div class="panel-title">
             <h2>Catalogue formateur des supports</h2>
             <div class="dashboard-support-actions">
                 <div class="badge-group">
@@ -32,7 +32,7 @@
     </section>
 
     {% if resources %}
-    <section class="card">
+    <section class="panel">
         <div class="taf-table-wrap">
             <table class="taf-table">
                 <thead>
