@@ -1,101 +1,65 @@
 {% extends "base.html" %}
 
 {% block title %}TAfHSSiM — Modules de formation{% endblock %}
-{% block hero_title %}Modules de formation{% endblock %}
-{% block hero_text %}Choisis un module, vérifie s’il est ouvert et entre dans un parcours clair pour répondre ou consulter selon la séance.{% endblock %}
-
-{% block hero_meta %}
-<div class="shell-aside-card">
-    <p class="shell-aside-title">Repères élèves</p>
-    <ul class="shell-meta-list">
-        <li>Modules ouverts clairement signalés</li>
-        <li>Consultation possible si les réponses sont fermées</li>
-        <li>Navigation simple sur téléphone</li>
-    </ul>
-</div>
-{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid student-modules-page">
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Modules" %}
 
-    <section class="panel student-panel-intro" aria-labelledby="welcome-heading">
-        <div class="panel-title">
-            <div>
-                <h2 id="welcome-heading">Modules TAfHSSiM</h2>
-                <p class="text-secondary">Choisis le module indiqué par le formateur. Les cartes restent lisibles sur téléphone et montrent clairement l’état de la séance.</p>
-            </div>
-            <span class="pill ok">Modules 2 à 8</span>
+    <section class="p6-section-head" aria-labelledby="welcome-heading">
+        <div>
+            <h1 id="welcome-heading">Modules TAfHSSiM</h1>
+            <p class="text-secondary">Choisis le module indiqué par le formateur. Les cartes gardent le rythme compact et lisible du prototype.</p>
+            <p class="student-modules-legend-copy">Comprendre l'état du module avant d'ouvrir</p>
         </div>
-        <div class="hero-actions">
-            <a class="btn btn-primary" href="{% url 'surveys:support_list' %}">Voir les supports</a>
-            <a class="btn btn-secondary" href="{% url 'surveys:home' %}#reperes">Lire les repères</a>
-        </div>
+        <span class="pill ok p6-badge p6-badge-soft">Modules 2 à 8</span>
     </section>
 
-    <section class="card student-status-legend" aria-labelledby="status-legend-heading">
-        <div class="panel-title">
-            <h2 id="status-legend-heading">Comprendre l'état du module avant d'ouvrir</h2>
-            <span class="pill">Repères</span>
-        </div>
-        <div class="grid cols-3 student-legend-grid">
-            <article class="step">
-                <span class="badge badge-success">Réponses ouvertes</span>
-                <p>Tu peux ouvrir le module puis envoyer ta réponse.</p>
-            </article>
-            <article class="step">
-                <span class="badge badge-warning">Consultation seulement</span>
-                <p>Tu peux lire le questionnaire, mais l'envoi est fermé.</p>
-            </article>
-            <article class="step">
-                <span class="badge badge-muted">Indisponible</span>
-                <p>La séance n'est pas encore active pour ce module.</p>
-            </article>
-        </div>
-    </section>
-
-    <section class="module-grid module-grid-enhanced" aria-label="Catalogue des modules">
+    <section class="module-grid p6-grid module-grid-enhanced" aria-label="Catalogue des modules">
         {% for item in module_data %}
-        <article class="module-card module-card-enhanced" aria-labelledby="module-title-{{ forloop.counter }}">
+        <article class="module-card p6-card module-card-enhanced" aria-labelledby="module-title-{{ forloop.counter }}">
             <div class="module-number">{{ item.module.code|slice:"7:" }}</div>
             <div class="tag-list">
                 {% if item.has_active_session %}
                     {% if item.active_session.accepting_responses %}
-                    <span class="badge badge-success">Réponses ouvertes</span>
+                    <span class="badge badge-success p6-badge">Réponses ouvertes</span>
                     {% else %}
-                    <span class="badge badge-warning">Consultation seulement</span>
+                    <span class="badge badge-warning p6-badge">Consultation seulement</span>
                     {% endif %}
                 {% else %}
-                <span class="badge badge-muted">Indisponible</span>
+                <span class="badge badge-neutral p6-badge">Indisponible</span>
                 {% endif %}
             </div>
             <h2 id="module-title-{{ forloop.counter }}" class="module-title">{{ item.module.title }}</h2>
             <p class="module-desc">{{ item.module.description|default:"Ce module fait partie du parcours de formation TAfHSSiM." }}</p>
-            <div class="progress"><span style="width:{% if item.has_active_session %}{% if item.active_session.accepting_responses %}100{% else %}60{% endif %}{% else %}18{% endif %}%"></span></div>
+            <div class="progress"><span style="width:{% if item.has_active_session %}{% if item.active_session.accepting_responses %}100{% else %}62{% endif %}{% else %}18{% endif %}%"></span></div>
             <div class="module-footer">
                 {% if item.has_active_session %}
                     {% if item.active_session.accepting_responses %}
                     <span class="module-card-note">Session active</span>
-                    <a class="btn btn-sm btn-primary" href="{{ item.detail_url }}">Ouvrir le module</a>
+                    <a class="btn btn-sm btn-primary p6-button" href="{{ item.detail_url }}">Ouvrir le module</a>
                     {% else %}
                     <span class="module-card-note">Lecture seule</span>
-                    <a class="btn btn-sm btn-secondary" href="{{ item.detail_url }}">Consulter</a>
+                    <a class="btn btn-sm btn-secondary p6-button" href="{{ item.detail_url }}">Consulter</a>
                     {% endif %}
                 {% else %}
                 <span class="module-card-note">Aucune session active</span>
-                <span class="btn btn-sm btn-secondary" aria-disabled="true">Indisponible</span>
+                <span class="btn btn-sm btn-secondary p6-button" aria-disabled="true">Indisponible</span>
                 {% endif %}
             </div>
         </article>
         {% empty %}
-        <section class="card empty-state" aria-labelledby="no-modules">
-            <h2 id="no-modules" class="empty-state-title">Aucun module disponible</h2>
-            <p>Aucun module de formation n'est ouvert pour le moment.</p>
+        <section class="card p6-card empty-state" aria-labelledby="no-modules">
+            <div class="card-body">
+                <h2 id="no-modules" class="empty-state-title">Aucun module disponible</h2>
+                <p>Aucun module de formation n'est ouvert pour le moment.</p>
+            </div>
         </section>
         {% endfor %}
     </section>

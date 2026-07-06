@@ -11,34 +11,34 @@
 <body>
     <a href="#content" class="skip-link">Aller au contenu</a>
     {% with view_name=request.resolver_match.view_name|default:'' %}
-    <div class="app-shell">
-        <header class="app-header" id="main-header">
-            <div class="container header-inner shell-header-compact">
-                <a href="{% url 'surveys:home' %}" class="brand">
+    <div class="app-shell p6-shell">
+        <header class="app-header p6-header" id="main-header">
+            <div class="container header-inner shell-header-compact p6-header-inner">
+                <a href="{% url 'surveys:home' %}" class="brand p6-brand">
                     {% brand_logo_exists as logo_exists %}
                     {% if logo_exists %}
                     <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
                     {% endif %}
-                    <div class="brand-text">
+                    <div class="brand-text p6-brand-text">
                         <span class="brand-title">TAfHSSiM</span>
                         <span class="brand-subtitle">Application locale pour la classe</span>
                     </div>
                 </a>
 
-                <div class="shell-header-meta">
-                    <div class="shell-header-status">
+                <div class="shell-header-meta p6-header-meta">
+                    <div class="shell-header-status p6-role-box">
                         {% if 'dashboard_' in view_name %}
-                        <span class="badge badge-info">Formateur</span>
-                        <span class="pill ok">Cockpit protégé</span>
+                        <span class="badge badge-info p6-badge">Formateur</span>
+                        <span class="pill ok p6-badge p6-badge-soft">Cockpit protégé</span>
                         {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
-                        <span class="badge badge-info">Étudiant</span>
-                        <span class="pill">Parcours public</span>
+                        <span class="badge badge-info p6-badge">Étudiant</span>
+                        <span class="pill p6-badge p6-badge-soft">Parcours public</span>
                         {% else %}
-                        <span class="badge badge-neutral">Public</span>
-                        <span class="pill">Mode local</span>
+                        <span class="badge badge-neutral p6-badge">Public</span>
+                        <span class="pill p6-badge p6-badge-soft">Mode local</span>
                         {% endif %}
                     </div>
-                    <p class="shell-header-note">
+                    <p class="shell-header-note p6-header-note">
                         {% if 'dashboard_' in view_name %}
                         Projection, réseau, modules et supports restent regroupés côté formateur.
                         {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
@@ -55,9 +55,9 @@
             {% include "surveys/partials/nav_public_landing.html" %}
         {% endblock %}
 
-        <div class="topbar" id="topbar">
-            <div class="container topbar-inner topbar-inner-compact">
-                <div class="topbar-copy">
+        <div class="topbar p6-topbar" id="topbar">
+            <div class="container topbar-inner topbar-inner-compact p6-topbar-inner">
+                <div class="topbar-copy p6-topbar-copy">
                     {% if 'dashboard_' in view_name %}
                     <span class="route-chip">Cockpit formateur</span>
                     {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
@@ -72,7 +72,7 @@
             </div>
         </div>
 
-        <div class="container shell-main">
+        <div class="container shell-main p6-main">
             {% if messages %}
             <div class="messages-container shell-messages">
                 {% for message in messages %}
@@ -82,8 +82,8 @@
             {% endif %}
 
             {% block page_header %}
-            <section class="page-intro{% if view_name == 'surveys:home' %} page-intro-home{% endif %}">
-                <div class="page-intro-copy">
+            <section class="page-intro p6-page-intro{% if view_name == 'surveys:home' %} page-intro-home{% endif %}">
+                <div class="page-intro-copy p6-page-intro-copy">
                     {% if 'dashboard_' in view_name %}
                     <span class="eyebrow">Cockpit formateur</span>
                     {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
@@ -94,7 +94,7 @@
                     <h1 class="page-intro-title">{% block hero_title %}TAfHSSiM{% endblock %}</h1>
                     <p class="page-intro-text">{% block hero_text %}{% endblock %}</p>
                 </div>
-                <div class="page-intro-actions">
+                <div class="page-intro-actions p6-actions">
                     {% block hero_actions %}{% endblock %}
                 </div>
             </section>

@@ -2,8 +2,7 @@
 {% load static %}
 
 {% block title %}Contrôle réseau local — Cockpit formateur{% endblock %}
-{% block hero_title %}Contrôle réseau local{% endblock %}
-{% block hero_text %}Configure, teste et désactive l'accès des élèves depuis l'interface locale du formateur.{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
@@ -15,7 +14,7 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid network-control-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Contrôle réseau local" %}
 
@@ -28,16 +27,27 @@
     </div>
     {% endif %}
 
-    <section class="card card-compact network-control-shell">
-        <div class="network-control-head">
+    <section class="panel p6-card network-control-shell">
+        <div class="panel-title">
             <div>
-                <span class="taf-pill">Outil local</span>
-                <h2>Assistant LAN local</h2>
-                <p class="muted">Cette page pilote le helper Windows local sur <code>{{ helper_url }}</code>. Ouvre-la depuis <code>localhost:8010</code> pour utiliser les boutons.</p>
+                <h1>Configuration LAN</h1>
+                <p class="text-secondary">Configurer, tester et désactiver l'accès des élèves depuis l'interface locale du formateur.</p>
             </div>
-            <div class="network-control-meta">
-                <span class="badge badge-info">Localhost requis</span>
-                <span class="badge badge-muted">Port helper {{ helper_port }}</span>
+            <span class="pill ok p6-badge p6-badge-soft">Helper Windows : 127.0.0.1:{{ helper_port }}</span>
+        </div>
+
+        <div class="grid cols-3 p6-grid network-control-summary">
+            <div class="card p6-card card-body">
+                <h3>Helper LAN</h3>
+                <p class="text-secondary">Pilotage local sur <code>{{ helper_url }}</code>.</p>
+            </div>
+            <div class="card p6-card card-body">
+                <h3>Localhost requis</h3>
+                <p class="text-secondary">Ouvre cette page depuis <code>localhost:8010</code> pour utiliser les actions.</p>
+            </div>
+            <div class="card p6-card card-body">
+                <h3>URL élèves</h3>
+                <p class="text-secondary">Le test LAN reste séparé et lisible pour le formateur.</p>
             </div>
         </div>
 
@@ -56,135 +66,149 @@
         </div>
     </section>
 
-    <section class="network-control-grid">
-        <section id="helper-status" class="card card-compact">
-            <h2>Statut du helper LAN</h2>
-            <div id="helper-status-content">
-                <p class="muted">Vérification en cours...</p>
-            </div>
-            <div class="network-helper-tip">
-                <p><strong>Si le helper ne répond pas :</strong> lance <code>taf-lan-helper-start.ps1</code> dans PowerShell administrateur sur Windows, puis relance <em>Actualiser l'état</em>.</p>
-            </div>
-        </section>
-
-        <section class="card card-compact network-helper-start">
-            <h2>Démarrage rapide</h2>
-            <p class="muted">Le helper n'est pas embarqué dans Django. Il doit tourner localement sur Windows pour que les actions LAN fonctionnent.</p>
-            <ol class="network-helper-list">
-                <li>Ouvre PowerShell en administrateur.</li>
-                <li>Place-toi dans le dépôt du projet.</li>
-                <li>Lance <code>.\scripts\windows\taf-lan-helper-start.ps1</code>.</li>
-                <li>Reviens ici puis clique sur <strong>Actualiser l'état</strong>.</li>
-            </ol>
-        </section>
-    </section>
-
-    <section id="network-status" class="card card-compact">
-        <h2>Etat du reseau</h2>
-        <dl class="setting-list" id="network-status-content">
-            <dt class="muted setting-label">Application locale (port {{ docker_port }})</dt>
-            <dd id="status-local-app"><span class="muted">En attente...</span></dd>
-
-            <dt class="muted setting-label">IP Wi-Fi detectee</dt>
-            <dd id="status-lan-ip"><span class="muted">En attente...</span></dd>
-
-            <dt class="muted setting-label">Portproxy ({{ lan_port }} &rarr; {{ docker_port }})</dt>
-            <dd id="status-portproxy"><span class="muted">En attente...</span></dd>
-
-            <dt class="muted setting-label">Pare-feu (port {{ lan_port }})</dt>
-            <dd id="status-firewall"><span class="muted">En attente...</span></dd>
-
-            <dt class="muted setting-label">Django autorise l'IP</dt>
-            <dd id="status-django"><span class="muted">En attente...</span></dd>
-
-            <dt class="muted setting-label">URL eleves</dt>
-            <dd id="status-student-url"><span class="muted">En attente...</span></dd>
-
-            <dt class="muted setting-label">Test URL eleves</dt>
-            <dd id="status-lan-test"><span class="muted">En attente...</span></dd>
-        </dl>
-    </section>
-
-    <section id="helper-actions" class="card card-compact">
-        <h2>Actions</h2>
-        <p class="muted">
-            Les actions suivantes communiquent avec le helper LAN sur <code>{{ helper_url }}</code>. Si le helper est absent, la page doit afficher une consigne exploitable, pas un message technique brut.
-        </p>
-        <div class="tools-grid network-tools-grid">
-
-        <button id="btn-sync" class="tool-card" type="button">
-            <strong>Configurer et rendre accessible</strong>
-            <span class="muted">Portproxy + pare-feu + synchronisation</span>
-        </button>
-
-        <button id="btn-check-status" class="tool-card" type="button">
-            <strong>Actualiser l'état</strong>
-            <span class="muted">Rafraîchir le statut du réseau</span>
-        </button>
-
-        <button id="btn-test" class="tool-card" type="button">
-            <strong>Tester l'URL élèves</strong>
-            <span class="muted">Vérifier l'accessibilité depuis le LAN</span>
-        </button>
-
-        <button id="btn-copy-url" class="tool-card" type="button">
-            <strong>Copier l'URL élèves</strong>
-            <span class="muted">Copier dans le presse-papiers</span>
-        </button>
-
-        <button id="btn-disable" class="tool-card" type="button">
-            <strong>Désactiver l'accès LAN</strong>
-            <span class="muted">Supprimer portproxy + règle pare-feu</span>
-        </button>
-
-        <button id="btn-restart" class="tool-card" type="button">
-            <strong>Redémarrer l'application</strong>
-            <span class="muted">docker compose restart web</span>
-        </button>
-
-        </div>
-
-        <div id="helper-message" class="messages-container"></div>
-    </section>
-
-    <details id="helper-diagnostics" class="pedagogy-details">
-        <summary class="pedagogy-summary">Diagnostics avances</summary>
-        <div class="pedagogy-content">
-            <section id="helper-not-found" class="card" hidden>
-                <h2>Helper LAN non disponible</h2>
-                <div class="alert">
-                    <strong>Le helper LAN n'est pas joignable.</strong>
+    <section class="grid cols-2 p6-grid network-control-top">
+        <section id="helper-status" class="card p6-card card-compact">
+            <div class="card-body">
+                <h2>Statut du helper LAN</h2>
+                <div id="helper-status-content">
+                    <p class="muted">Vérification en cours...</p>
                 </div>
-                <p>
-                    Cette page reste correcte côté Django, mais les actions LAN dépendent d'un processus Windows local. Utilise les scripts PowerShell suivants :
-                </p>
-                <pre class="code-block">
+                <div class="network-helper-tip">
+                    <p><strong>Si le helper ne répond pas :</strong> lance <code>taf-lan-helper-start.ps1</code> dans PowerShell administrateur sur Windows, puis relance <em>Actualiser l'état</em>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card p6-card card-compact network-helper-start">
+            <div class="card-body">
+                <h2>Démarrage rapide</h2>
+                <p class="muted">Le helper n'est pas embarqué dans Django. Il doit tourner localement sur Windows pour que les actions LAN fonctionnent.</p>
+                <ol class="network-helper-list">
+                    <li>Ouvre PowerShell en administrateur.</li>
+                    <li>Place-toi dans le dépôt du projet.</li>
+                    <li>Lance <code>.\scripts\windows\taf-lan-helper-start.ps1</code>.</li>
+                    <li>Reviens ici puis clique sur <strong>Actualiser l'état</strong>.</li>
+                </ol>
+            </div>
+        </section>
+    </section>
+
+    <section id="network-status" class="card p6-card card-compact">
+        <div class="card-body">
+            <h2>État du réseau</h2>
+            <dl class="setting-list" id="network-status-content">
+                <dt class="muted setting-label">Application locale (port {{ docker_port }})</dt>
+                <dd id="status-local-app"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">IP Wi-Fi detectee</dt>
+                <dd id="status-lan-ip"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">Portproxy ({{ lan_port }} &rarr; {{ docker_port }})</dt>
+                <dd id="status-portproxy"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">Pare-feu (port {{ lan_port }})</dt>
+                <dd id="status-firewall"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">Django autorise l'IP</dt>
+                <dd id="status-django"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">URL eleves</dt>
+                <dd id="status-student-url"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">Test URL eleves</dt>
+                <dd id="status-lan-test"><span class="muted">En attente...</span></dd>
+            </dl>
+        </div>
+    </section>
+
+    <section id="helper-actions" class="card p6-card card-compact">
+        <div class="card-body">
+            <h2>Actions</h2>
+            <p class="muted">
+                Les actions suivantes communiquent avec le helper LAN sur <code>{{ helper_url }}</code>. Si le helper est absent, la page doit afficher une consigne exploitable, pas un message technique brut.
+            </p>
+            <div class="tools-grid network-tools-grid">
+
+            <button id="btn-sync" class="tool-card" type="button">
+                <strong>Configurer et rendre accessible</strong>
+                <span class="muted">Portproxy + pare-feu + synchronisation</span>
+            </button>
+
+            <button id="btn-check-status" class="tool-card" type="button">
+                <strong>Actualiser l'état</strong>
+                <span class="muted">Rafraîchir le statut du réseau</span>
+            </button>
+
+            <button id="btn-test" class="tool-card" type="button">
+                <strong>Tester l'URL élèves</strong>
+                <span class="muted">Vérifier l'accessibilité depuis le LAN</span>
+            </button>
+
+            <button id="btn-copy-url" class="tool-card" type="button">
+                <strong>Copier l'URL élèves</strong>
+                <span class="muted">Copier dans le presse-papiers</span>
+            </button>
+
+            <button id="btn-disable" class="tool-card" type="button">
+                <strong>Désactiver l'accès LAN</strong>
+                <span class="muted">Supprimer portproxy + règle pare-feu</span>
+            </button>
+
+            <button id="btn-restart" class="tool-card" type="button">
+                <strong>Redémarrer l'application</strong>
+                <span class="muted">docker compose restart web</span>
+            </button>
+
+            </div>
+
+            <div id="helper-message" class="messages-container"></div>
+        </div>
+    </section>
+
+    <details id="helper-diagnostics" class="diagnostics">
+        <summary>Diagnostics avances</summary>
+        <div class="pedagogy-content">
+            <section id="helper-not-found" class="card p6-card" hidden>
+                <div class="card-body">
+                    <h2>Helper LAN non disponible</h2>
+                    <div class="alert">
+                        <strong>Le helper LAN n'est pas joignable.</strong>
+                    </div>
+                    <p>
+                        Cette page reste correcte côté Django, mais les actions LAN dépendent d'un processus Windows local. Utilise les scripts PowerShell suivants :
+                    </p>
+                    <pre class="code-block">
 .\scripts\windows\taf-lan-sync.ps1          # Configurer l'acces LAN
 .\scripts\windows\taf-lan-show-status.ps1    # Afficher l'etat
 .\scripts\windows\taf-lan-helper-start.ps1   # Demarrer le helper
-                </pre>
-                <p>
-                    <strong>Installation du helper (une seule fois, PowerShell Admin) :</strong>
-                </p>
-                <pre class="code-block">
+                    </pre>
+                    <p>
+                        <strong>Installation du helper (une seule fois, PowerShell Admin) :</strong>
+                    </p>
+                    <pre class="code-block">
 # Depuis le dossier du projet :
 .\scripts\windows\taf-lan-helper-start.ps1
-                </pre>
-                <p class="muted">
-                    Le helper ecoute uniquement sur <code>127.0.0.1:{{ helper_port }}</code> et n'est pas accessible depuis le LAN.
-                </p>
+                    </pre>
+                    <p class="muted">
+                        Le helper ecoute uniquement sur <code>127.0.0.1:{{ helper_port }}</code> et n'est pas accessible depuis le LAN.
+                    </p>
+                </div>
             </section>
 
-            <section id="helper-result" class="card" hidden>
-                <h2>Resultat technique</h2>
-                <pre id="helper-result-content" class="code-block"></pre>
+            <section id="helper-result" class="card p6-card" hidden>
+                <div class="card-body">
+                    <h2>Resultat technique</h2>
+                    <pre id="helper-result-content" class="code-block"></pre>
+                </div>
             </section>
 
-            <section class="card">
-                <h2>Liens de diagnostic</h2>
-                <div class="back-links">
-                    <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic reseau complet &rarr;</a>
-                    <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configuration reseau &rarr;</a>
+            <section class="card p6-card">
+                <div class="card-body">
+                    <h2>Liens de diagnostic</h2>
+                    <div class="back-links">
+                        <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic reseau complet &rarr;</a>
+                        <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configuration reseau &rarr;</a>
+                    </div>
                 </div>
             </section>
         </div>
@@ -250,7 +274,6 @@
             return;
         }
 
-        // Abort previous request if any
         if (activeController) {
             activeController.abort();
         }
@@ -270,7 +293,6 @@
             opts.body = '{}';
         }
 
-        // Timeout: 8 seconds
         var timer = setTimeout(function() {
             activeController.abort();
             activeController = null;
@@ -319,143 +341,109 @@
             });
     }
 
-    function updateStatusDisplay(data) {
-        var statusEl = document.getElementById('helper-status-content');
-        var helperOk = false;
-        if (data.success) {
-            statusEl.innerHTML = '<div class="alert alert-success"><strong>Helper actif</strong> sur ' + helperUrl + '</div>';
-            document.getElementById('helper-not-found').hidden = true;
-            helperOk = true;
-        } else {
-            statusEl.innerHTML = '<div class="alert"><strong>Helper répond mais signale une erreur.</strong></div>';
-        }
-
-        var allOk = helperOk;
-
-        if (data.lan_ip) {
-            setStatus('status-lan-ip', data.lan_ip, true);
-        } else {
-            setStatus('status-lan-ip', 'Non détectée', false);
-            allOk = false;
-        }
-
-        var localOk = data.local_ok !== undefined && data.local_ok;
-        setStatus('status-local-app', localOk ? 'Accessible' : 'Inaccessible', localOk);
-        allOk = allOk && localOk;
-
-        var portproxyOk = data.portproxy !== undefined && data.portproxy;
-        setStatus('status-portproxy', portproxyOk ? 'Configuré' : 'Non configuré', portproxyOk);
-        allOk = allOk && portproxyOk;
-
-        var firewallOk = data.firewall !== undefined && data.firewall;
-        setStatus('status-firewall', firewallOk ? 'Configuré' : 'Non configuré', firewallOk);
-        allOk = allOk && firewallOk;
-
-        var djangoOk = data.django_ok !== undefined ? data.django_ok : (data.student_url && data.student_url.indexOf('127.0.0.1') === -1);
-        setStatus('status-django', djangoOk ? "Autorise l'IP" : 'IP non autorisée', djangoOk);
-        document.getElementById('step-django').className = 'step ' + (djangoOk ? 'step-done' : (helperOk ? 'step-active' : 'step-error'));
-        allOk = allOk && djangoOk;
-
-        var lanOk = data.lan_ok !== undefined && data.lan_ok;
-        setStatus('status-lan-test', lanOk ? 'Accessible' : 'Inaccessible', lanOk);
-        allOk = allOk && lanOk;
-
-        if (data.student_url) {
-            lastStudentUrl = data.student_url;
-            setStatus('status-student-url', data.student_url, true);
-            document.getElementById('step-student-url').className = allOk ? 'step step-done' : 'step step-error';
-        } else {
-            setStatus('status-student-url', 'Non disponible', false);
-            allOk = false;
-            document.getElementById('step-student-url').className = 'step step-error';
-        }
-
-        updateGlobalStatus(
-            allOk ? '✅ LAN prêt — les élèves peuvent accéder à l\'application' : '⚠ Configuration incomplète — suivez les étapes ci-dessous',
-            allOk
-        );
+    function setStepState(stepId, state, text) {
+        var el = document.getElementById(stepId);
+        if (!el) return;
+        el.classList.remove('ok', 'warn', 'danger');
+        if (state) el.classList.add(state);
+        if (text) el.textContent = text;
     }
 
-
-    function setStatus(id, text, ok) {
+    function setStatus(id, ok, html) {
         var el = document.getElementById(id);
-        if (el) {
-            el.innerHTML = ok
-                ? '<span class="badge badge-success">' + text + '</span>'
-                : '<span class="badge badge-warning">' + text + '</span>';
+        if (!el) return;
+        el.innerHTML = html;
+        el.className = ok ? 'status-ok' : 'status-warn';
+    }
+
+    function updateStatusDisplay(data) {
+        var status = data.status || data;
+        var helperOk = status.helper_running !== false;
+        var studentUrlStep = document.getElementById('step-student-url');
+        document.getElementById('global-status-text').textContent = helperOk ? 'Helper joignable et état réseau récupéré.' : 'Helper joignable mais LAN incomplet.';
+
+        setStepState('step-helper', helperOk ? 'ok' : 'warn', '1. Helper local');
+        setStepState('step-local-app', status.local_app_ok ? 'ok' : 'warn', '2. Application locale');
+        setStepState('step-lan-ip', status.lan_ip ? 'ok' : 'warn', '3. IP Wi-Fi');
+        setStepState('step-portproxy', status.portproxy_ok ? 'ok' : 'warn', '4. Portproxy');
+        setStepState('step-firewall', status.firewall_ok ? 'ok' : 'warn', '5. Pare-feu');
+        setStepState('step-django', status.django_allows_ip ? 'ok' : 'warn', '6. Django autorise l\'IP');
+        setStepState('step-student-url', status.student_url ? 'ok' : 'warn', '7. URL élèves accessible');
+        if (studentUrlStep && status.student_url) {
+            studentUrlStep.dataset.studentUrl = status.student_url;
         }
-        var step = document.getElementById('step-' + id.replace('status-', ''));
-        if (step) {
-            step.className = 'step ' + (ok ? 'step-done' : 'step-error');
+
+        setStatus('status-local-app', !!status.local_app_ok, status.local_app_ok ? '<strong>OK</strong>' : '<span class="muted">Indisponible</span>');
+        setStatus('status-lan-ip', !!status.lan_ip, status.lan_ip ? '<code>' + status.lan_ip + '</code>' : '<span class="muted">Non détectée</span>');
+        setStatus('status-portproxy', !!status.portproxy_ok, status.portproxy_ok ? '<strong>Configuré</strong>' : '<span class="muted">Absent</span>');
+        setStatus('status-firewall', !!status.firewall_ok, status.firewall_ok ? '<strong>Ouvert</strong>' : '<span class="muted">À vérifier</span>');
+        setStatus('status-django', !!status.django_allows_ip, status.django_allows_ip ? '<strong>OK</strong>' : '<span class="muted">À mettre à jour</span>');
+        setStatus('status-student-url', !!status.student_url, status.student_url ? '<code>' + status.student_url + '</code>' : '<span class="muted">Non disponible</span>');
+        setStatus('status-lan-test', !!status.student_url_ok, status.student_url_ok ? '<strong>Accessible</strong>' : '<span class="muted">Test à lancer</span>');
+
+        if (status.student_url) {
+            lastStudentUrl = status.student_url;
         }
     }
 
-    function updateGlobalStatus(text, ok) {
-        var card = document.getElementById('global-status-card');
-        var label = document.getElementById('global-status-text');
-        if (card && label) {
-            label.textContent = text;
-            card.className = ok ? 'alert alert-success' : 'alert alert-warning';
-        }
-    }
-
-    function copyStudentUrl() {
-        var url = lastStudentUrl;
-        if (!url) {
-            showError('Aucune URL eleves disponible. Configure d\'abord l\'acces LAN.');
-            return;
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(function() {
-                showSuccess('URL copiee : ' + url);
-            }).catch(function() {
-                fallbackCopy(url);
-            });
-        } else {
-            fallbackCopy(url);
-        }
-    }
-
-    function fallbackCopy(url) {
-        var ta = document.createElement('textarea');
-        ta.value = url;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showSuccess('URL copiee : ' + url);
-    }
-
-    // Wire up buttons
     document.getElementById('btn-check-status').addEventListener('click', function() {
-        callHelper('status', 'GET', 'Verification', 'btn-check-status');
+        callHelper('status', 'GET', 'Actualiser', 'btn-check-status');
     });
     document.getElementById('btn-sync').addEventListener('click', function() {
-        callHelper('sync', 'POST', 'Configuration', 'btn-sync');
-    });
-    document.getElementById('btn-restart').addEventListener('click', function() {
-        callHelper('restart-app', 'POST', 'Redemarrage', 'btn-restart');
+        callHelper('sync', 'POST', 'Configurer', 'btn-sync');
     });
     document.getElementById('btn-test').addEventListener('click', function() {
-        callHelper('test', 'POST', 'Test', 'btn-test');
+        callHelper('test', 'POST', 'Tester', 'btn-test');
     });
-    document.getElementById('btn-copy-url').addEventListener('click', copyStudentUrl);
     document.getElementById('btn-disable').addEventListener('click', function() {
-        if (confirm('Desactiver l\'acces LAN ? Les eleves en cours perdront la connexion.')) {
-            callHelper('disable', 'POST', 'Desactivation', 'btn-disable');
+        if (!confirm('Desactiver l\'acces LAN pour les eleves ?')) {
+            return;
         }
+        callHelper('disable', 'POST', 'Desactiver', 'btn-disable');
+    });
+    document.getElementById('btn-restart').addEventListener('click', function() {
+        callHelper('restart-app', 'POST', 'Redémarrer', 'btn-restart');
+    });
+    document.getElementById('btn-copy-url').addEventListener('click', function() {
+        if (!lastStudentUrl) {
+            showError('Aucune URL élèves disponible à copier pour le moment.');
+            return;
+        }
+        function fallbackCopy(text) {
+            var tempInput = document.createElement('input');
+            tempInput.type = 'text';
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            tempInput.setSelectionRange(0, tempInput.value.length);
+            var copied = false;
+            try {
+                copied = document.execCommand('copy');
+            } catch (err) {
+                copied = false;
+            }
+            document.body.removeChild(tempInput);
+            if (copied) {
+                showSuccess('URL élèves copiée : ' + text);
+            } else {
+                showError('Copie impossible. Copie manuellement : ' + text);
+            }
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(lastStudentUrl).then(function() {
+                showSuccess('URL élèves copiée : ' + lastStudentUrl);
+            }).catch(function() {
+                fallbackCopy(lastStudentUrl);
+            });
+            return;
+        }
+
+        fallbackCopy(lastStudentUrl);
     });
 
-    // Auto-check on load
-    if (isLocalhost) {
-        setTimeout(function() { callHelper('status', 'GET', 'Vérification initiale', 'btn-check-status'); }, 500);
-    } else {
-        document.getElementById('helper-status-content').innerHTML =
-            '<div class="alert"><strong>Helper non accessible</strong> depuis l\'URL LAN. Ouvre localhost:8010.</div>';
-        document.getElementById('helper-not-found').hidden = false;
-    }
+    resetAllButtons();
+    callHelper('status', 'GET', 'Initialisation', 'btn-check-status');
 })();
 </script>
 {% endblock %}

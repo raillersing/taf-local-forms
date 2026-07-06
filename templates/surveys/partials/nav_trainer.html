@@ -1,24 +1,24 @@
-<nav class="nav-bar shell-primary-nav" id="instructor-nav" aria-label="Navigation formateur">
-    <div class="container shell-nav-inner shell-nav-inner-trainer">
+<nav class="nav-bar shell-primary-nav p6-nav" id="instructor-nav" aria-label="Navigation formateur">
+    <div class="container shell-nav-inner shell-nav-inner-trainer p6-nav-inner">
         <ul class="nav-list">
             <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_home' %}active{% endif %}">
-                <a href="{% url 'surveys:dashboard_home' %}">Cockpit</a>
+                <a href="{% url 'surveys:dashboard_home' %}"><span class="p6-nav-emoji" aria-hidden="true">🏠</span>Cockpit</a>
             </li>
             <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_projection' %}active{% endif %}">
-                <a href="{% url 'surveys:dashboard_projection' %}">Projection</a>
+                <a href="{% url 'surveys:dashboard_projection' %}"><span class="p6-nav-emoji" aria-hidden="true">📺</span>Projection</a>
             </li>
             <li class="nav-item {% if request.resolver_match and 'dashboard_module' in request.resolver_match.view_name %}active{% endif %}">
-                <a href="{% url 'surveys:dashboard_home' %}#modules">Modules</a>
+                <a href="{% url 'surveys:dashboard_home' %}#modules"><span class="p6-nav-emoji" aria-hidden="true">📊</span>Modules</a>
             </li>
             <li class="nav-item {% if request.resolver_match and 'dashboard_support' in request.resolver_match.view_name %}active{% endif %}">
-                <a href="{% url 'surveys:dashboard_supports' %}">Supports</a>
+                <a href="{% url 'surveys:dashboard_supports' %}"><span class="p6-nav-emoji" aria-hidden="true">📚</span>Supports</a>
             </li>
             <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' or request.resolver_match.view_name == 'surveys:dashboard_network_control' or request.resolver_match.view_name == 'surveys:dashboard_settings' or request.resolver_match.view_name == 'surveys:dashboard_backup' %}active{% endif %}">
-                <a href="{% url 'surveys:dashboard_network' %}">Outils</a>
+                <a href="{% url 'surveys:dashboard_network' %}"><span class="p6-nav-emoji" aria-hidden="true">🧰</span>Outils</a>
             </li>
         </ul>
         <details class="shell-tools-menu" {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' or request.resolver_match.view_name == 'surveys:dashboard_network_control' or request.resolver_match.view_name == 'surveys:dashboard_settings' or request.resolver_match.view_name == 'surveys:dashboard_backup' %}open{% endif %}>
-            <summary class="shell-tools-summary">Outils</summary>
+            <summary class="shell-tools-summary"><span class="p6-nav-emoji" aria-hidden="true">🧰</span>Outils</summary>
             <div class="shell-tools-panel" aria-label="Accès secondaires formateur">
                 <a class="shell-tools-link" href="{% url 'surveys:dashboard_network' %}">Réseau</a>
                 <a class="shell-tools-link" href="{% url 'surveys:dashboard_network_control' %}">Contrôle LAN</a>

@@ -1,121 +1,101 @@
 {% extends "base.html" %}
 
 {% block title %}TAfHSSiM — Accueil{% endblock %}
-{% block hero_title %}Formation numérique locale pour la classe{% endblock %}
-{% block hero_text %}Un shell plus clair pour entrer rapidement dans l’espace étudiant, piloter la séance côté formateur et retrouver les supports utiles sans changer la logique métier.{% endblock %}
-
 {% block page_header %}{% endblock %}
 
-{% block hero_actions %}
-<div class="shell-hero-actions">
-    <a class="taf-button taf-button-primary taf-button-lg" href="{% url 'surveys:student_modules' %}">Entrer côté étudiant</a>
-    <a class="taf-button taf-button-secondary taf-button-lg" href="{% url 'surveys:dashboard_home' %}">Ouvrir le cockpit formateur</a>
-</div>
-{% endblock %}
-
-{% block hero_meta %}
-<div class="shell-aside-card">
-    <p class="shell-aside-title">Séance locale</p>
-    <ul class="shell-meta-list">
-        <li>Fonctionne sur le laptop du formateur</li>
-        <li>Navigation mobile plus lisible pour les élèves</li>
-        <li>Aucune donnée envoyée hors de la salle de classe</li>
-    </ul>
-</div>
-{% endblock %}
-
 {% block content %}
-<main id="content" class="content-grid content-grid-home">
-    <section class="hero home-hero-prototype" aria-labelledby="landing-heading">
-        <article class="hero-card">
-            <span class="eyebrow">Formation numérique locale</span>
+<main id="content" class="content-grid content-grid-home p6-home-page">
+    <section class="hero p6-hero" aria-labelledby="landing-heading">
+        <article class="hero-card p6-card p6-hero-card">
+            <span class="eyebrow">🌱 Formation numérique locale</span>
             <h1 id="landing-heading">Bienvenue sur TAf Local Forms</h1>
-            <p class="lead">Une interface simple pour répondre aux modules, consulter les supports et piloter la séance sans dépendre d’Internet public.</p>
-            <div class="hero-actions">
-                <a class="btn btn-primary btn-lg" href="{% url 'surveys:student_modules' %}">Entrer côté étudiant</a>
-                <a class="btn btn-secondary btn-lg" href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a>
+            <p class="lead">Une interface simple pour répondre aux modules, consulter les supports et apprendre en salle sans dépendre d'Internet public.</p>
+            <div class="hero-actions p6-actions">
+                <a class="btn btn-primary btn-lg p6-button" href="{% url 'surveys:student_modules' %}">📚 Voir les modules</a>
+                <a class="btn btn-secondary btn-lg p6-button" href="{% url 'surveys:support_list' %}">🎒 Voir les supports</a>
             </div>
         </article>
 
-        <aside class="panel landing-session-panel">
+        <aside class="panel p6-card landing-session-panel">
             <div class="panel-title">
-                <h2>Séance locale</h2>
-                <span class="pill ok">Prête</span>
+                <h2>Séance en cours</h2>
+                <span class="pill ok p6-badge p6-badge-soft">Ouverte</span>
             </div>
-            <div class="stat-grid">
-                <div class="stat-card"><strong>7</strong><span>modules disponibles</span></div>
-                <div class="stat-card"><strong>2</strong><span>espaces distincts</span></div>
+            <div class="stat-grid p6-stats">
+                <div class="stat-card"><strong>7</strong><span>Modules disponibles</span></div>
+                <div class="stat-card"><strong>2</strong><span>Espaces distincts</span></div>
                 <div class="stat-card"><strong>0</strong><span>CDN au runtime</span></div>
-                <div class="stat-card"><strong>100%</strong><span>local en classe</span></div>
+                <div class="stat-card"><strong>100%</strong><span>Local en classe</span></div>
             </div>
             <div class="alert alert-info landing-url-alert">
                 <span>ℹ️</span>
                 <div>
-                    <strong>Accès élèves</strong>
-                    <p class="text-sm">Le formateur partage ensuite l’URL locale ou le QR code depuis le cockpit.</p>
+                    <strong>URL élèves</strong>
+                    <p class="text-sm">Le formateur partage ensuite l'URL locale ou le QR code depuis le cockpit.</p>
                 </div>
             </div>
-            <p class="footer-note">Les élèves voient uniquement modules, supports et repères. Les outils réseau restent séparés.</p>
+            <div class="footer-note">Aucun compte élève requis. Les outils réseau et d'administration restent séparés du parcours public.</div>
         </aside>
     </section>
 
-    <section class="grid cols-3 landing-entry-grid" aria-label="Entrées principales">
-        <article class="card landing-entry-card">
+    <section class="grid cols-3 p6-grid landing-entry-grid" aria-label="Entrées principales">
+        <article class="card p6-card landing-entry-card">
             <div class="card-body">
-                <span class="badge badge-info">Espace étudiant</span>
-                <h2>Apprendre, répondre, consulter</h2>
-                <p class="text-secondary">Accède rapidement aux modules ouverts, aux consignes et aux supports publiés sur smartphone.</p>
-                <a class="btn btn-primary" href="{% url 'surveys:student_modules' %}">Voir les modules</a>
+                <span class="badge badge-info p6-badge">Espace étudiant</span>
+                <h2 class="mb-2">📚 Répondre</h2>
+                <p class="text-secondary mb-4">Accéder aux modules 2 à 8 avec consignes courtes, badges lisibles et boutons larges.</p>
+                <a class="btn btn-primary p6-button" href="{% url 'surveys:student_modules' %}">Voir les modules</a>
             </div>
         </article>
-        <article class="card landing-entry-card">
+        <article class="card p6-card landing-entry-card">
             <div class="card-body">
-                <span class="badge badge-neutral">Supports</span>
-                <h2>Réviser après la séance</h2>
-                <p class="text-secondary">Documents et vidéos locaux disponibles sans exposer les brouillons ni l’administration.</p>
-                <a class="btn btn-secondary" href="{% url 'surveys:support_list' %}">Voir les supports</a>
+                <h2 class="mb-2">🎒 Réviser</h2>
+                <p class="text-secondary mb-4">Consulter documents et vidéos publiés par le formateur sur le réseau local de la classe.</p>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
             </div>
         </article>
-        <article id="espace-formateur" class="card landing-entry-card">
+        <article id="espace-formateur" class="card p6-card landing-entry-card">
             <div class="card-body">
-                <span class="badge badge-success">Espace formateur</span>
-                <h2>Piloter la séance</h2>
-                <p class="text-secondary">Projection, réseau, modules, exports et sauvegarde restent regroupés dans un espace protégé.</p>
-                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_home' %}">Ouvrir le cockpit formateur</a>
+                <span class="badge badge-success p6-badge">Espace formateur</span>
+                <h2 class="mb-2">🏫 Futur scolaire</h2>
+                <p class="text-secondary mb-4">Préparer la suite avec une médiathèque qui pourra un jour se classer par matière, niveau et chapitre.</p>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a>
             </div>
         </article>
     </section>
 
-    <section id="reperes" class="card home-steps-card" aria-labelledby="how-it-works-heading">
-        <div class="panel-title">
-            <h2 id="how-it-works-heading">Repères de séance</h2>
-            <span class="pill">Usage terrain</span>
-        </div>
-        <div class="steps">
-            <article class="step"><strong>1. Préparer</strong><span class="text-secondary">Le formateur vérifie réseau, projection et module actif.</span></article>
-            <article class="step"><strong>2. Répondre</strong><span class="text-secondary">Les élèves ouvrent les modules indiqués avec une navigation simple.</span></article>
-            <article class="step"><strong>3. Réviser</strong><span class="text-secondary">Les supports publiés restent accessibles sans lien technique.</span></article>
+    <section id="reperes" class="card p6-card home-steps-card" aria-labelledby="how-it-works-heading">
+        <div class="card-body">
+            <div class="panel-title">
+                <h2 id="how-it-works-heading">Repères de séance</h2>
+                <span class="pill p6-badge p6-badge-soft">Usage terrain</span>
+            </div>
+            <div class="steps">
+                <article class="step"><strong>1. Préparer</strong><span class="text-secondary">Le formateur vérifie réseau, projection et module actif.</span></article>
+                <article class="step"><strong>2. Répondre</strong><span class="text-secondary">Les élèves ouvrent les modules indiqués avec une navigation simple.</span></article>
+                <article class="step"><strong>3. Réviser</strong><span class="text-secondary">Les supports publiés restent accessibles sans lien technique.</span></article>
+            </div>
         </div>
     </section>
 
-    <section id="le-projet" class="grid cols-2 home-about-grid" aria-labelledby="about-heading">
-        <article class="card">
+    <section id="le-projet" class="grid cols-2 p6-grid home-about-grid" aria-labelledby="about-heading">
+        <article class="card p6-card">
             <div class="card-body">
-                <span class="badge badge-info">Le projet</span>
+                <span class="badge badge-info p6-badge">Le projet</span>
                 <h2 id="about-heading">À propos du projet TAfHSSiM</h2>
                 <p><strong>TAfHSSiM</strong> est une application locale de formation au numérique pour les lycéens à Madagascar.</p>
-                <p class="text-secondary">Elle tourne sur le laptop du formateur. Les élèves rejoignent le même Wi-Fi ou hotspot pour utiliser l’application pendant la séance.</p>
+                <p class="text-secondary">Elle tourne sur le laptop du formateur. Les élèves rejoignent le même Wi-Fi ou hotspot pour utiliser l'application pendant la séance.</p>
             </div>
         </article>
-        <article class="card">
+        <article class="card p6-card">
             <div class="card-body">
-                <span class="badge badge-neutral">Prototype 6</span>
-                <h2>Ce que cette refonte change</h2>
-                <ul class="steps">
-                    <li class="step"><strong>Header compact</strong><span class="text-secondary">Moins de narration en haut, plus de lisibilité immédiate.</span></li>
-                    <li class="step"><strong>Cartes plus serrées</strong><span class="text-secondary">Entrées, modules et dashboard plus proches du prototype.</span></li>
-                    <li class="step"><strong>Navigation clarifiée</strong><span class="text-secondary">Public, étudiant et formateur restent séparés sans dérive fonctionnelle.</span></li>
-                </ul>
+                <span class="badge badge-neutral p6-badge">Prototype 6</span>
+                <h2>Ce que cette version reprend</h2>
+                <div class="steps">
+                    <div class="step"><strong>Hero en deux zones</strong><span class="text-secondary">Bienvenue et séance en cours comme dans le prototype.</span></div>
+                    <div class="step"><strong>Trois cartes d'entrée</strong><span class="text-secondary">Répondre, réviser, futur scolaire avec même rythme visuel.</span></div>
+                    <div class="step"><strong>Header et nav clairs</strong><span class="text-secondary">Hiérarchie compacte et largeur proche du prototype réel.</span></div>
+                </div>
             </div>
         </article>
     </section>

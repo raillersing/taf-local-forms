@@ -2,15 +2,14 @@
 {% load static %}
 
 {% block title %}Cockpit formateur — Tableau de bord{% endblock %}
-{% block hero_title %}Cockpit formateur{% endblock %}
-{% block hero_text %}Ouvre les modules, partage l'accès élèves et projette l'URL locale sans changer la logique métier.{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-page">
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Cockpit" %}
 
@@ -25,59 +24,54 @@
         <a href="#advanced" class="sub-nav-link">Outils</a>
     </nav>
 
-    <section id="overview" class="panel dashboard-hero-panel">
-        <div class="panel-title">
-            <div>
-                <h2>Vue séance</h2>
-                <p class="text-secondary">Le cockpit regroupe les actions terrain utiles pour préparer, lancer et clôturer la séance sans changer la logique métier.</p>
-            </div>
-            <a class="btn btn-primary" href="{% url 'surveys:dashboard_projection' %}">Mode projection</a>
+    <section id="overview" class="p6-section-head p6-dashboard-head">
+        <div>
+            <h1>Bonjour, Formateur</h1>
+            <p class="text-secondary">Vue terrain pour démarrer, surveiller, exporter et sauvegarder sans changer la logique métier.</p>
         </div>
-
-        <div class="kpi-grid cols-4">
-            <article class="kpi-card"><div class="kpi-label">Total réponses</div><div class="kpi-value">{{ total_submissions }}</div></article>
-            <article class="kpi-card"><div class="kpi-label">Total élèves</div><div class="kpi-value">{{ total_students }}</div></article>
-            <article class="kpi-card"><div class="kpi-label">Score moyen</div><div class="kpi-value">{{ average_score|floatformat:1 }}/5</div></article>
-            <article class="kpi-card"><div class="kpi-label">Modules ouverts</div><div class="kpi-value">{{ modules_open }}/{{ module_list|length }}</div></article>
-            <article class="kpi-card"><div class="kpi-label">Supports publiés</div><div class="kpi-value">{{ published_resources_count }}</div></article>
-        </div>
-
-        <div class="grid cols-3 cockpit-action-grid">
-            <article class="card" id="before-session">
-                <div class="card-body">
-                    <span class="badge badge-info">Avant</span>
-                    <h3>Préparer l'accès de la classe</h3>
-                    <p class="text-secondary">Vérifier le réseau local, la projection et les supports publiés.</p>
-                    <a class="btn btn-secondary btn-sm" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet</a>
-                </div>
-            </article>
-            <article class="card" id="during-session">
-                <div class="card-body">
-                    <span class="badge badge-success">Pendant</span>
-                    <h3>Piloter modules, présence et accès élèves</h3>
-                    <p class="text-secondary">{{ modules_open }}/{{ module_list|length }} modules acceptent des réponses en ce moment.</p>
-                    <a class="btn btn-primary btn-sm" href="#modules">Voir les modules</a>
-                </div>
-            </article>
-            <article class="card" id="after-session">
-                <div class="card-body">
-                    <span class="badge badge-neutral">Après</span>
-                    <h3>Exporter, sauvegarder et clôturer proprement</h3>
-                    <p class="text-secondary">Exports CSV, sauvegarde et outils de fin de séance restent disponibles plus bas.</p>
-                    <a class="btn btn-secondary btn-sm" href="{% url 'surveys:dashboard_backup' %}">Ouvrir la sauvegarde</a>
-                </div>
-            </article>
-        </div>
+        <a class="btn btn-primary p6-button" href="{% url 'surveys:dashboard_projection' %}">📺 Ouvrir la projection</a>
     </section>
 
-    <section id="access" class="split cockpit-access-split">
-        <article class="panel student-access-panel" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
+    <section class="kpi-grid cols-4 p6-stats">
+        <article class="kpi-card p6-card"><div class="kpi-label">Total réponses</div><div class="kpi-value">{{ total_submissions }}</div></article>
+        <article class="kpi-card p6-card"><div class="kpi-label">Total élèves</div><div class="kpi-value">{{ total_students }}</div></article>
+        <article class="kpi-card p6-card"><div class="kpi-label">Score moyen</div><div class="kpi-value">{{ average_score|floatformat:1 }}/5</div></article>
+        <article class="kpi-card p6-card"><div class="kpi-label">Modules ouverts</div><div class="kpi-value">{{ modules_open }}/{{ module_list|length }}</div></article>
+        <article class="kpi-card p6-card"><div class="kpi-label">Supports publiés</div><div class="kpi-value">{{ published_resources_count }}</div></article>
+    </section>
+
+    <section class="grid cols-3 p6-grid p6-dashboard-quick">
+        <article class="card p6-card" id="before-session">
+            <div class="card-body">
+                <h2>🌐 Accès élèves</h2>
+                <p class="text-secondary mb-4">Préparer l'accès de la classe avec réseau, QR code et projection.</p>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet</a>
+            </div>
+        </article>
+        <article class="card p6-card" id="during-session">
+            <div class="card-body">
+                <h2>📊 Session active</h2>
+                <p class="text-secondary mb-4">Piloter modules, présence et accès élèves pendant la séance.</p>
+                <a class="btn btn-primary p6-button" href="#modules">Voir les modules</a>
+            </div>
+        </article>
+        <article class="card p6-card" id="after-session">
+            <div class="card-body">
+                <h2>💾 Après séance</h2>
+                <p class="text-secondary mb-4">Exporter, sauvegarder et clôturer proprement en fin d'atelier.</p>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_backup' %}">Ouvrir la sauvegarde</a>
+            </div>
+        </article>
+    </section>
+
+    <section class="split cockpit-access-split p6-split">
+        <article class="panel p6-card student-access-panel" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
             <div class="panel-title">
                 <div>
-                    <h2>Accès élèves</h2>
-                    <p class="text-secondary">Partage uniquement l’URL publique élèves. Les liens formateur restent protégés.</p>
+                    <h2>URL pour les élèves</h2>
+                    <p class="text-secondary">Partage uniquement l'accès public. Les liens formateur restent protégés.</p>
                 </div>
-                <span class="pill{% if student_access_ready %} ok{% endif %}">{% if student_access_ready %}Prêt{% else %}À vérifier{% endif %}</span>
+                <span class="pill{% if student_access_ready %} ok{% endif %} p6-badge p6-badge-soft">{% if student_access_ready %}Prêt{% else %}À vérifier{% endif %}</span>
             </div>
             {% if student_access_ready %}
             <p class="student-access-url">{{ student_access_url }}</p>
@@ -98,18 +92,18 @@
             {% if network.lan_host_stale %}
             <div class="taf-alert taf-alert-warning">L'IP configurée diffère de l'adresse actuelle. Mets à jour la configuration dans Réseau local.</div>
             {% endif %}
-            <div class="hero-actions">
-                <button type="button" class="btn btn-primary" data-copy-url {% if not student_access_ready %}disabled{% endif %}>Copier l'URL élèves</button>
-                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_projection' %}">Ouvrir la projection</a>
-                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_network' %}">Voir le réseau</a>
+            <div class="hero-actions p6-actions">
+                <button type="button" class="btn btn-primary p6-button" data-copy-url {% if not student_access_ready %}disabled{% endif %}>Copier l'URL élèves</button>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_projection' %}">Projection</a>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_network' %}">Réseau</a>
             </div>
             <p class="student-access-feedback" data-copy-feedback aria-live="polite"></p>
         </article>
 
-        <aside class="panel student-qr-panel">
+        <aside class="panel p6-card student-qr-panel">
             <div class="panel-title">
                 <h2>QR code local</h2>
-                <span class="pill">Scan</span>
+                <span class="pill p6-badge p6-badge-soft">Scan</span>
             </div>
             <div class="student-qr-shell">
                 <div class="student-qr-code" data-qr-target aria-label="QR code de l'accès élèves"></div>
@@ -122,27 +116,27 @@
         </aside>
     </section>
 
-    <section id="modules" class="panel">
+    <section id="modules" class="panel p6-card">
         <div class="panel-title">
             <div>
                 <h2>Modules de formation</h2>
                 <p class="text-secondary">Active ou désactive les réponses et ouvre les dashboards existants sans changer les routes.</p>
             </div>
-            <span class="pill ok">{{ module_list|length }} modules suivis</span>
+            <span class="pill ok p6-badge p6-badge-soft">{{ module_list|length }} modules suivis</span>
         </div>
-        <div class="module-grid">
+        <div class="module-grid p6-grid">
             {% for item in module_list %}
-            <article class="module-card">
+            <article class="module-card p6-card">
                 <div class="module-number">{{ item.module.code|slice:"7:" }}</div>
                 <div class="tag-list">
                     {% if item.has_active_session %}
                         {% if item.accepting_responses %}
-                        <span class="badge badge-success">Réponses ouvertes</span>
+                        <span class="badge badge-success p6-badge">Réponses ouvertes</span>
                         {% else %}
-                        <span class="badge badge-warning">Réponses fermées</span>
+                        <span class="badge badge-warning p6-badge">Réponses fermées</span>
                         {% endif %}
                     {% else %}
-                    <span class="badge badge-neutral">Aucune session</span>
+                    <span class="badge badge-neutral p6-badge">Aucune session</span>
                     {% endif %}
                 </div>
                 <h3 class="module-title">{{ item.module.title }}</h3>
@@ -173,41 +167,14 @@
         </div>
     </section>
 
-    <section class="grid cols-3 cockpit-phase-summary">
-        <article class="card">
-            <div class="card-body">
-                <span class="badge badge-info">Avant la séance</span>
-                <h3>Projection et réseau</h3>
-                <p class="text-secondary">Grande URL, QR local et accès LAN prêts avant l’arrivée des élèves.</p>
-                <a class="btn btn-secondary btn-sm" href="{% url 'surveys:dashboard_projection' %}">Ouvrir la projection</a>
-            </div>
-        </article>
-        <article class="card">
-            <div class="card-body">
-                <span class="badge badge-success">Pendant la séance</span>
-                <h3>Présence et modules</h3>
-                <p class="text-secondary">Compteur indicatif en direct et bascule rapide des réponses par module.</p>
-                <a class="btn btn-primary btn-sm" href="#presence">Suivre la présence</a>
-            </div>
-        </article>
-        <article class="card">
-            <div class="card-body">
-                <span class="badge badge-neutral">Après la séance</span>
-                <h3>Exports et sauvegarde</h3>
-                <p class="text-secondary">Télécharge les CSV et ouvre la procédure de sauvegarde sans commandes destructives.</p>
-                <a class="btn btn-secondary btn-sm" href="{% url 'surveys:dashboard_backup' %}">Voir la sauvegarde</a>
-            </div>
-        </article>
-    </section>
-
-    <section class="split cockpit-monitor-split">
-        <article id="presence" class="panel">
+    <section class="split cockpit-monitor-split p6-split">
+        <article id="presence" class="panel p6-card">
             <div class="panel-title">
                 <div>
                     <h2>Présence en direct</h2>
                     <p class="text-secondary">Compteur indicatif des élèves encore actifs sur les questionnaires. Mise à jour toutes les 15 secondes.</p>
                 </div>
-                <span class="pill">Live</span>
+                <span class="pill p6-badge p6-badge-soft">Live</span>
             </div>
             <div id="presence-container" class="presence-grid">
                 <div class="presence-counter"><span class="presence-dot"></span><span>Module 2 :</span><span class="presence-count" id="presence-module-2">…</span></div>
@@ -221,42 +188,42 @@
             </div>
         </article>
 
-        <article id="exports" class="panel">
+        <article id="exports" class="panel p6-card">
             <div class="panel-title">
                 <div>
                     <h2>Exports CSV</h2>
                     <p class="text-secondary">Télécharge les résultats module par module au format tableur.</p>
                 </div>
-                <span class="pill">UTF-8</span>
+                <span class="pill p6-badge p6-badge-soft">UTF-8</span>
             </div>
             <div class="cockpit-links-grid">
-                <a class="tool-card" href="{% url 'surveys:export_module_2_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 2</strong></a>
-                <a class="tool-card" href="{% url 'surveys:export_module_3_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 3</strong></a>
-                <a class="tool-card" href="{% url 'surveys:export_module_4_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 4</strong></a>
-                <a class="tool-card" href="{% url 'surveys:export_module_5_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 5</strong></a>
-                <a class="tool-card" href="{% url 'surveys:export_module_6_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 6</strong></a>
-                <a class="tool-card" href="{% url 'surveys:export_module_7_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 7</strong></a>
-                <a class="tool-card" href="{% url 'surveys:export_module_8_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 8</strong></a>
+                <a class="tool-card p6-card" href="{% url 'surveys:export_module_2_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 2</strong></a>
+                <a class="tool-card p6-card" href="{% url 'surveys:export_module_3_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 3</strong></a>
+                <a class="tool-card p6-card" href="{% url 'surveys:export_module_4_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 4</strong></a>
+                <a class="tool-card p6-card" href="{% url 'surveys:export_module_5_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 5</strong></a>
+                <a class="tool-card p6-card" href="{% url 'surveys:export_module_6_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 6</strong></a>
+                <a class="tool-card p6-card" href="{% url 'surveys:export_module_7_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 7</strong></a>
+                <a class="tool-card p6-card" href="{% url 'surveys:export_module_8_csv' %}" target="_blank" rel="noopener noreferrer"><strong>Export Module 8</strong></a>
             </div>
         </article>
     </section>
 
-    <section id="advanced" class="panel">
+    <section id="advanced" class="panel p6-card">
         <div class="panel-title">
             <div>
                 <h2>Outils formateur</h2>
                 <p class="text-secondary">Configuration avancée, réseau local, supports et aide terrain.</p>
             </div>
-            <span class="pill">Secondaire</span>
+            <span class="pill p6-badge p6-badge-soft">Secondaire</span>
         </div>
         <div class="tools-grid">
-            <a class="tool-card" href="{% url 'surveys:dashboard_network_control' %}"><strong>Contrôle réseau local</strong><span class="muted">Configurer, tester et copier l'accès LAN</span></a>
-            <a class="tool-card" href="{% url 'surveys:dashboard_network' %}"><strong>Accès réseau</strong><span class="muted">Adresses, diagnostic et ports utiles</span></a>
-            <a class="tool-card" href="{% url 'surveys:dashboard_settings' %}"><strong>Paramètres réseau</strong><span class="muted">IP, port et hôtes autorisés</span></a>
-            <a class="tool-card" href="{% url 'surveys:dashboard_supports' %}"><strong>Supports pédagogiques</strong><span class="muted">Ouvrir les supports publiés et les brouillons</span></a>
-            <a class="tool-card" href="{% url 'admin:index' %}"><strong>Admin avancé</strong><span class="muted">Gérer sessions, élèves et modules</span></a>
-            <a class="tool-card" href="{% url 'surveys:dashboard_backup' %}"><strong>Sauvegarde</strong><span class="muted">Conserver les commandes sûres de fin de séance</span></a>
-            <a class="tool-card" href="/docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer"><strong>Guide dépannage réseau</strong><span class="muted">Wi-Fi, WSL, pare-feu et téléphone</span></a>
+            <a class="tool-card p6-card" href="{% url 'surveys:dashboard_network_control' %}"><strong>Contrôle réseau local</strong><span class="muted">Configurer, tester et copier l'accès LAN</span></a>
+            <a class="tool-card p6-card" href="{% url 'surveys:dashboard_network' %}"><strong>Accès réseau</strong><span class="muted">Adresses, diagnostic et ports utiles</span></a>
+            <a class="tool-card p6-card" href="{% url 'surveys:dashboard_settings' %}"><strong>Paramètres réseau</strong><span class="muted">IP, port et hôtes autorisés</span></a>
+            <a class="tool-card p6-card" href="{% url 'surveys:dashboard_supports' %}"><strong>Supports pédagogiques</strong><span class="muted">Ouvrir les supports publiés et les brouillons</span></a>
+            <a class="tool-card p6-card" href="{% url 'admin:index' %}"><strong>Admin avancé</strong><span class="muted">Gérer sessions, élèves et modules</span></a>
+            <a class="tool-card p6-card" href="{% url 'surveys:dashboard_backup' %}"><strong>Sauvegarde</strong><span class="muted">Conserver les commandes sûres de fin de séance</span></a>
+            <a class="tool-card p6-card" href="/docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer"><strong>Guide dépannage réseau</strong><span class="muted">Wi-Fi, WSL, pare-feu et téléphone</span></a>
         </div>
     </section>
 </main>

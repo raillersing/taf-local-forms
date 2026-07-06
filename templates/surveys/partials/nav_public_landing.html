@@ -1,20 +1,20 @@
-<nav class="nav-bar shell-primary-nav" id="public-nav" aria-label="Navigation publique">
-    <div class="container shell-nav-inner shell-nav-inner-light">
+<nav class="nav-bar shell-primary-nav p6-nav" id="public-nav" aria-label="Navigation publique">
+    <div class="container shell-nav-inner shell-nav-inner-light p6-nav-inner">
         <ul class="nav-list">
             <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
-                <a href="{% url 'surveys:home' %}">Accueil</a>
+                <a href="{% url 'surveys:home' %}"><span class="p6-nav-emoji" aria-hidden="true">🏠</span>Accueil</a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'surveys:home' %}#le-projet">Le projet</a>
+                <a href="{% url 'surveys:home' %}#le-projet"><span class="p6-nav-emoji" aria-hidden="true">ℹ️</span>Le projet</a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'surveys:student_modules' %}">Modules</a>
+                <a href="{% url 'surveys:student_modules' %}"><span class="p6-nav-emoji" aria-hidden="true">📚</span>Modules</a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'surveys:support_list' %}">Supports</a>
+                <a href="{% url 'surveys:support_list' %}"><span class="p6-nav-emoji" aria-hidden="true">🎒</span>Supports</a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a>
+                <a href="{% url 'surveys:dashboard_home' %}"><span class="p6-nav-emoji" aria-hidden="true">🎛️</span>Cockpit formateur</a>
             </li>
         </ul>
     </div>
