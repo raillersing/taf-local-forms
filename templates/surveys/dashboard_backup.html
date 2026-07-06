@@ -10,12 +10,12 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-backup-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Sauvegarde" %}
 
     <!-- Base de données active -->
-    <section class="panel" aria-labelledby="db-heading">
+    <section class="panel p6-card" aria-labelledby="db-heading">
         <div class="panel-title">
             <h2 id="db-heading">Base de données active</h2>
             <span class="pill">Diagnostic</span>
@@ -44,7 +44,7 @@
     </section>
 
     <!-- Sauvegarde -->
-    <section class="panel" aria-labelledby="backup-heading">
+    <section class="panel p6-card" aria-labelledby="backup-heading">
         <div class="panel-title">
             <h2 id="backup-heading">Sauvegarder les données</h2>
             <span class="pill warn">Prudence</span>
@@ -68,7 +68,7 @@
     </section>
 
     <!-- Volumes -->
-    <section class="panel" aria-labelledby="volumes-heading">
+    <section class="panel p6-card" aria-labelledby="volumes-heading">
         <div class="panel-title">
             <h2 id="volumes-heading">Volumes Docker</h2>
             <span class="pill">À préserver</span>
@@ -97,7 +97,7 @@
     </section>
 
     <!-- Liens utiles -->
-    <section class="panel" aria-labelledby="links-heading">
+    <section class="panel p6-card" aria-labelledby="links-heading">
         <div class="panel-title">
             <h2 id="links-heading">Liens utiles</h2>
             <span class="pill">Navigation</span>

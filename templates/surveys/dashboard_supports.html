@@ -9,11 +9,11 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-supports-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Supports" %}
 
-    <section class="panel">
+    <section class="panel p6-card">
         <div class="panel-title">
             <h2>Catalogue formateur des supports</h2>
             <div class="dashboard-support-actions">
@@ -32,7 +32,7 @@
     </section>
 
     {% if resources %}
-    <section class="panel">
+    <section class="panel p6-card">
         <div class="taf-table-wrap">
             <table class="taf-table">
                 <thead>

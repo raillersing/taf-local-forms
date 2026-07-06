@@ -24,7 +24,7 @@
         <a href="#advanced" class="sub-nav-link">Outils</a>
     </nav>
 
-    <section id="overview" class="p6-section-head p6-dashboard-head">
+    <section id="overview" class="p6-section-head p6-dashboard-head dashboard-hero">
         <div>
             <h1>Bonjour, Formateur</h1>
             <p class="text-secondary">Vue terrain pour démarrer, surveiller, exporter et sauvegarder sans changer la logique métier.</p>
@@ -40,7 +40,7 @@
         <article class="kpi-card p6-card"><div class="kpi-label">Supports publiés</div><div class="kpi-value">{{ published_resources_count }}</div></article>
     </section>
 
-    <section class="grid cols-3 p6-grid p6-dashboard-quick">
+    <section class="grid cols-3 p6-grid p6-dashboard-quick dashboard-quick-grid">
         <article class="card p6-card" id="before-session">
             <div class="card-body">
                 <h2>🌐 Accès élèves</h2>
@@ -64,7 +64,7 @@
         </article>
     </section>
 
-    <section class="split cockpit-access-split p6-split">
+    <section class="split cockpit-access-split p6-split dashboard-access-split">
         <article class="panel p6-card student-access-panel" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
             <div class="panel-title">
                 <div>
@@ -116,7 +116,7 @@
         </aside>
     </section>
 
-    <section id="modules" class="panel p6-card">
+    <section id="modules" class="panel p6-card dashboard-module-panel">
         <div class="panel-title">
             <div>
                 <h2>Modules de formation</h2>
@@ -167,7 +167,7 @@
         </div>
     </section>
 
-    <section class="split cockpit-monitor-split p6-split">
+    <section class="split cockpit-monitor-split p6-split dashboard-monitor-split">
         <article id="presence" class="panel p6-card">
             <div class="panel-title">
                 <div>
@@ -208,7 +208,7 @@
         </article>
     </section>
 
-    <section id="advanced" class="panel p6-card">
+    <section id="advanced" class="panel p6-card dashboard-tools-panel">
         <div class="panel-title">
             <div>
                 <h2>Outils formateur</h2>

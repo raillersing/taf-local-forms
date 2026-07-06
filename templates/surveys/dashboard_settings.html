@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-settings-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Paramètres réseau" %}
 
@@ -52,7 +52,7 @@
     </div>
     {% endif %}
 
-    <section class="card">
+    <section class="card p6-card">
         <h2>Champs modifiables</h2>
         <p class="muted">Modifie une valeur ci-dessous, puis clique sur Enregistrer.</p>
         <div class="settings-grid">
@@ -102,7 +102,7 @@
         </div>
     </section>
 
-    <section class="card">
+    <section class="card p6-card">
         <h2>Informations (lecture seule)</h2>
         <dl class="setting-list">
             {% for key, value in settings.readonly.items %}

@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-network-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Réseau local" %}
 
@@ -26,7 +26,7 @@
     {% endif %}
 
     <section class="split network-hero-split">
-        <article class="panel">
+        <article class="panel p6-card">
             <div class="panel-title">
                 <div>
                     <h2>Adresse recommandée</h2>
@@ -54,7 +54,7 @@
             <p class="text-secondary">L’adresse <code>localhost</code> ne fonctionne que sur cet ordinateur formateur.</p>
         </article>
 
-        <aside class="panel{% if not configured_host and not current_request_is_lan %} alert-warning{% endif %}">
+        <aside class="panel p6-card{% if not configured_host and not current_request_is_lan %} alert-warning{% endif %}">
             <div class="panel-title">
                 <div>
                     <h2>État réseau</h2>
@@ -124,7 +124,7 @@
         </article>
     </section>
 
-    <section class="panel">
+    <section class="panel p6-card">
         <div class="panel-title">
             <h2>Configuration actuelle</h2>
             <span class="pill">Lecture</span>
@@ -161,7 +161,7 @@
     </section>
 
     {% if warnings %}
-    <section class="panel">
+    <section class="panel p6-card">
         <div class="panel-title">
             <h2>Avertissements</h2>
             <span class="pill warn">Attention</span>

@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-support-upload-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% url 'surveys:dashboard_supports' as dashboard_supports_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Supports" crumb_2_url=dashboard_supports_url current_label="Déposer un support" %}

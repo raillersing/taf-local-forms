@@ -7,12 +7,26 @@
 <main id="content" class="content-grid content-grid-home p6-home-page">
     <section class="hero p6-hero" aria-labelledby="landing-heading">
         <article class="hero-card p6-card p6-hero-card">
-            <span class="eyebrow">🌱 Formation numérique locale</span>
+            <span class="eyebrow">Formation numérique locale</span>
             <h1 id="landing-heading">Bienvenue sur TAf Local Forms</h1>
-            <p class="lead">Une interface simple pour répondre aux modules, consulter les supports et apprendre en salle sans dépendre d'Internet public.</p>
+            <p class="lead">Répondre aux modules, réviser avec les supports et accéder au cockpit formateur dans une interface locale pensée pour la salle de classe.</p>
+            <div class="landing-hero-kpis">
+                <div class="landing-hero-kpi">
+                    <strong>7</strong>
+                    <span>modules prêts</span>
+                </div>
+                <div class="landing-hero-kpi">
+                    <strong>100%</strong>
+                    <span>usage local</span>
+                </div>
+                <div class="landing-hero-kpi">
+                    <strong>2</strong>
+                    <span>parcours séparés</span>
+                </div>
+            </div>
             <div class="hero-actions p6-actions">
-                <a class="btn btn-primary btn-lg p6-button" href="{% url 'surveys:student_modules' %}">📚 Voir les modules</a>
-                <a class="btn btn-secondary btn-lg p6-button" href="{% url 'surveys:support_list' %}">🎒 Voir les supports</a>
+                <a class="btn btn-primary btn-lg p6-button" href="{% url 'surveys:student_modules' %}">Voir les modules</a>
+                <a class="btn btn-secondary btn-lg p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
             </div>
         </article>
 
@@ -24,15 +38,18 @@
             <div class="stat-grid p6-stats">
                 <div class="stat-card"><strong>7</strong><span>Modules disponibles</span></div>
                 <div class="stat-card"><strong>2</strong><span>Espaces distincts</span></div>
-                <div class="stat-card"><strong>0</strong><span>CDN au runtime</span></div>
+                <div class="stat-card"><strong>1</strong><span>Cockpit protégé</span></div>
                 <div class="stat-card"><strong>100%</strong><span>Local en classe</span></div>
             </div>
-            <div class="alert alert-info landing-url-alert">
-                <span>ℹ️</span>
-                <div>
-                    <strong>URL élèves</strong>
-                    <p class="text-sm">Le formateur partage ensuite l'URL locale ou le QR code depuis le cockpit.</p>
-                </div>
+            <div class="landing-session-stack">
+                <article class="landing-mini-card">
+                    <strong>Répondre</strong>
+                    <p>Le formateur active le module puis partage l’URL locale ou la projection.</p>
+                </article>
+                <article class="landing-mini-card">
+                    <strong>Réviser</strong>
+                    <p>Les documents et vidéos publiés restent visibles sans exposer les outils techniques.</p>
+                </article>
             </div>
             <div class="footer-note">Aucun compte élève requis. Les outils réseau et d'administration restent séparés du parcours public.</div>
         </aside>
@@ -42,14 +59,15 @@
         <article class="card p6-card landing-entry-card">
             <div class="card-body">
                 <span class="badge badge-info p6-badge">Espace étudiant</span>
-                <h2 class="mb-2">📚 Répondre</h2>
+                <h2 class="mb-2">Répondre</h2>
                 <p class="text-secondary mb-4">Accéder aux modules 2 à 8 avec consignes courtes, badges lisibles et boutons larges.</p>
                 <a class="btn btn-primary p6-button" href="{% url 'surveys:student_modules' %}">Voir les modules</a>
             </div>
         </article>
         <article class="card p6-card landing-entry-card">
             <div class="card-body">
-                <h2 class="mb-2">🎒 Réviser</h2>
+                <span class="badge badge-neutral p6-badge">Supports publiés</span>
+                <h2 class="mb-2">Réviser</h2>
                 <p class="text-secondary mb-4">Consulter documents et vidéos publiés par le formateur sur le réseau local de la classe.</p>
                 <a class="btn btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
             </div>
@@ -57,29 +75,28 @@
         <article id="espace-formateur" class="card p6-card landing-entry-card">
             <div class="card-body">
                 <span class="badge badge-success p6-badge">Espace formateur</span>
-                <h2 class="mb-2">🏫 Futur scolaire</h2>
-                <p class="text-secondary mb-4">Préparer la suite avec une médiathèque qui pourra un jour se classer par matière, niveau et chapitre.</p>
+                <h2 class="mb-2">Futur scolaire</h2>
+                <p class="text-secondary mb-4">Préparer la suite avec le cockpit, la projection, les supports et une médiathèque prête à s’enrichir.</p>
                 <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a>
             </div>
         </article>
     </section>
 
-    <section id="reperes" class="card p6-card home-steps-card" aria-labelledby="how-it-works-heading">
-        <div class="card-body">
-            <div class="panel-title">
-                <h2 id="how-it-works-heading">Repères de séance</h2>
-                <span class="pill p6-badge p6-badge-soft">Usage terrain</span>
+    <section class="grid cols-3 p6-grid home-secondary-grid">
+        <article id="reperes" class="card p6-card home-steps-card" aria-labelledby="how-it-works-heading">
+            <div class="card-body">
+                <div class="panel-title">
+                    <h2 id="how-it-works-heading">Repères de séance</h2>
+                    <span class="pill p6-badge p6-badge-soft">Usage terrain</span>
+                </div>
+                <div class="steps">
+                    <article class="step"><strong>1. Préparer</strong><span class="text-secondary">Le formateur vérifie réseau, projection et module actif.</span></article>
+                    <article class="step"><strong>2. Répondre</strong><span class="text-secondary">Les élèves ouvrent les modules indiqués avec une navigation simple.</span></article>
+                    <article class="step"><strong>3. Réviser</strong><span class="text-secondary">Les supports publiés restent accessibles sans lien technique.</span></article>
+                </div>
             </div>
-            <div class="steps">
-                <article class="step"><strong>1. Préparer</strong><span class="text-secondary">Le formateur vérifie réseau, projection et module actif.</span></article>
-                <article class="step"><strong>2. Répondre</strong><span class="text-secondary">Les élèves ouvrent les modules indiqués avec une navigation simple.</span></article>
-                <article class="step"><strong>3. Réviser</strong><span class="text-secondary">Les supports publiés restent accessibles sans lien technique.</span></article>
-            </div>
-        </div>
-    </section>
-
-    <section id="le-projet" class="grid cols-2 p6-grid home-about-grid" aria-labelledby="about-heading">
-        <article class="card p6-card">
+        </article>
+        <article id="le-projet" class="card p6-card">
             <div class="card-body">
                 <span class="badge badge-info p6-badge">Le projet</span>
                 <h2 id="about-heading">À propos du projet TAfHSSiM</h2>
@@ -94,7 +111,7 @@
                 <div class="steps">
                     <div class="step"><strong>Hero en deux zones</strong><span class="text-secondary">Bienvenue et séance en cours comme dans le prototype.</span></div>
                     <div class="step"><strong>Trois cartes d'entrée</strong><span class="text-secondary">Répondre, réviser, futur scolaire avec même rythme visuel.</span></div>
-                    <div class="step"><strong>Header et nav clairs</strong><span class="text-secondary">Hiérarchie compacte et largeur proche du prototype réel.</span></div>
+                    <div class="step"><strong>Header et nav compacts</strong><span class="text-secondary">Hiérarchie resserrée et cartes plus lisibles sur mobile.</span></div>
                 </div>
             </div>
         </article>

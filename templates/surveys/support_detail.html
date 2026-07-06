@@ -9,13 +9,13 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid support-detail-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:support_list' as support_list_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Supports" crumb_2_url=support_list_url current_label=resource.title %}
 
-    <section class="split">
-        <article class="panel resource-detail-panel">
+    <section class="split support-detail-split">
+        <article class="panel p6-card resource-detail-panel">
             <div class="tag-list">
                 <span class="badge badge-info">{% if resource.is_video %}Vidéo{% else %}{{ resource.get_resource_type_display }}{% endif %}</span>
                 {% if resource.module_number %}
@@ -57,7 +57,7 @@
             </div>
         </article>
 
-        <aside class="card">
+        <aside class="card p6-card resource-detail-aside">
             <div class="card-header"><div class="card-title">Repères</div></div>
             <div class="card-body">
                 <div class="step"><strong>Publié</strong><span class="text-secondary">{{ resource.updated_at|date:"d/m/Y" }}</span></div>

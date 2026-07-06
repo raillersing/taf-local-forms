@@ -5431,7 +5431,7 @@ class Module8RegressionTests(TestCase):
 
 
 class RedesignUITests(TestCase):
-    """Tests for F033 global UI redesign."""
+    """Tests for Prototype 6 UI redesign slices."""
 
     def setUp(self):
         call_command("seed_module2")
@@ -5487,9 +5487,21 @@ class RedesignUITests(TestCase):
 
     def test_public_navigation_uses_student_and_trainer_entry_labels(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace étudiant")
+        self.assertContains(response, "Accueil")
+        self.assertContains(response, "Le projet")
+        self.assertContains(response, "Modules")
+        self.assertContains(response, "Supports")
         self.assertContains(response, "Cockpit formateur")
         self.assertNotContains(response, "Contrôle réseau")
+
+    def test_home_contains_expected_prototype6_blocks(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "Séance en cours")
+        self.assertContains(response, "Répondre")
+        self.assertContains(response, "Réviser")
+        self.assertContains(response, "Futur scolaire")
+        self.assertContains(response, "landing-entry-grid")
+        self.assertContains(response, "home-secondary-grid")
 
     def test_student_module_links_present(self):
         response = self.client.get(reverse("surveys:student_modules"))
@@ -5528,6 +5540,21 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Sauvegarder les données")
         self.assertContains(response, "Ne jamais supprimer")
         self.assertContains(response, "Commandes interdites")
+
+    def test_supports_page_contains_filters_and_catalog_cards(self):
+        response = self.client.get(reverse("surveys:support_list"))
+        self.assertContains(response, "Filtres du catalogue")
+        self.assertContains(response, "support-filter-card")
+        if "resource-grid" not in response.content.decode():
+            self.assertContains(response, "Aucun support publié")
+
+    def test_dashboard_home_contains_kpis_actions_and_tools(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Total réponses")
+        self.assertContains(response, "URL pour les élèves")
+        self.assertContains(response, "Outils formateur")
+        self.assertContains(response, "dashboard-tools-panel")
 
     def test_dashboard_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5673,6 +5700,15 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, 'breadcrumb-shell')
         self.assertContains(response, "Cockpit")
+
+    def test_templates_and_css_keep_prototype6_shell_classes(self):
+        response = self.client.get(reverse("surveys:home"))
+        self.assertContains(response, "p6-shell")
+        self.assertContains(response, "p6-nav")
+        self.assertContains(response, "p6-card")
+        css = (Path(__file__).resolve().parent.parent / "static/css/app.css").read_text()
+        self.assertIn("@media (max-width: 980px)", css)
+        self.assertIn("@media (max-width: 640px)", css)
 
 @override_settings(ALLOWED_HOSTS=["*"], MEDIA_ROOT=Path(mkdtemp()))
 class LearningResourceViewTests(TestCase):
@@ -6168,6 +6204,7 @@ class NavigationShellTests(TestCase):
         self.assertNotContains(response, 'Admin')
         self.assertNotContains(response, 'Contrôle LAN')
         self.assertNotContains(response, 'Paramètres')
+        self.assertNotContains(response, 'Réseau')
 
     def test_trainer_nav_content(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -6180,6 +6217,8 @@ class NavigationShellTests(TestCase):
         self.assertContains(response, 'Supports')
         self.assertContains(response, 'Outils')
         self.assertContains(response, 'Réseau')
+        self.assertContains(response, 'Contrôle LAN')
+        self.assertContains(response, 'Exports')
         self.assertContains(response, 'Sauvegarde')
         self.assertContains(response, 'Admin avancé')
 

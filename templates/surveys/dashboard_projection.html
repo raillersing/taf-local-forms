@@ -10,11 +10,11 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-projection-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Projection" %}
 
-    <section class="card projection-stage" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
+    <section class="card p6-card projection-stage" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
         <div class="projection-topbar">
             <div>
                 <span class="taf-pill">Projection salle</span>
