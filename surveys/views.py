@@ -69,7 +69,32 @@ def _mark_presence_submitted(request, module_code, session):
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    return render(request, "surveys/home.html")
+    return render(request, "surveys/home.html", _build_home_context())
+
+
+def _build_home_context() -> dict:
+    modules_total = TrainingModule.objects.count() or 7
+    modules_open = (
+        TrainingSession.objects.filter(is_active=True, accepting_responses=True)
+        .values("module_id")
+        .distinct()
+        .count()
+    )
+    total_submissions = (
+        Submission.objects.count()
+        + Module3Submission.objects.count()
+        + Module4Submission.objects.count()
+        + Module5Submission.objects.count()
+        + Module6Submission.objects.count()
+        + Module7Submission.objects.count()
+        + Module8Submission.objects.count()
+    )
+    return {
+        "modules_total": modules_total,
+        "modules_open": modules_open,
+        "total_submissions": total_submissions,
+        "published_resources_count": _published_resources_queryset().count(),
+    }
 
 
 def _published_resources_queryset():

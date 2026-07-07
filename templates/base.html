@@ -25,7 +25,7 @@
                     </div>
                 </a>
 
-                <div class="shell-header-meta p6-header-meta">
+                <div class="shell-header-meta p6-header-meta{% if view_name == 'surveys:home' %} p6-header-meta-home{% endif %}">
                     <div class="shell-header-status p6-role-box">
                         {% if 'dashboard_' in view_name %}
                         <span class="badge badge-info p6-badge">Formateur</span>
@@ -34,10 +34,11 @@
                         <span class="badge badge-info p6-badge">Étudiant</span>
                         <span class="pill p6-badge p6-badge-soft">Parcours public</span>
                         {% else %}
-                        <span class="badge badge-neutral p6-badge">Public</span>
-                        <span class="pill p6-badge p6-badge-soft">Mode local</span>
+                        <span class="badge badge-success p6-badge">Formateur</span>
+                        <span class="pill p6-badge p6-badge-soft">Passer élève</span>
                         {% endif %}
                     </div>
+                    {% if view_name != 'surveys:home' %}
                     <p class="shell-header-note p6-header-note">
                         {% if 'dashboard_' in view_name %}
                         Projection, réseau, modules et supports restent regroupés côté formateur.
@@ -47,6 +48,7 @@
                         Entrée simple vers l’espace étudiant, les supports et le cockpit formateur.
                         {% endif %}
                     </p>
+                    {% endif %}
                 </div>
             </div>
         </header>
@@ -55,6 +57,7 @@
             {% include "surveys/partials/nav_public_landing.html" %}
         {% endblock %}
 
+        {% if view_name != 'surveys:home' %}
         <div class="topbar p6-topbar" id="topbar">
             <div class="container topbar-inner topbar-inner-compact p6-topbar-inner">
                 <div class="topbar-copy p6-topbar-copy">
@@ -71,6 +74,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="container shell-main p6-main">
             {% if messages %}

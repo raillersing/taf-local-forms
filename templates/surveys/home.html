@@ -9,21 +9,7 @@
         <article class="hero-card p6-card p6-hero-card">
             <span class="eyebrow">Formation numérique locale</span>
             <h1 id="landing-heading">Bienvenue sur TAf Local Forms</h1>
-            <p class="lead">Répondre aux modules, réviser avec les supports et accéder au cockpit formateur dans une interface locale pensée pour la salle de classe.</p>
-            <div class="landing-hero-kpis">
-                <div class="landing-hero-kpi">
-                    <strong>7</strong>
-                    <span>modules prêts</span>
-                </div>
-                <div class="landing-hero-kpi">
-                    <strong>100%</strong>
-                    <span>usage local</span>
-                </div>
-                <div class="landing-hero-kpi">
-                    <strong>2</strong>
-                    <span>parcours séparés</span>
-                </div>
-            </div>
+            <p class="lead">Une interface simple pour répondre aux modules, consulter les supports et apprendre en salle sans dépendre d'Internet public.</p>
             <div class="hero-actions p6-actions">
                 <a class="btn btn-primary btn-lg p6-button" href="{% url 'surveys:student_modules' %}">Voir les modules</a>
                 <a class="btn btn-secondary btn-lg p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
@@ -36,28 +22,23 @@
                 <span class="pill ok p6-badge p6-badge-soft">Ouverte</span>
             </div>
             <div class="stat-grid p6-stats">
-                <div class="stat-card"><strong>7</strong><span>Modules disponibles</span></div>
-                <div class="stat-card"><strong>2</strong><span>Espaces distincts</span></div>
-                <div class="stat-card"><strong>1</strong><span>Cockpit protégé</span></div>
-                <div class="stat-card"><strong>100%</strong><span>Local en classe</span></div>
+                <div class="stat-card"><strong>{{ modules_total }}</strong><span>Modules disponibles</span></div>
+                <div class="stat-card"><strong>{{ modules_open }}</strong><span>Modules ouverts</span></div>
+                <div class="stat-card"><strong>{{ total_submissions }}</strong><span>Réponses reçues</span></div>
+                <div class="stat-card"><strong>{{ published_resources_count }}</strong><span>Supports publiés</span></div>
             </div>
-            <div class="landing-session-stack">
-                <article class="landing-mini-card">
-                    <strong>Répondre</strong>
-                    <p>Le formateur active le module puis partage l’URL locale ou la projection.</p>
-                </article>
-                <article class="landing-mini-card">
-                    <strong>Réviser</strong>
-                    <p>Les documents et vidéos publiés restent visibles sans exposer les outils techniques.</p>
-                </article>
-            </div>
-            <div class="footer-note">Aucun compte élève requis. Les outils réseau et d'administration restent séparés du parcours public.</div>
+            <article class="landing-url-card">
+                <strong>URL élèves</strong>
+                <p>Disponible depuis le cockpit formateur</p>
+            </article>
+            <div class="footer-note">Aucun compte élève requis. Utilise l'identifiant à 2 chiffres donné en classe.</div>
         </aside>
     </section>
 
     <section class="grid cols-3 p6-grid landing-entry-grid" aria-label="Entrées principales">
         <article class="card p6-card landing-entry-card">
             <div class="card-body">
+                <div class="landing-card-icon" aria-hidden="true">📚</div>
                 <span class="badge badge-info p6-badge">Espace étudiant</span>
                 <h2 class="mb-2">Répondre</h2>
                 <p class="text-secondary mb-4">Accéder aux modules 2 à 8 avec consignes courtes, badges lisibles et boutons larges.</p>
@@ -66,7 +47,7 @@
         </article>
         <article class="card p6-card landing-entry-card">
             <div class="card-body">
-                <span class="badge badge-neutral p6-badge">Supports publiés</span>
+                <div class="landing-card-icon" aria-hidden="true">🧲</div>
                 <h2 class="mb-2">Réviser</h2>
                 <p class="text-secondary mb-4">Consulter documents et vidéos publiés par le formateur sur le réseau local de la classe.</p>
                 <a class="btn btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
@@ -74,15 +55,16 @@
         </article>
         <article id="espace-formateur" class="card p6-card landing-entry-card">
             <div class="card-body">
+                <div class="landing-card-icon" aria-hidden="true">🏫</div>
                 <span class="badge badge-success p6-badge">Espace formateur</span>
                 <h2 class="mb-2">Futur scolaire</h2>
-                <p class="text-secondary mb-4">Préparer la suite avec le cockpit, la projection, les supports et une médiathèque prête à s’enrichir.</p>
-                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a>
+                <p class="text-secondary mb-4">Préparer la suite avec les futures ressources par matière, niveau et chapitre, sans perdre les accès déjà en place.</p>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_home' %}">Explorer</a>
             </div>
         </article>
     </section>
 
-    <section class="grid cols-3 p6-grid home-secondary-grid">
+    <section class="grid cols-3 p6-grid home-secondary-grid home-secondary-grid-quiet">
         <article id="reperes" class="card p6-card home-steps-card" aria-labelledby="how-it-works-heading">
             <div class="card-body">
                 <div class="panel-title">
