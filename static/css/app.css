@@ -455,6 +455,39 @@ textarea {
   letter-spacing: 0;
 }
 
+.prototype-page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.page-tab.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.page-tab-muted {
+  background: #e2e8f0;
+  color: var(--text);
+}
+
 .text-secondary,
 .muted,
 .help-text,
@@ -948,7 +981,7 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 230px;
+  min-height: 210px;
   padding: 20px;
 }
 
@@ -982,6 +1015,13 @@ pre {
 .module-footer,
 .module-card-actions {
   margin-top: auto;
+}
+
+.module-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .progress,
@@ -1170,6 +1210,7 @@ textarea:focus {
   background: var(--surface);
   color: var(--text-secondary);
   font-weight: 800;
+  text-decoration: none;
 }
 
 .filter-pill.active {
@@ -1183,6 +1224,36 @@ textarea:focus {
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: 14px;
   align-items: end;
+}
+
+.support-advanced-filters {
+  margin-top: 2px;
+}
+
+.support-advanced-filters summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.support-advanced-filters[open] {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.support-advanced-filters[open] summary {
+  margin-bottom: 12px;
 }
 
 .resource-grid {
@@ -1266,6 +1337,10 @@ textarea:focus {
   margin: 0 auto;
 }
 
+.dashboard-page-compact {
+  max-width: var(--content-width);
+}
+
 .sub-nav,
 .subnav,
 .cockpit-subnav {
@@ -1296,6 +1371,90 @@ textarea:focus {
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
   box-shadow: var(--shadow);
+}
+
+.dashboard-list-head {
+  margin-bottom: 0;
+}
+
+.dashboard-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-module-table-card {
+  overflow: hidden;
+}
+
+.table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.table-card-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.dashboard-module-table th,
+.dashboard-module-table td {
+  font-size: 0.86rem;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.table-actions form {
+  margin: 0;
+}
+
+.dashboard-page-links .card-body {
+  display: grid;
+  gap: 10px;
+}
+
+.compact-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.compact-link-list a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.presence-grid-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.student-qr-shell-compact {
+  max-width: 132px;
+  padding: 8px;
+}
+
+.student-qr-shell-compact .student-qr-code {
+  width: 112px;
+  height: 112px;
 }
 
 .kpi-grid {
@@ -1523,6 +1682,7 @@ table th {
   .cols-4,
   .landing-entry-grid,
   .home-secondary-grid,
+  .dashboard-summary-strip,
   .kpi-grid.cols-4,
   .p6-filter-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1612,6 +1772,8 @@ table th {
   .kpi-grid.cols-4,
   .module-grid,
   .resource-grid,
+  .dashboard-summary-strip,
+  .presence-grid-compact,
   .tools-grid,
   .network-tools-grid,
   .cockpit-links-grid {

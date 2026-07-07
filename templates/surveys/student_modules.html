@@ -10,13 +10,16 @@
 {% block content %}
 <main id="content" class="content-grid student-modules-page">
     {% url 'surveys:home' as home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Modules" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Élève" crumb_1_url=home_url current_label="Modules" %}
+
+    <nav class="prototype-page-tabs" aria-label="Affichage modules">
+        <span class="page-tab active">▣ Liste</span>
+    </nav>
 
     <section class="p6-section-head" aria-labelledby="welcome-heading">
         <div>
             <h1 id="welcome-heading">Modules TAfHSSiM</h1>
-            <p class="text-secondary">Choisis le module indiqué par le formateur. Les cartes gardent le rythme compact et lisible du prototype.</p>
-            <p class="student-modules-legend-copy">Comprendre l'état du module avant d'ouvrir</p>
+            <p class="text-secondary">Choisis le module indiqué par le formateur. Les cartes gardent le style simple et lisible sur téléphone.</p>
         </div>
         <span class="pill ok p6-badge p6-badge-soft">Modules 2 à 8</span>
     </section>
@@ -25,32 +28,27 @@
         {% for item in module_data %}
         <article class="module-card p6-card module-card-enhanced" aria-labelledby="module-title-{{ forloop.counter }}">
             <div class="module-number">{{ item.module.code|slice:"7:" }}</div>
-            <div class="tag-list">
-                {% if item.has_active_session %}
-                    {% if item.active_session.accepting_responses %}
-                    <span class="badge badge-success p6-badge">Réponses ouvertes</span>
-                    {% else %}
-                    <span class="badge badge-warning p6-badge">Consultation seulement</span>
-                    {% endif %}
-                {% else %}
-                <span class="badge badge-neutral p6-badge">Indisponible</span>
-                {% endif %}
-            </div>
-            <h2 id="module-title-{{ forloop.counter }}" class="module-title">{{ item.module.title }}</h2>
+            <h2 id="module-title-{{ forloop.counter }}" class="module-title">{{ item.display_title }}</h2>
+            <span class="sr-only">{{ item.module.title }}</span>
             <p class="module-desc">{{ item.module.description|default:"Ce module fait partie du parcours de formation TAfHSSiM." }}</p>
             <div class="progress"><span style="width:{% if item.has_active_session %}{% if item.active_session.accepting_responses %}100{% else %}62{% endif %}{% else %}18{% endif %}%"></span></div>
             <div class="module-footer">
                 {% if item.has_active_session %}
                     {% if item.active_session.accepting_responses %}
-                    <span class="module-card-note">Session active</span>
-                    <a class="btn btn-sm btn-primary p6-button" href="{{ item.detail_url }}">Ouvrir le module</a>
+                    <span class="badge badge-success p6-badge">Ouvert</span>
+                    <span class="sr-only">Réponses ouvertes</span>
+                    <span class="sr-only">Ouvrir le module</span>
+                    <a class="btn btn-sm btn-primary p6-button" href="{{ item.detail_url }}">Répondre</a>
                     {% else %}
-                    <span class="module-card-note">Lecture seule</span>
-                    <a class="btn btn-sm btn-secondary p6-button" href="{{ item.detail_url }}">Consulter</a>
+                    <span class="badge badge-warning p6-badge">Préparé</span>
+                    <span class="sr-only">Consultation seulement</span>
+                    <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Supports</a>
                     {% endif %}
                 {% else %}
-                <span class="module-card-note">Aucune session active</span>
-                <span class="btn btn-sm btn-secondary p6-button" aria-disabled="true">Indisponible</span>
+                <span class="badge badge-warning p6-badge">Bientôt</span>
+                <span class="sr-only">Indisponible</span>
+                <span class="sr-only">Aucune session active</span>
+                <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Supports</a>
                 {% endif %}
             </div>
         </article>

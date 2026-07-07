@@ -97,6 +97,27 @@ def _build_home_context() -> dict:
     }
 
 
+def _prototype_module_title(module: TrainingModule) -> str:
+    prefix = f"Module {module.code.removeprefix('MODULE_')} - "
+    if module.title.startswith(prefix):
+        return module.title[len(prefix):]
+    return module.title
+
+
+def _submission_count_for_module(module_code: str) -> int:
+    counters = {
+        "MODULE_2": Submission.objects.count,
+        "MODULE_3": Module3Submission.objects.count,
+        "MODULE_4": Module4Submission.objects.count,
+        "MODULE_5": Module5Submission.objects.count,
+        "MODULE_6": Module6Submission.objects.count,
+        "MODULE_7": Module7Submission.objects.count,
+        "MODULE_8": Module8Submission.objects.count,
+    }
+    counter = counters.get(module_code)
+    return counter() if counter else 0
+
+
 def _published_resources_queryset():
     return LearningResource.objects.filter(is_published=True).select_related("subject", "chapter")
 
@@ -135,9 +156,11 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
             modules_open += 1
         module_list.append({
             "module": mod,
+            "display_title": _prototype_module_title(mod),
             "has_active_session": active_session is not None,
             "accepting_responses": accepting,
             "active_session_id": active_session.pk if active_session else None,
+            "submission_count": _submission_count_for_module(mod.code),
         })
 
     student_access_url = ""
@@ -178,6 +201,7 @@ def student_modules(request: HttpRequest) -> HttpResponse:
         detail_url = reverse(URL_MAP[mod.code])
         module_data.append({
             "module": mod,
+            "display_title": _prototype_module_title(mod),
             "has_active_session": active_session is not None,
             "active_session": active_session,
             "detail_url": detail_url,
@@ -221,12 +245,15 @@ def support_list(request: HttpRequest) -> HttpResponse:
     selected_subject = request.GET.get("subject", "").strip()
     selected_level = request.GET.get("level", "").strip()
     selected_module = request.GET.get("module", "").strip()
+    selected_type = request.GET.get("type", "").strip()
     if selected_subject:
         resources = resources.filter(subject__slug=selected_subject)
     if selected_level:
         resources = resources.filter(subject__class_level=selected_level)
     if selected_module.isdigit():
         resources = resources.filter(module_number=int(selected_module))
+    if selected_type in {LearningResource.RESOURCE_TYPE_DOCUMENT, LearningResource.RESOURCE_TYPE_VIDEO}:
+        resources = resources.filter(resource_type=selected_type)
     return render(
         request,
         "surveys/support_list.html",
@@ -238,6 +265,7 @@ def support_list(request: HttpRequest) -> HttpResponse:
             "selected_subject": selected_subject,
             "selected_level": selected_level,
             "selected_module": selected_module,
+            "selected_type": selected_type,
         },
     )
 

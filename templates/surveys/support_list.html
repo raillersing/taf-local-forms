@@ -10,7 +10,12 @@
 {% block content %}
 <main id="content" class="content-grid supports-page">
     {% url 'surveys:home' as home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Supports" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Élève" crumb_1_url=home_url current_label="Supports" %}
+
+    <nav class="prototype-page-tabs" aria-label="Actions supports">
+        <span class="page-tab active">▣ Gestion</span>
+        <span class="page-tab page-tab-muted">ℹ Ajouter</span>
+    </nav>
 
     <section class="p6-section-head" aria-labelledby="supports-heading">
         <div>
@@ -20,47 +25,51 @@
         <span class="pill ok p6-badge p6-badge-soft">{{ resources|length }} support{{ resources|length|pluralize }}</span>
     </section>
 
-    <section class="panel p6-card support-filter-card">
+    <section class="support-filter-card">
         <div class="filter-bar">
-            <span class="filter-pill active">Tous</span>
-            <span class="filter-pill">Documents</span>
-            <span class="filter-pill">Vidéos</span>
-            <span class="filter-pill">Modules</span>
+            <a class="filter-pill {% if not selected_type %}active{% endif %}" href="{% url 'surveys:support_list' %}">Tous</a>
+            <a class="filter-pill {% if selected_type == 'document' %}active{% endif %}" href="?type=document">Documents</a>
+            <a class="filter-pill {% if selected_type == 'video' %}active{% endif %}" href="?type=video">Vidéos</a>
+            <span class="filter-pill">Module 2</span>
+            <span class="filter-pill">Module 8</span>
             <span class="filter-pill">Matières</span>
         </div>
-        <form method="get" class="p6-filter-form" aria-label="Filtres du catalogue">
-            <div class="field">
-                <label for="id_subject">Matière</label>
-                <select id="id_subject" name="subject" class="taf-select">
-                    <option value="">Toutes les matières</option>
-                    {% for subject in subjects %}
-                    <option value="{{ subject.slug }}"{% if selected_subject == subject.slug %} selected{% endif %}>{{ subject.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="field">
-                <label for="id_level">Niveau</label>
-                <select id="id_level" name="level" class="taf-select">
-                    <option value="">Tous les niveaux</option>
-                    {% for value, label in level_choices %}
-                    <option value="{{ value }}"{% if selected_level == value %} selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="field">
-                <label for="id_module">Module</label>
-                <select id="id_module" name="module" class="taf-select">
-                    <option value="">Tous les modules</option>
-                    {% for module_number in module_choices %}
-                    <option value="{{ module_number }}"{% if selected_module == module_number|stringformat:"s" %} selected{% endif %}>Module {{ module_number }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="p6-actions support-filter-actions">
-                <button type="submit" class="btn btn-primary p6-button">Filtrer</button>
-                <a class="btn btn-secondary btn-sm p6-button" href="{% url 'surveys:support_list' %}">Réinitialiser</a>
-            </div>
-        </form>
+        <details class="support-advanced-filters">
+            <summary>Filtres avancés</summary>
+            <form method="get" class="p6-filter-form" aria-label="Filtres du catalogue">
+                <div class="field">
+                    <label for="id_subject">Matière</label>
+                    <select id="id_subject" name="subject" class="taf-select">
+                        <option value="">Toutes les matières</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.slug }}"{% if selected_subject == subject.slug %} selected{% endif %}>{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="id_level">Niveau</label>
+                    <select id="id_level" name="level" class="taf-select">
+                        <option value="">Tous les niveaux</option>
+                        {% for value, label in level_choices %}
+                        <option value="{{ value }}"{% if selected_level == value %} selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="id_module">Module</label>
+                    <select id="id_module" name="module" class="taf-select">
+                        <option value="">Tous les modules</option>
+                        {% for module_number in module_choices %}
+                        <option value="{{ module_number }}"{% if selected_module == module_number|stringformat:"s" %} selected{% endif %}>Module {{ module_number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="p6-actions support-filter-actions">
+                    <button type="submit" class="btn btn-primary p6-button">Filtrer</button>
+                    <a class="btn btn-secondary btn-sm p6-button" href="{% url 'surveys:support_list' %}">Réinitialiser</a>
+                </div>
+            </form>
+        </details>
     </section>
 
     {% if resources %}
