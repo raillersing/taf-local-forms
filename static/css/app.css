@@ -1730,6 +1730,67 @@ textarea:focus {
   max-width: var(--content-width);
 }
 
+.dashboard-cockpit-head,
+.dashboard-inline-head {
+  align-items: end;
+}
+
+.dashboard-inline-head h2 {
+  margin: 0 0 6px;
+  font-size: 1.28rem;
+  font-weight: 900;
+}
+
+.dashboard-kpi-grid,
+.dashboard-action-grid,
+.dashboard-backup-actions,
+.dashboard-settings-primary,
+.network-kpi-grid,
+.network-qr-stage,
+.dashboard-module-table-card {
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+
+.dashboard-kpi-card,
+.dashboard-action-card {
+  min-height: 144px;
+}
+
+.dashboard-kpi-card {
+  padding: 18px;
+  text-align: left;
+}
+
+.dashboard-kpi-note {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.dashboard-kpi-value-sm {
+  font-size: 1.15rem;
+  word-break: break-word;
+}
+
+.dashboard-action-card .card-body {
+  min-height: 150px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.dashboard-action-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.dashboard-action-card p {
+  margin: 0;
+}
+
 .sub-nav,
 .subnav,
 .cockpit-subnav {
@@ -1768,6 +1829,17 @@ textarea:focus {
 
 .dashboard-module-table-card {
   overflow: hidden;
+}
+
+.dashboard-support-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dashboard-support-table td:last-child {
+  min-width: 144px;
 }
 
 .table-card-header {
@@ -2071,6 +2143,28 @@ button.tool-card {
   color: var(--text-secondary);
 }
 
+.network-status-banner {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border-left: 4px solid var(--success);
+  border-radius: var(--radius);
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.network-status-banner.warn {
+  border-left-color: var(--warning);
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.network-status-banner.off {
+  border-left-color: var(--danger);
+  background: #fff1f2;
+  color: #991b1b;
+}
+
 .network-directory {
   overflow: hidden;
 }
@@ -2142,6 +2236,32 @@ button.tool-card {
   font-size: 0.78rem;
 }
 
+.network-qr-stage-head {
+  align-items: start;
+}
+
+.network-qr-stage-head p {
+  margin: 6px 0 0;
+}
+
+.network-qr-stage-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.9fr);
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+}
+
+.network-qr-copy {
+  display: grid;
+  gap: 14px;
+}
+
+.network-stage-url {
+  font-size: clamp(1.3rem, 2vw, 2rem);
+  text-align: center;
+}
+
 .network-control-page .step.ok {
   background: #ecfdf5;
   color: #065f46;
@@ -2171,6 +2291,32 @@ button.tool-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
+}
+
+.settings-highlight-list {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-highlight-item {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.settings-highlight-item strong {
+  color: #172554;
+  font-size: 0.9rem;
+}
+
+.setting-card-title {
+  margin: 0;
+  color: #172554;
+  font-size: 1rem;
+  font-weight: 900;
 }
 
 .ip-detect-row {
@@ -2252,7 +2398,8 @@ table th {
   .p6-split,
   .p6-home-page .hero,
   .p6-hero,
-  .projection-grid {
+  .projection-grid,
+  .network-qr-stage-body {
     grid-template-columns: 1fr;
   }
 
@@ -2321,6 +2468,9 @@ table th {
   .cols-3,
   .cols-4,
   .landing-entry-grid,
+  .dashboard-action-grid,
+  .dashboard-backup-actions,
+  .dashboard-settings-primary,
   .field-grid,
   .filter-grid,
   .settings-grid,
@@ -2346,7 +2496,8 @@ table th {
   }
 
   .questionnaire-banner,
-  .learning-hero {
+  .learning-hero,
+  .network-qr-stage-head {
     display: grid;
     padding: 18px;
   }
@@ -2372,6 +2523,7 @@ table th {
   .intro-card,
   .form-card,
   .projection-stage,
+  .network-qr-stage-body,
   .student-state-card,
   .hero-card,
   .p6-hero-card {

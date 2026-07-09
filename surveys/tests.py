@@ -5533,6 +5533,7 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_backup"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Sauvegarder les données")
+        self.assertContains(response, "Sauvegarde & restauration")
         self.assertContains(response, "Ne jamais supprimer")
         self.assertContains(response, "Commandes interdites")
 
@@ -5564,13 +5565,18 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_network"))
 
         self.assertContains(response, "network-command-bar")
+        self.assertContains(response, "URL pour les élèves")
+        self.assertContains(response, "data-student-access")
         self.assertContains(response, "Répertoire des adresses")
         self.assertContains(response, "Diagnostic technique avancé")
         self.assertNotContains(response, '<details class="diagnostics" open>')
 
-    def test_dashboard_home_contains_compact_module_table_and_preserved_tools(self):
+    def test_dashboard_home_restores_cockpit_and_preserved_tools(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Bonjour, Formateur")
+        self.assertContains(response, "Mode projection")
+        self.assertContains(response, "Module actif")
         self.assertContains(response, "Gestion des modules")
         self.assertContains(response, "dashboard-module-table")
         self.assertContains(response, "Fonctions complémentaires")

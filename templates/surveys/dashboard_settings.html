@@ -12,7 +12,12 @@
 {% block content %}
 <main id="content" class="content-grid dashboard-settings-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Paramètres réseau" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Configuration" %}
+
+    <nav class="prototype-page-tabs" aria-label="Sous-navigation configuration">
+        <span class="page-tab active">⚙️ Général</span>
+        <a class="page-tab" href="{% url 'admin:index' %}">🛡️ Admin</a>
+    </nav>
 
     {% if current_request_is_lan %}
     <div class="alert alert-success">
@@ -52,13 +57,75 @@
     </div>
     {% endif %}
 
+    <section class="p6-section-head" aria-labelledby="settings-heading">
+        <div>
+            <h1 id="settings-heading">Configuration</h1>
+            <p class="text-secondary">Paramètres non destructifs pour la séance, l’accès LAN et l’interface locale.</p>
+        </div>
+        <span class="pill warn">Formateur avancé</span>
+    </section>
+
+    <section class="grid cols-2 dashboard-settings-primary">
+        <article class="card p6-card">
+            <div class="card-header">
+                <h2>Séance et réseau</h2>
+            </div>
+            <div class="card-body settings-highlight-list">
+                <div class="settings-highlight-item">
+                    <strong>Adresse LAN</strong>
+                    <span>{% if settings.editable.TAF_LAN_HOST %}{{ settings.editable.TAF_LAN_HOST }}{% else %}Détection automatique{% endif %}</span>
+                </div>
+                <div class="settings-highlight-item">
+                    <strong>Port formateur</strong>
+                    <span>{% if settings.editable.TAF_HOST_PORT %}{{ settings.editable.TAF_HOST_PORT }}{% else %}8010{% endif %}</span>
+                </div>
+                <div class="settings-highlight-item">
+                    <strong>Origine CSRF</strong>
+                    <span>{% if settings.editable.CSRF_TRUSTED_ORIGINS %}Configurée{% else %}À compléter{% endif %}</span>
+                </div>
+            </div>
+        </article>
+        <article class="card p6-card">
+            <div class="card-header">
+                <h2>Interface locale</h2>
+            </div>
+            <div class="card-body settings-highlight-list">
+                <div class="settings-highlight-item">
+                    <strong>Fuseau horaire</strong>
+                    <span>{% if settings.editable.TIME_ZONE %}{{ settings.editable.TIME_ZONE }}{% else %}Indian/Antananarivo{% endif %}</span>
+                </div>
+                <div class="settings-highlight-item">
+                    <strong>Hôtes autorisés</strong>
+                    <span>{% if settings.editable.ALLOWED_HOSTS %}Liste configurée{% else %}À vérifier{% endif %}</span>
+                </div>
+                <div class="settings-highlight-item">
+                    <strong>Admin avancé</strong>
+                    <span>Accès séparé et protégé</span>
+                </div>
+            </div>
+        </article>
+    </section>
+
     <section class="card p6-card">
-        <h2>Champs modifiables</h2>
-        <p class="muted">Modifie une valeur ci-dessous, puis clique sur Enregistrer.</p>
-        <div class="settings-grid">
+        <div class="card-header">
+            <h2>Champs modifiables</h2>
+            <span class="pill">Sans secrets</span>
+        </div>
+        <div class="card-body">
+            <p class="muted">Modifie uniquement ce qui est nécessaire, puis redémarre Docker si la configuration réseau change.</p>
+            <div class="settings-grid">
             {% for key, value in settings.editable.items %}
             <div class="setting-card">
-                <h3><code>{{ key }}</code></h3>
+                <h3 class="setting-card-title">
+                    {% if key == "TAF_LAN_HOST" %}Adresse LAN élèves
+                    {% elif key == "TAF_HOST_PORT" %}Port de l'application
+                    {% elif key == "ALLOWED_HOSTS" %}Hôtes autorisés
+                    {% elif key == "CSRF_TRUSTED_ORIGINS" %}Origines de confiance
+                    {% elif key == "TIME_ZONE" %}Fuseau horaire
+                    {% else %}<code>{{ key }}</code>
+                    {% endif %}
+                </h3>
+                <p class="muted"><code>{{ key }}</code></p>
                 {% if key == "TAF_LAN_HOST" and detected_ip_candidates %}
                 <div class="ip-detect-row">
                     <span class="muted">IP détectée(s) :</span>
@@ -99,11 +166,16 @@
                 {% endif %}
             </div>
             {% endfor %}
+            </div>
         </div>
     </section>
 
-    <section class="card p6-card">
-        <h2>Informations (lecture seule)</h2>
+    <details class="network-directory p6-card">
+        <summary>
+            <span><strong>Informations lecture seule</strong><small>Résumé d’environnement sans exposition de secret</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <div class="network-details-body">
         <dl class="setting-list">
             {% for key, value in settings.readonly.items %}
             <dt class="muted setting-label"><code>{{ key }}</code></dt>
@@ -120,7 +192,8 @@
                 {% if settings.has_secret_key %}Configuré : oui{% else %}Configuré : non{% endif %}
             </dd>
         </dl>
-    </section>
+        </div>
+    </details>
 
     <div class="back-links">
         <a class="text-link" href="{% url 'surveys:dashboard_home' %}">&larr; Cockpit formateur</a>

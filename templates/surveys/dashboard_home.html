@@ -14,22 +14,92 @@
 {% block content %}
 <main id="content" class="content-grid dashboard-page dashboard-page-compact">
     {% url 'surveys:home' as home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Formateur" crumb_1_url=home_url current_label="Modules" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Formateur" crumb_1_url=home_url current_label="Cockpit" %}
 
     <nav class="prototype-page-tabs" aria-label="Actions formateur">
-        <span class="page-tab active">▣ Liste</span>
-        <a class="page-tab" href="{% url 'surveys:dashboard_projection' %}">📊 Dashboard</a>
+        <span class="page-tab active">▣ Cockpit</span>
+        <a class="page-tab" href="{% url 'surveys:dashboard_projection' %}">📺 Projection</a>
+        <a class="page-tab" href="#modules">📊 Modules</a>
+        <span class="sr-only">Liste</span>
+        <span class="sr-only">Dashboard</span>
     </nav>
 
-    <section class="p6-section-head dashboard-list-head" aria-labelledby="dashboard-heading">
+    <section class="p6-section-head dashboard-list-head dashboard-cockpit-head" aria-labelledby="dashboard-heading">
         <div>
-            <h1 id="dashboard-heading">Gestion des modules</h1>
-            <p class="text-secondary">Ouvrir/fermer les sessions, accéder aux dashboards et exports.</p>
+            <h1 id="dashboard-heading">Bonjour, Formateur</h1>
+            <p class="text-secondary">Vue terrain pour démarrer, surveiller, exporter et sauvegarder.</p>
         </div>
-        <a class="btn btn-secondary p6-button" href="?tools=open#exports">Exports CSV</a>
+        <a class="btn btn-primary p6-button" href="{% url 'surveys:dashboard_projection' %}">Mode projection</a>
     </section>
 
-    <section id="modules" class="p6-card dashboard-module-table-card" aria-label="Modules de formation">
+    <section class="kpi-grid cols-4 dashboard-kpi-grid">
+        <article class="kpi-card dashboard-kpi-card">
+            <div class="kpi-label">Réponses reçues</div>
+            <div class="kpi-value">{{ total_submissions }}</div>
+            <p class="dashboard-kpi-note">{{ total_students }} élève{{ total_students|pluralize }} enregistré{{ total_students|pluralize }}</p>
+        </article>
+        <article class="kpi-card dashboard-kpi-card">
+            <div class="kpi-label">Présences live</div>
+            <div class="kpi-value" id="presence-total-value">…</div>
+            <p class="dashboard-kpi-note">
+                {% if active_module %}{{ active_module.display_title }}{% else %}En attente de séance{% endif %}
+            </p>
+        </article>
+        <article class="kpi-card dashboard-kpi-card">
+            <div class="kpi-label">Participation</div>
+            <div class="kpi-value">{{ average_score|floatformat:0 }}%</div>
+            <p class="dashboard-kpi-note">Moyenne consolidée des modules</p>
+        </article>
+        <article class="kpi-card dashboard-kpi-card">
+            <div class="kpi-label">LAN</div>
+            <div class="kpi-value dashboard-kpi-value-sm">
+                {% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}
+            </div>
+            <p class="dashboard-kpi-note">Port élèves 8011</p>
+        </article>
+    </section>
+
+    <section class="grid cols-3 dashboard-action-grid" aria-label="Accès cockpit">
+        <article class="card p6-card dashboard-action-card">
+            <div class="card-body">
+                <h2>📊 Module actif</h2>
+                <p class="text-secondary">
+                    {% if active_module %}{{ active_module.display_title }}.{% else %}Aucune session active.{% endif %}
+                </p>
+                {% if active_module %}
+                <a class="btn btn-primary p6-button" href="#modules">Voir dashboard</a>
+                {% else %}
+                <a class="btn btn-secondary p6-button" href="#modules">Voir les modules</a>
+                {% endif %}
+            </div>
+        </article>
+        <article class="card p6-card dashboard-action-card">
+            <div class="card-body">
+                <h2>🌐 Accès élèves</h2>
+                <p class="text-secondary">Afficher le QR code et tester le téléphone avant de partager le lien.</p>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_network' %}">Contrôler réseau</a>
+            </div>
+        </article>
+        <article class="card p6-card dashboard-action-card">
+            <div class="card-body">
+                <h2>💾 Après séance</h2>
+                <p class="text-secondary">Exporter CSV puis sauvegarder les réponses et les supports utiles.</p>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_backup' %}">Sauvegarder</a>
+            </div>
+        </article>
+    </section>
+
+    <details id="modules" class="dashboard-complementary p6-card" open>
+        <summary>Gestion des modules</summary>
+        <div class="dashboard-complementary-body">
+            <section class="p6-section-head dashboard-list-head dashboard-inline-head" aria-labelledby="modules-heading">
+                <div>
+                    <h2 id="modules-heading">Gestion des modules</h2>
+                    <p class="text-secondary">Ouvrir ou fermer les sessions, accéder aux dashboards et garder les exports proches.</p>
+                </div>
+                <a class="btn btn-secondary btn-sm p6-button" href="?tools=open#exports">Exports CSV</a>
+            </section>
+            <section class="dashboard-module-table-card" aria-label="Modules de formation">
         <div class="taf-table-wrap">
             <table class="taf-table dashboard-module-table">
                 <thead>
@@ -88,7 +158,9 @@
                 </tbody>
             </table>
         </div>
-    </section>
+            </section>
+        </div>
+    </details>
 
     <details class="dashboard-complementary p6-card"{% if request.GET.tools == "open" %} open{% endif %}>
         <summary>Fonctions complémentaires</summary>
@@ -141,11 +213,13 @@
                     document.getElementById('presence-module-7').textContent = 'Module 7 : ' + (data.by_module.MODULE_7 || 0);
                     document.getElementById('presence-module-8').textContent = 'Module 8 : ' + (data.by_module.MODULE_8 || 0);
                     document.getElementById('presence-total').textContent = 'Total : ' + data.total;
+                    document.getElementById('presence-total-value').textContent = data.total;
                 } catch (error) {}
             }
         };
         xhr.onerror = function() {
             document.getElementById('presence-total').textContent = 'compteur indisponible';
+            document.getElementById('presence-total-value').textContent = '—';
         };
         xhr.send();
     };

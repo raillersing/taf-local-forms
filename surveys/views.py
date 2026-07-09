@@ -149,19 +149,23 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     modules = TrainingModule.objects.all().order_by("code")
     module_list = []
     modules_open = 0
+    active_module = None
     for mod in modules:
         active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
         accepting = active_session.accepting_responses if active_session else False
         if accepting:
             modules_open += 1
-        module_list.append({
+        module_item = {
             "module": mod,
             "display_title": _prototype_module_title(mod),
             "has_active_session": active_session is not None,
             "accepting_responses": accepting,
             "active_session_id": active_session.pk if active_session else None,
             "submission_count": _submission_count_for_module(mod.code),
-        })
+        }
+        module_list.append(module_item)
+        if active_module is None and active_session is not None:
+            active_module = module_item
 
     student_access_url = ""
     if net_ctx.get("recommended_lan_host"):
@@ -173,6 +177,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         "average_score": avg_score,
         "module_list": module_list,
         "modules_open": modules_open,
+        "active_module": active_module,
         "network": net_ctx,
         "student_access_url": student_access_url,
         "student_access_ready": bool(student_access_url),

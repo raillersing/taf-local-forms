@@ -14,6 +14,11 @@
     {% url 'surveys:dashboard_supports' as dashboard_supports_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Supports" crumb_2_url=dashboard_supports_url current_label="Déposer un support" %}
 
+    <nav class="prototype-page-tabs" aria-label="Sous-navigation ajout de support">
+        <a class="page-tab" href="{% url 'surveys:dashboard_supports' %}">🗂 Gestion</a>
+        <span class="page-tab active">➕ Ajouter</span>
+    </nav>
+
     <section class="panel form-card support-upload-card">
         <div class="panel-title">
             <div>
