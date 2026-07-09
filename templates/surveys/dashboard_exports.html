@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Résultats et exports CSV — Cockpit formateur{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid dashboard-exports-page">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Formateur" crumb_1_url=dashboard_home_url current_label="Exports" %}
+
+    <nav class="prototype-page-tabs" aria-label="Exports formateur">
+        <span class="page-tab active">Exports CSV</span>
+    </nav>
+
+    <section class="p6-section-head" aria-labelledby="exports-heading">
+        <div>
+            <h1 id="exports-heading">Résultats et exports CSV</h1>
+            <p class="text-secondary">Fichiers protégés par login, encodés en UTF-8 et neutralisés contre les formules tableur.</p>
+        </div>
+        <span class="pill ok">UTF-8</span>
+    </section>
+
+    <section class="p6-card dashboard-export-table-card">
+        <div class="card-header">
+            <h2>Modules disponibles</h2>
+            <span class="pill">UTF-8</span>
+        </div>
+        <div class="taf-table-wrap">
+            <table class="taf-table dashboard-export-table">
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Lignes</th>
+                        <th>Session</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in module_list %}
+                    <tr>
+                        <td><strong>module-{{ item.module_number }}.csv</strong><br><span class="muted">{{ item.display_title }}</span></td>
+                        <td>{{ item.submission_count }}</td>
+                        <td>
+                            {% if item.has_active_session %}
+                                {% if item.accepting_responses %}
+                                <span class="badge badge-success">Ouverte</span>
+                                {% else %}
+                                <span class="badge badge-warning">Fermée</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-neutral">Aucune</span>
+                            {% endif %}
+                        </td>
+                        <td><a class="btn btn-sm btn-primary" href="{% url item.export_url_name %}">CSV</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">Aucun module enregistré.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="alert alert-info">
+        <strong>Sécurité</strong>
+        <p>Les valeurs commençant par un symbole de formule sont neutralisées avant export.</p>
+    </section>
+</main>
+{% endblock %}

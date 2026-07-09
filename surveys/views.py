@@ -151,12 +151,15 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     modules_open = 0
     active_module = None
     for mod in modules:
+        module_number = mod.code.removeprefix("MODULE_")
         active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
         accepting = active_session.accepting_responses if active_session else False
         if accepting:
             modules_open += 1
         module_item = {
             "module": mod,
+            "module_number": module_number,
+            "export_url_name": f"surveys:export_module_{module_number}_csv",
             "display_title": _prototype_module_title(mod),
             "has_active_session": active_session is not None,
             "accepting_responses": accepting,
@@ -403,6 +406,11 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
 @login_required
 def dashboard_projection(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_projection.html", _build_cockpit_context(request))
+
+
+@login_required
+def dashboard_exports(request: HttpRequest) -> HttpResponse:
+    return render(request, "surveys/dashboard_exports.html", _build_cockpit_context(request))
 
 
 @login_required

@@ -5433,6 +5433,7 @@ class RedesignUITests(TestCase):
             "surveys:dashboard_network_control",
             "surveys:dashboard_settings",
             "surveys:dashboard_backup",
+            "surveys:dashboard_exports",
             "surveys:dashboard_module_2",
             "surveys:dashboard_module_8",
             "surveys:export_module_2_csv",
@@ -5510,6 +5511,16 @@ class RedesignUITests(TestCase):
         for num in range(2, 9):
             with self.subTest(module=num):
                 self.assertContains(response, f"/module-{num}/")
+
+    def test_exports_page_matches_prototype_entry(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_exports"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Résultats et exports CSV")
+        self.assertContains(response, "Modules disponibles")
+        self.assertContains(response, "module-2.csv")
+        self.assertContains(response, reverse("surveys:export_module_2_csv"))
+        self.assertContains(response, "Les valeurs commençant par un symbole de formule")
 
     def test_cockpit_has_network_control_steps(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")

@@ -1721,9 +1721,22 @@ textarea:focus {
 .dashboard-settings-page,
 .dashboard-supports-page,
 .dashboard-support-upload-page,
+.dashboard-exports-page,
 .dashboard-backup-page {
   max-width: var(--max-width);
   margin: 0 auto;
+}
+
+.dashboard-export-table-card {
+  padding: 22px;
+}
+
+.shell-tools-menu-compact {
+  flex: 0 0 auto;
+}
+
+.shell-tools-menu-compact .shell-tools-summary {
+  padding-inline: 10px;
 }
 
 .dashboard-page-compact {

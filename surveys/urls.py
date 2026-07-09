@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     dashboard_backup,
+    dashboard_exports,
     dashboard_home,
     dashboard_module_2,
     dashboard_module_3,
@@ -82,6 +83,7 @@ urlpatterns = [
     path("module-8/", module_8_form, name="module_8"),
     path("module-8/success/<int:submission_id>/", module_8_success, name="module_8_success"),
     path("dashboard/", dashboard_home, name="dashboard_home"),
+    path("dashboard/exports/", dashboard_exports, name="dashboard_exports"),
     path("dashboard/module-2/", dashboard_module_2, name="dashboard_module_2"),
     path("dashboard/module-3/", dashboard_module_3, name="dashboard_module_3"),
     path("dashboard/module-4/", dashboard_module_4, name="dashboard_module_4"),
