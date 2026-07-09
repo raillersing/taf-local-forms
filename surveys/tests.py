@@ -239,9 +239,9 @@ class Module2FormViewTests(TestCase):
         response = self.client.get(reverse("surveys:home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Espace étudiant")
-        self.assertContains(response, "Espace formateur")
-        self.assertContains(response, "À propos du projet")
+        self.assertContains(response, "Bienvenue sur TAf Local Forms")
+        self.assertContains(response, "Répondre")
+        self.assertNotContains(response, "Repères de séance")
 
     def test_home_page_shows_module_2_when_active(self):
         response = self.client.get(reverse("surveys:student_modules"))
@@ -295,12 +295,10 @@ class DashboardAccessTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cockpit formateur")
-        self.assertContains(response, "Modules de formation")
-        self.assertContains(response, "Réseau local")
+        self.assertContains(response, "Gestion des modules")
+        self.assertContains(response, "Fonctions complémentaires")
         self.assertContains(response, "Admin avancé")
-        self.assertContains(response, "Guide dépannage réseau")
-        self.assertContains(response, "Accès élèves")
-        self.assertContains(response, "Ouvrir la projection")
+        self.assertContains(response, "Projection")
         self.assertNotContains(response, "https://cdnjs.cloudflare.com")
 
     def test_projection_requires_login(self):
@@ -334,8 +332,8 @@ class DashboardAccessTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Disponible après configuration réseau")
-        self.assertContains(response, "URL LAN non configurée")
+        self.assertContains(response, reverse("surveys:dashboard_projection"))
+        self.assertContains(response, reverse("surveys:dashboard_network"))
 
     def test_projection_tools_do_not_appear_in_student_pages(self):
         response = self.client.get(reverse("surveys:student_modules"))
@@ -1740,12 +1738,12 @@ class NavigationTests(TestCase):
 
     def test_home_contains_modules_link(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace étudiant")
+        self.assertContains(response, "Répondre")
         self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_home_contains_espace_formateur_link_to_dashboard(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, "Futur scolaire")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
     def test_logo_links_to_home(self):
@@ -1764,15 +1762,15 @@ class NavigationTests(TestCase):
 
     def test_dashboard_shows_tools(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Réseau local")
-        self.assertContains(response, "Paramètres réseau")
+        self.assertContains(response, "Outils")
+        self.assertContains(response, "Paramètres")
         self.assertContains(response, "Admin avancé")
 
-    def test_dashboard_shows_stats(self):
+    def test_dashboard_shows_module_status_columns(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Total réponses")
-        self.assertContains(response, "Total élèves")
-        self.assertContains(response, "Modules ouverts")
+        self.assertContains(response, "Session")
+        self.assertContains(response, "Réponses")
+        self.assertContains(response, "Actions")
 
 
 class AcceptingResponsesModelTests(TestCase):
@@ -2035,12 +2033,12 @@ class F019NavigationUXTests(TestCase):
 
     def test_home_contains_modules_link(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace étudiant")
+        self.assertContains(response, "Répondre")
         self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_home_contains_espace_formateur(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, "Futur scolaire")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
     def test_logo_points_to_home(self):
@@ -2051,37 +2049,19 @@ class F019NavigationUXTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
         self.assertContains(response, "Réseau")
-        self.assertContains(response, "Configuration")
+        self.assertContains(response, "Paramètres")
         self.assertContains(response, "Admin avancé")
 
-    def test_dashboard_shows_all_subnav_tabs(self):
+    def test_dashboard_shows_compact_page_navigation(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        for tab in [
-            "Vue séance",
-            "Liste",
-            "Dashboard",
-            "Après la séance",
-            "Modules",
-            "Présence",
-            "Exports",
-            "Outils formateur",
-        ]:
+        for tab in ["Liste", "Dashboard", "Modules", "Exports"]:
             self.assertContains(response, tab)
 
-    def test_dashboard_shows_overview_stats(self):
+    def test_dashboard_hides_overview_stats_from_module_list(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Total réponses")
-        self.assertContains(response, "Total élèves")
-        self.assertContains(response, "Score moyen")
-        self.assertContains(response, "Modules ouverts")
-        self.assertContains(response, "Supports publiés")
-
-    def test_dashboard_shows_session_phase_blocks(self):
-        response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Vue séance")
-        self.assertContains(response, "Après la séance")
-        self.assertContains(response, "Préparer l'accès de la classe")
-        self.assertContains(response, "Exporter, sauvegarder et clôturer proprement")
+        self.assertNotContains(response, "dashboard-summary-strip")
+        self.assertNotContains(response, "Total élèves")
+        self.assertNotContains(response, "Score moyen")
 
     def test_dashboard_shows_presence_section(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2092,8 +2072,7 @@ class F019NavigationUXTests(TestCase):
 
     def test_dashboard_shows_network_section(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Réseau local")
-        self.assertContains(response, "Diagnostic réseau complet")
+        self.assertContains(response, reverse("surveys:dashboard_network"))
 
     def test_dashboard_shows_exports_section(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2104,10 +2083,8 @@ class F019NavigationUXTests(TestCase):
 
     def test_dashboard_shows_advanced_section(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Outils formateur")
+        self.assertContains(response, "Fonctions complémentaires")
         self.assertContains(response, "Admin avancé")
-        self.assertContains(response, "Contrôle réseau local")
-        self.assertContains(response, "Sauvegarde")
 
     def test_dashboard_links_have_target_blank(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2149,24 +2126,24 @@ class F019NetworkIPTests(TestCase):
         self.client.login(username="ipuser", password="secret")
 
     @override_settings(TAF_LAN_HOST="192.168.0.100")
-    def test_dashboard_shows_configured_ip(self):
+    def test_projection_shows_configured_ip(self):
         import os
         os.environ["TAF_LAN_HOST"] = "192.168.0.100"
         try:
-            response = self.client.get(reverse("surveys:dashboard_home"))
+            response = self.client.get(reverse("surveys:dashboard_projection"))
             self.assertContains(response, "192.168.0.100")
         finally:
             os.environ.pop("TAF_LAN_HOST", None)
 
     @override_settings(TAF_LAN_HOST="192.168.0.100")
-    def test_dashboard_links_use_configured_ip(self):
+    def test_projection_links_use_configured_ip(self):
         import os
         old_lan = os.environ.get("TAF_LAN_HOST")
         old_port = os.environ.get("TAF_HOST_PORT")
         os.environ["TAF_LAN_HOST"] = "192.168.0.100"
         os.environ.pop("TAF_HOST_PORT", None)
         try:
-            response = self.client.get(reverse("surveys:dashboard_home"))
+            response = self.client.get(reverse("surveys:dashboard_projection"))
             self.assertContains(response, "http://192.168.0.100:8000/")
         finally:
             if old_lan:
@@ -2176,9 +2153,9 @@ class F019NetworkIPTests(TestCase):
             if old_port:
                 os.environ["TAF_HOST_PORT"] = old_port
 
-    def test_dashboard_shows_config_link_when_no_ip(self):
+    def test_dashboard_links_to_settings_when_no_ip(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Ouvrir les paramètres réseau")
+        self.assertContains(response, "Paramètres")
         self.assertContains(response, reverse("surveys:dashboard_settings"))
 
 
@@ -2356,18 +2333,18 @@ class F022RNavigationRewireTests(TestCase):
     # --- Landing page ---
     def test_landing_shows_student_choice(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace étudiant")
+        self.assertContains(response, "Répondre")
         self.assertContains(response, reverse("surveys:student_modules"))
 
     def test_landing_shows_trainer_choice(self):
         response = self.client.get(reverse("surveys:home"))
-        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, "Futur scolaire")
         self.assertContains(response, reverse("surveys:dashboard_home"))
 
     def test_landing_shows_about(self):
         response = self.client.get(reverse("surveys:home"))
         self.assertContains(response, "Le projet")
-        self.assertContains(response, "À propos du projet")
+        self.assertContains(response, 'id="le-projet"')
 
     def test_landing_nav_minimal(self):
         response = self.client.get(reverse("surveys:home"))
@@ -2514,7 +2491,7 @@ class F022RNavigationRewireTests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
         self.assertContains(response, "Réseau")
-        self.assertContains(response, "Configuration")
+        self.assertContains(response, "Paramètres")
         self.assertContains(response, "Admin avancé")
 
     def test_dashboard_toggle_staff_only(self):
@@ -5500,7 +5477,9 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Réviser")
         self.assertContains(response, "Futur scolaire")
         self.assertContains(response, "landing-entry-grid")
-        self.assertContains(response, "home-secondary-grid")
+        self.assertNotContains(response, "home-secondary-grid")
+        self.assertNotContains(response, "Repères de séance")
+        self.assertNotContains(response, "Ce que cette version reprend")
 
     def test_student_module_links_present(self):
         response = self.client.get(reverse("surveys:student_modules"))
@@ -5547,13 +5526,12 @@ class RedesignUITests(TestCase):
         if "resource-grid" not in response.content.decode():
             self.assertContains(response, "Aucun support publié")
 
-    def test_dashboard_home_contains_kpis_actions_and_tools(self):
+    def test_dashboard_home_contains_compact_module_table_and_preserved_tools(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Total réponses")
         self.assertContains(response, "Gestion des modules")
         self.assertContains(response, "dashboard-module-table")
-        self.assertContains(response, "Outils formateur")
+        self.assertContains(response, "Fonctions complémentaires")
         self.assertContains(response, "compact-link-list")
 
     def test_dashboard_has_breadcrumbs(self):

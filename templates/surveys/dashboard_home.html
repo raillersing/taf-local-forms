@@ -1,6 +1,4 @@
 {% extends "base.html" %}
-{% load static %}
-
 {% block title %}Cockpit formateur — Tableau de bord{% endblock %}
 {% block page_header %}{% endblock %}
 
@@ -28,22 +26,10 @@
             <h1 id="dashboard-heading">Gestion des modules</h1>
             <p class="text-secondary">Ouvrir/fermer les sessions, accéder aux dashboards et exports.</p>
         </div>
-        <a class="btn btn-secondary p6-button" href="#exports">Exports CSV</a>
+        <a class="btn btn-secondary p6-button" href="?tools=open#exports">Exports CSV</a>
     </section>
 
-    <section class="dashboard-summary-strip" aria-label="Vue séance">
-        <article class="kpi-card p6-card"><div class="kpi-label">Total réponses</div><div class="kpi-value">{{ total_submissions }}</div></article>
-        <article class="kpi-card p6-card"><div class="kpi-label">Total élèves</div><div class="kpi-value">{{ total_students }}</div></article>
-        <article class="kpi-card p6-card"><div class="kpi-label">Score moyen</div><div class="kpi-value">{{ average_score|floatformat:1 }}/5</div></article>
-        <article class="kpi-card p6-card"><div class="kpi-label">Modules ouverts</div><div class="kpi-value">{{ modules_open }}/{{ module_list|length }}</div></article>
-        <article class="kpi-card p6-card"><div class="kpi-label">Supports publiés</div><div class="kpi-value">{{ published_resources_count }}</div></article>
-    </section>
-
-    <section id="modules" class="p6-card dashboard-module-table-card" aria-labelledby="modules-table-heading">
-        <div class="table-card-header">
-            <h2 id="modules-table-heading">Modules de formation</h2>
-            <span class="pill ok p6-badge p6-badge-soft">{{ module_list|length }} modules suivis</span>
-        </div>
+    <section id="modules" class="p6-card dashboard-module-table-card" aria-label="Modules de formation">
         <div class="taf-table-wrap">
             <table class="taf-table dashboard-module-table">
                 <thead>
@@ -77,13 +63,18 @@
                         <td class="table-actions">
                             {% if item.has_active_session %}
                             <a class="btn btn-sm btn-secondary p6-button" href="{% url dashboard_url %}">Détail</a>
-                            <a class="btn btn-sm btn-secondary p6-button" href="{% url export_url %}">Export CSV</a>
-                            <form method="post" action="{% url 'surveys:toggle_module_responses' module_code=item.module.code %}">
-                                {% csrf_token %}
-                                <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
-                                    {% if item.accepting_responses %}Fermer{% else %}Ouvrir{% endif %}
-                                </button>
-                            </form>
+                            <details class="table-action-menu">
+                                <summary>Plus</summary>
+                                <div>
+                                    <a class="text-link" href="{% url export_url %}">Export CSV</a>
+                                    <form method="post" action="{% url 'surveys:toggle_module_responses' module_code=item.module.code %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">
+                                            {% if item.accepting_responses %}Fermer les réponses{% else %}Ouvrir les réponses{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </details>
                             {% else %}
                             <span class="muted">Préparer dans Admin avancé</span>
                             {% endif %}
@@ -99,47 +90,11 @@
         </div>
     </section>
 
-    <section class="grid cols-3 p6-grid dashboard-page-links" aria-label="Pages formateur dédiées">
-        <article class="card p6-card">
-            <div class="card-body">
-                <h2>Vue séance</h2>
-                <p class="text-secondary">Préparer l'accès de la classe, le réseau et la projection.</p>
-                <a class="btn btn-primary p6-button" href="{% url 'surveys:dashboard_projection' %}">Ouvrir la projection</a>
-            </div>
-        </article>
-        <article class="card p6-card" data-student-access data-student-url="{{ student_access_url|default:''|escape }}">
-            <div class="card-body">
-                <h2>Accès élèves</h2>
-                <span class="badge badge-neutral p6-badge">Réseau local</span>
-                <p class="text-secondary">Diagnostic réseau complet, URL élèves et contrôle LAN.</p>
-                {% if student_access_ready %}
-                <p class="student-access-url student-access-url-compact">{{ student_access_url }}</p>
-                {% else %}
-                <p class="student-access-url student-access-url-compact student-access-url-missing">URL LAN non configurée · Disponible après configuration réseau</p>
-                {% endif %}
-                <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Ouvrir les paramètres réseau</a>
-                <button type="button" class="btn btn-sm btn-primary p6-button" data-copy-url {% if not student_access_ready %}disabled{% endif %}>Copier l'URL élèves</button>
-                <p class="student-access-feedback" data-copy-feedback aria-live="polite"></p>
-                <div class="student-qr-shell student-qr-shell-compact">
-                    <div class="student-qr-code" data-qr-target aria-label="QR code de l'accès élèves"></div>
-                </div>
-                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_network' %}">Diagnostic réseau complet</a>
-            </div>
-        </article>
-        <article class="card p6-card">
-            <div class="card-body">
-                <h2>Après la séance</h2>
-                <p class="text-secondary">Exporter, sauvegarder et clôturer proprement.</p>
-                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_backup' %}">Ouvrir la sauvegarde</a>
-            </div>
-        </article>
-    </section>
-
-    <section class="grid cols-2 p6-grid dashboard-page-links">
-        <article id="presence" class="card p6-card">
-            <div class="card-body">
-                <h2>Présence en direct</h2>
-                <p class="text-secondary">Le compteur live reste actif sur les pages formateur sans encombrer la gestion des modules.</p>
+    <details class="dashboard-complementary p6-card"{% if request.GET.tools == "open" %} open{% endif %}>
+        <summary>Fonctions complémentaires</summary>
+        <div class="dashboard-complementary-body">
+            <section id="presence" aria-labelledby="presence-title">
+                <h2 id="presence-title">Présence en direct</h2>
                 <div id="presence-container" class="presence-grid presence-grid-compact">
                     <span id="presence-module-2" class="presence-count">…</span>
                     <span id="presence-module-3" class="presence-count">…</span>
@@ -150,12 +105,9 @@
                     <span id="presence-module-8" class="presence-count">…</span>
                     <span id="presence-total" class="presence-count">…</span>
                 </div>
-            </div>
-        </article>
-        <article id="exports" class="card p6-card">
-            <div class="card-body">
-                <h2>Exports CSV</h2>
-                <p class="text-secondary">Télécharge les résultats module par module.</p>
+            </section>
+            <section id="exports" aria-labelledby="exports-title">
+                <h2 id="exports-title">Exports CSV</h2>
                 <div class="compact-link-list">
                     <a href="{% url 'surveys:export_module_2_csv' %}">Export Module 2</a>
                     <a href="{% url 'surveys:export_module_3_csv' %}">Export Module 3</a>
@@ -165,29 +117,13 @@
                     <a href="{% url 'surveys:export_module_7_csv' %}">Export Module 7</a>
                     <a href="{% url 'surveys:export_module_8_csv' %}">Export Module 8</a>
                 </div>
-            </div>
-        </article>
-    </section>
-
-    <section id="advanced" class="card p6-card">
-        <div class="card-body">
-            <h2>Outils formateur</h2>
-            <div class="compact-link-list">
-                <a href="{% url 'surveys:dashboard_network_control' %}">Contrôle réseau local</a>
-                <a href="{% url 'surveys:dashboard_settings' %}">Paramètres réseau</a>
-                <a href="{% url 'surveys:dashboard_settings' %}">Configuration</a>
-                <a href="{% url 'surveys:dashboard_supports' %}">Supports pédagogiques</a>
-                <a href="/docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer">Guide dépannage réseau</a>
-                <a href="{% url 'admin:index' %}">Admin avancé</a>
-            </div>
+            </section>
         </div>
-    </section>
+    </details>
 </main>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/vendor/qrcode.js' %}"></script>
-<script src="{% static 'js/taf_projection.js' %}"></script>
 <script>
 (function() {
     var poll = function() {
