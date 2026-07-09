@@ -34,22 +34,12 @@
                         {% else %}
                         <span class="badge badge-info p6-badge">Étudiant</span>
                         <span class="pill p6-badge p6-badge-soft">Parcours public</span>
+                        <span class="sr-only">Parcours étudiant</span>
                         {% if view_name == 'surveys:home' %}
                         <a class="shell-role-action shell-role-action-secure" href="{% url 'surveys:dashboard_home' %}">Espace formateur <span aria-hidden="true">🔒</span></a>
                         {% endif %}
                         {% endif %}
                     </div>
-                    {% if view_name != 'surveys:home' %}
-                    <p class="shell-header-note p6-header-note">
-                        {% if 'dashboard_' in view_name %}
-                        Projection, réseau, modules et supports restent regroupés côté formateur.
-                        {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
-                        Modules, supports et repères utiles seulement, sans liens techniques.
-                        {% else %}
-                        Entrée simple vers l’espace étudiant, les supports et le cockpit formateur.
-                        {% endif %}
-                    </p>
-                    {% endif %}
                 </div>
             </div>
         </header>
@@ -62,13 +52,63 @@
         <div class="topbar p6-topbar" id="topbar">
             <div class="container topbar-inner topbar-inner-compact p6-topbar-inner">
                 <div class="topbar-copy p6-topbar-copy">
-                    {% if 'dashboard_' in view_name %}
-                    <span class="route-chip">Cockpit formateur</span>
-                    {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
-                    <span class="route-chip">Parcours étudiant</span>
-                    {% else %}
-                    <span class="route-chip">Accueil public</span>
-                    {% endif %}
+                    <nav class="breadcrumb-shell topbar-breadcrumb-shell" aria-label="Fil d'Ariane">
+                        <ol class="ldlc-breadcrumb" id="path-breadcrumb">
+                            {% if 'dashboard_' in view_name %}
+                            <li class="crumb-item"><a class="crumb-link" href="{% url 'surveys:dashboard_home' %}">⌂ Formateur</a></li>
+                            <li class="crumb-item"><span class="crumb-sep">›</span></li>
+                            <li class="crumb-item">
+                                {% if view_name == 'surveys:dashboard_home' %}
+                                <span class="crumb-current crumb-label">Cockpit</span>
+                                {% elif view_name == 'surveys:dashboard_projection' %}
+                                <span class="crumb-current crumb-label">Projection</span>
+                                {% elif view_name == 'surveys:dashboard_exports' %}
+                                <span class="crumb-current crumb-label">Exports</span>
+                                {% elif view_name == 'surveys:dashboard_supports' %}
+                                <span class="crumb-current crumb-label">Supports</span>
+                                {% elif view_name == 'surveys:dashboard_support_upload' %}
+                                <span class="crumb-current crumb-label">Ajouter un support</span>
+                                {% elif view_name == 'surveys:dashboard_network' %}
+                                <span class="crumb-current crumb-label">Réseau</span>
+                                {% elif view_name == 'surveys:dashboard_network_control' %}
+                                <span class="crumb-current crumb-label">Contrôle LAN</span>
+                                {% elif view_name == 'surveys:dashboard_settings' %}
+                                <span class="crumb-current crumb-label">Config</span>
+                                {% elif view_name == 'surveys:dashboard_backup' %}
+                                <span class="crumb-current crumb-label">Sauvegarde</span>
+                                {% elif 'dashboard_module_' in view_name %}
+                                <span class="crumb-current crumb-label">Module</span>
+                                {% else %}
+                                <span class="crumb-current crumb-label">Cockpit</span>
+                                {% endif %}
+                            </li>
+                            {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
+                            <li class="crumb-item"><a class="crumb-link" href="{% url 'surveys:home' %}">⌂ Élève</a></li>
+                            <li class="crumb-item"><span class="crumb-sep">›</span></li>
+                            <li class="crumb-item">
+                                {% if view_name == 'surveys:student_modules' %}
+                                <span class="crumb-current crumb-label">Modules</span>
+                                {% elif 'module_' in view_name %}
+                                <a class="crumb-link" href="{% url 'surveys:student_modules' %}">Modules</a>
+                                <span class="crumb-sep">›</span>
+                                <span class="crumb-current crumb-label">Activité</span>
+                                {% elif view_name == 'surveys:support_list' %}
+                                <span class="crumb-current crumb-label">Supports</span>
+                                {% elif 'support' in view_name %}
+                                <a class="crumb-link" href="{% url 'surveys:support_list' %}">Supports</a>
+                                <span class="crumb-sep">›</span>
+                                <span class="crumb-current crumb-label">Détail</span>
+                                {% else %}
+                                <span class="crumb-current crumb-label">Parcours</span>
+                                {% endif %}
+                            </li>
+                            {% else %}
+                            <li class="crumb-item"><a class="crumb-link" href="{% url 'surveys:home' %}">⌂ Accueil</a></li>
+                            <li class="crumb-item"><span class="crumb-sep">›</span></li>
+                            <li class="crumb-item"><span class="crumb-current crumb-label">Projet</span></li>
+                            {% endif %}
+                        </ol>
+                    </nav>
                 </div>
                 <div class="topbar-actions" id="topbar-actions">
                     {% block topbar_actions %}{% endblock %}

@@ -386,6 +386,18 @@ textarea {
   gap: 8px;
 }
 
+.topbar-breadcrumb-shell {
+  min-height: 34px;
+}
+
+.topbar-breadcrumb-shell .ldlc-breadcrumb {
+  font-size: 0.9rem;
+}
+
+.shell-main > main > .breadcrumb-shell:first-child {
+  display: none;
+}
+
 .shell-main,
 .p6-main {
   padding-top: 24px;

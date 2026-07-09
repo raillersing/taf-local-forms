@@ -7,8 +7,8 @@
 {% endblock %}
 
 {% block topbar_actions %}
-<a class="shell-inline-action" href="{% url 'surveys:dashboard_projection' %}">Projection</a>
-<a class="shell-inline-action" href="{% url 'surveys:dashboard_network' %}">Réseau</a>
+<a class="btn btn-sm btn-primary" href="{% url 'surveys:dashboard_projection' %}">🖥 Projection</a>
+<a class="btn btn-sm btn-secondary" href="{% url 'surveys:dashboard_network' %}">Tester réseau</a>
 {% endblock %}
 
 {% block content %}
@@ -89,7 +89,7 @@
         </article>
     </section>
 
-    <details id="modules" class="dashboard-complementary p6-card" open>
+    <details id="modules" class="dashboard-complementary p6-card">
         <summary>Gestion des modules</summary>
         <div class="dashboard-complementary-body">
             <section class="p6-section-head dashboard-list-head dashboard-inline-head" aria-labelledby="modules-heading">

@@ -8,11 +8,6 @@
     {% include "surveys/partials/nav_trainer.html" %}
 {% endblock %}
 
-{% block topbar_actions %}
-    <a class="shell-inline-action" href="{% url 'surveys:dashboard_network' %}">Réseau</a>
-    <a class="shell-inline-action" href="{% url 'surveys:dashboard_settings' %}">Paramètres</a>
-{% endblock %}
-
 {% block content %}
 <main id="content" class="content-grid network-control-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
