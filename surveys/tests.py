@@ -2369,7 +2369,7 @@ class F022RNavigationRewireTests(TestCase):
 
     def test_student_modules_shows_open_module_cta(self):
         response = self.client.get(reverse("surveys:student_modules"))
-        self.assertContains(response, "Répondre")
+        self.assertContains(response, "Découvrir")
 
     def test_student_modules_no_full_pedagogy(self):
         """Module list should NOT contain the full detailed pedagogy for all modules."""
@@ -5470,6 +5470,23 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Cockpit formateur")
         self.assertNotContains(response, "Contrôle réseau")
 
+    def test_home_stays_in_student_context_when_trainer_session_exists(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:home"))
+
+        self.assertContains(response, "Étudiant")
+        self.assertContains(response, "Parcours public")
+        self.assertContains(response, "Espace formateur")
+        self.assertContains(response, reverse("surveys:dashboard_home"))
+        self.assertNotContains(response, "Cockpit protégé")
+
+    def test_trainer_entry_is_password_protected(self):
+        response = self.client.get(reverse("surveys:dashboard_home"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
     def test_home_contains_expected_prototype6_blocks(self):
         response = self.client.get(reverse("surveys:home"))
         self.assertContains(response, "Séance en cours")
@@ -5525,6 +5542,31 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "support-filter-card")
         if "resource-grid" not in response.content.decode():
             self.assertContains(response, "Aucun support publié")
+
+    def test_questionnaire_uses_guided_student_layout(self):
+        response = self.client.get(reverse("surveys:module_2"))
+
+        self.assertContains(response, "student-questionnaire-page")
+        self.assertContains(response, "questionnaire-progress")
+        self.assertContains(response, "À toi de jouer")
+        self.assertContains(response, "Environ 10 minutes")
+
+    def test_module_detail_uses_interactive_learning_layout(self):
+        response = self.client.get(reverse("surveys:student_module_2_detail"))
+
+        self.assertContains(response, "learning-page")
+        self.assertContains(response, "Cours interactif")
+        self.assertContains(response, "Explore les chapitres")
+        self.assertContains(response, "Prêt à vérifier tes connaissances")
+
+    def test_network_dashboard_uses_progressive_disclosure(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_network"))
+
+        self.assertContains(response, "network-command-bar")
+        self.assertContains(response, "Répertoire des adresses")
+        self.assertContains(response, "Diagnostic technique avancé")
+        self.assertNotContains(response, '<details class="diagnostics" open>')
 
     def test_dashboard_home_contains_compact_module_table_and_preserved_tools(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5615,7 +5657,7 @@ class RedesignUITests(TestCase):
         session.accepting_responses = False
         session.save(update_fields=["accepting_responses"])
         response = self.client.get(reverse("surveys:student_modules"))
-        self.assertContains(response, "Les cartes gardent le style simple et lisible sur téléphone.")
+        self.assertContains(response, "découvre l’objectif puis commence l’activité")
         self.assertContains(response, "Ouvert")
         self.assertContains(response, "Préparé")
 

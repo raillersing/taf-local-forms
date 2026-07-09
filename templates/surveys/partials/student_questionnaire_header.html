@@ -1,0 +1,24 @@
+<section class="questionnaire-banner" aria-labelledby="questionnaire-title">
+    <div>
+        <span class="section-kicker">À toi de jouer</span>
+        <h1 id="questionnaire-title">{{ module_heading }}</h1>
+        <p>{{ module_summary }}</p>
+    </div>
+    <div class="questionnaire-banner-meta">
+        {% if accepting_responses %}
+        <span class="badge badge-success">Réponses ouvertes</span>
+        {% else %}
+        <span class="badge badge-warning">Lecture seule</span>
+        {% endif %}
+        <span class="questionnaire-time">Environ 10 minutes</span>
+    </div>
+    <div class="questionnaire-reminder">
+        <strong>Ton identifiant :</strong> Entre exactement 2 chiffres. Exemple : 07.
+        <span>Une seule réponse par séance.</span>
+    </div>
+</section>
+<div class="questionnaire-progress" aria-label="Étapes du questionnaire">
+    <span class="active">1. Ton profil</span>
+    <span>2. Ton activité</span>
+    <span>3. Ton bilan</span>
+</div>

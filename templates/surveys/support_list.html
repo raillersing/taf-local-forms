@@ -12,13 +12,9 @@
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Élève" crumb_1_url=home_url current_label="Supports" %}
 
-    <nav class="prototype-page-tabs" aria-label="Actions supports">
-        <span class="page-tab active">▣ Gestion</span>
-        <span class="page-tab page-tab-muted">ℹ Ajouter</span>
-    </nav>
-
     <section class="p6-section-head" aria-labelledby="supports-heading">
         <div>
+            <span class="section-kicker">Bibliothèque d’apprentissage</span>
             <h1 id="supports-heading">Médiathèque locale</h1>
             <p class="text-secondary"><strong>Catalogue public</strong> de documents et vidéos publiés par le formateur, disponibles sur le réseau local.</p>
         </div>

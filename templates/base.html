@@ -30,12 +30,13 @@
                         {% if 'dashboard_' in view_name %}
                         <span class="badge badge-info p6-badge">Formateur</span>
                         <span class="pill ok p6-badge p6-badge-soft">Cockpit protégé</span>
-                        {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
+                        <a class="shell-role-action" href="{% url 'surveys:home' %}">Voir l’espace élève</a>
+                        {% else %}
                         <span class="badge badge-info p6-badge">Étudiant</span>
                         <span class="pill p6-badge p6-badge-soft">Parcours public</span>
-                        {% else %}
-                        <span class="badge badge-success p6-badge">Formateur</span>
-                        <span class="pill p6-badge p6-badge-soft">Passer élève</span>
+                        {% if view_name == 'surveys:home' %}
+                        <a class="shell-role-action shell-role-action-secure" href="{% url 'surveys:dashboard_home' %}">Espace formateur <span aria-hidden="true">🔒</span></a>
+                        {% endif %}
                         {% endif %}
                     </div>
                     {% if view_name != 'surveys:home' %}

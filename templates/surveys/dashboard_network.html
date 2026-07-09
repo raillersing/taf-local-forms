@@ -3,7 +3,7 @@
 
 {% block title %}Réseau local — Cockpit formateur{% endblock %}
 {% block hero_title %}Réseau local{% endblock %}
-{% block hero_text %}Vérifie les adresses utiles pour les élèves et les liens internes du formateur, sans modifier la logique applicative.{% endblock %}
+{% block hero_text %}Prépare l’accès de la classe, vérifie l’état du réseau puis partage une seule adresse aux élèves.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
@@ -13,6 +13,12 @@
 <main id="content" class="content-grid dashboard-network-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Réseau local" %}
+
+    <section class="network-command-bar" aria-label="Parcours réseau">
+        <div class="network-command-step active"><span>1</span><div><strong>Vérifier</strong><small>Contrôler l’adresse et le statut</small></div></div>
+        <div class="network-command-step"><span>2</span><div><strong>Projeter</strong><small>Afficher le QR code en classe</small></div></div>
+        <div class="network-command-step"><span>3</span><div><strong>Dépanner</strong><small>Ouvrir le contrôle LAN si nécessaire</small></div></div>
+    </section>
 
     {% if lan_host_stale %}
     <section class="card alert-warning">
@@ -84,7 +90,12 @@
         <article class="kpi-card"><div class="kpi-label">Statut</div><div class="kpi-value network-kpi-text">{% if configured_host and not lan_host_stale %}OK{% elif configured_host and lan_host_stale %}À synchroniser{% elif current_request_is_lan %}Détecté{% else %}Non configuré{% endif %}</div></article>
     </section>
 
-    <section class="grid cols-2">
+    <details class="network-directory p6-card">
+        <summary>
+            <span><strong>Répertoire des adresses</strong><small>Modules publics, dashboards et exports protégés</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <section class="grid cols-2 network-directory-grid">
         <article class="panel">
             <div class="panel-title">
                 <h2>Modules élèves</h2>
@@ -122,14 +133,16 @@
                 <li><span class="muted">Admin</span><a class="text-link" href="{{ admin_url }}" target="_blank" rel="noopener noreferrer">{{ admin_url }}</a></li>
             </ul>
         </article>
-    </section>
+        </section>
+    </details>
 
-    <section class="panel p6-card">
-        <div class="panel-title">
-            <h2>Configuration actuelle</h2>
-            <span class="pill">Lecture</span>
-        </div>
-        <dl class="setting-list">
+    <details class="network-directory p6-card">
+        <summary>
+            <span><strong>Configuration actuelle</strong><small>Valeurs détectées et paramètres utilisés</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <div class="network-details-body">
+            <dl class="setting-list">
             <dt class="muted setting-label">TAF_LAN_HOST configuré</dt>
             <dd>{% if configured_host %}{{ configured_host }}{% else %}<span class="muted">Non défini</span>{% endif %}</dd>
 
@@ -148,17 +161,18 @@
                     <span class="muted">Aucune IP candidate détectée.</span>
                 {% endif %}
             </dd>
-        </dl>
-        <div class="back-links">
-            <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer depuis l'interface &rarr;</a>
-            {% if current_request_is_lan %}
-            <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-primary">Utiliser l'adresse actuelle</button>
-            </form>
-            {% endif %}
+            </dl>
+            <div class="back-links">
+                <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer depuis l'interface &rarr;</a>
+                {% if current_request_is_lan %}
+                <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Utiliser l'adresse actuelle</button>
+                </form>
+                {% endif %}
+            </div>
         </div>
-    </section>
+    </details>
 
     {% if warnings %}
     <section class="panel p6-card">
@@ -174,8 +188,8 @@
     </section>
     {% endif %}
 
-    <details class="diagnostics" open>
-        <summary>Diagnostic LAN (côté serveur)</summary>
+    <details class="diagnostics">
+        <summary>Diagnostic technique avancé</summary>
         <div>
         <dl class="setting-list">
             <dt class="muted setting-label">Environnement WSL</dt>
@@ -199,11 +213,12 @@
         </div>
     </details>
 
-    <section class="panel">
-        <div class="panel-title">
-            <h2>Si les élèves ne voient pas la page</h2>
-            <span class="pill">Dépannage</span>
-        </div>
+    <details class="network-directory p6-card">
+        <summary>
+            <span><strong>Si les élèves ne voient pas la page</strong><small>Checklist de dépannage en classe</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <div class="network-details-body">
         <ul class="troubleshoot-list">
             <li>Vérifie que le téléphone et l'ordinateur sont sur le <strong>même Wi-Fi ou hotspot</strong>.</li>
             <li>Vérifie que l'adresse ci-dessus est bien l'IP de l'ordinateur (pas une IP WSL ou Docker).</li>
@@ -218,7 +233,8 @@
         <p class="muted">
             Configure automatiquement le portproxy, le pare-feu et synchronise l'application.
         </p>
-    </section>
+        </div>
+    </details>
 
     <div class="back-links">
         <a class="text-link" href="{% url 'surveys:dashboard_home' %}">&larr; Cockpit formateur</a>

@@ -14,11 +14,12 @@
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label=module.title %}
-    <section class="panel p6-card student-detail-hero" aria-labelledby="module-detail-heading">
-        <div class="panel-title">
+    <section class="panel p6-card student-detail-hero learning-page" aria-labelledby="module-detail-heading">
+        <div class="learning-hero">
             <div>
+                <span class="section-kicker">Cours interactif</span>
                 <h2 id="module-detail-heading">{{ module.title }}</h2>
-                <p class="text-secondary">Lis d’abord les repères du module, puis ouvre le questionnaire si la séance l’autorise.</p>
+                <p class="text-secondary">{{ module.description|default:"Découvre les notions essentielles, avance chapitre par chapitre puis vérifie ce que tu as appris." }}</p>
             </div>
             <div class="badge-group">
                 {% if has_active_session %}
@@ -33,51 +34,36 @@
             </div>
         </div>
 
-        {% if module.code == "MODULE_2" %}
-            {% include "surveys/partials/module_2_pedagogy.html" %}
-        {% elif module.code == "MODULE_3" %}
-            {% include "surveys/partials/module_3_pedagogy.html" %}
-        {% elif module.code == "MODULE_4" %}
-            {% include "surveys/partials/module_4_pedagogy.html" %}
-        {% elif module.code == "MODULE_5" %}
-            {% include "surveys/partials/module_5_pedagogy.html" %}
-        {% elif module.code == "MODULE_6" %}
-            {% include "surveys/partials/module_6_pedagogy.html" %}
-        {% elif module.code == "MODULE_7" %}
-            {% include "surveys/partials/module_7_pedagogy.html" %}
-        {% elif module.code == "MODULE_8" %}
-            {% include "surveys/partials/module_8_pedagogy.html" %}
-        {% endif %}
-
-        <div class="student-journey-panel p6-card">
-            <p class="student-form-summary">
-                {% if has_active_session %}
-                    {% if accepting_responses %}
-                        Lis d'abord le résumé, puis ouvre le questionnaire quand tu es prêt.
-                    {% else %}
-                        La séance continue en lecture seule. Tu peux consulter le questionnaire sans envoyer de réponse.
-                    {% endif %}
-                {% else %}
-                    Ce module réapparaîtra dès qu'une séance active sera ouverte par le formateur.
-                {% endif %}
-            </p>
-            <div class="grid cols-3 student-tip-grid">
-                <article class="step">
-                    <strong>1. Comprendre</strong>
-                    <p>Lis les repères pédagogiques avant d'ouvrir le questionnaire.</p>
-                </article>
-                <article class="step">
-                    <strong>2. Vérifier l'état</strong>
-                    <p>Regarde si les réponses sont ouvertes, fermées ou indisponibles.</p>
-                </article>
-                <article class="step">
-                    <strong>3. Répondre ou consulter</strong>
-                    <p>Le bouton ci-dessous correspond à l'état réel de la séance.</p>
-                </article>
-            </div>
+        <div class="learning-overview" aria-label="Organisation du cours">
+            <div><strong>1</strong><span>Lis le résumé</span></div>
+            <div><strong>2</strong><span>Explore les chapitres</span></div>
+            <div><strong>3</strong><span>Teste tes acquis</span></div>
         </div>
 
-        <div class="cta-section student-detail-actions">
+        <div class="learning-content">
+            {% if module.code == "MODULE_2" %}
+                {% include "surveys/partials/module_2_pedagogy.html" %}
+            {% elif module.code == "MODULE_3" %}
+                {% include "surveys/partials/module_3_pedagogy.html" %}
+            {% elif module.code == "MODULE_4" %}
+                {% include "surveys/partials/module_4_pedagogy.html" %}
+            {% elif module.code == "MODULE_5" %}
+                {% include "surveys/partials/module_5_pedagogy.html" %}
+            {% elif module.code == "MODULE_6" %}
+                {% include "surveys/partials/module_6_pedagogy.html" %}
+            {% elif module.code == "MODULE_7" %}
+                {% include "surveys/partials/module_7_pedagogy.html" %}
+            {% elif module.code == "MODULE_8" %}
+                {% include "surveys/partials/module_8_pedagogy.html" %}
+            {% endif %}
+        </div>
+
+        <div class="cta-section student-detail-actions learning-cta">
+            <div>
+                <strong>Prêt à vérifier tes connaissances ?</strong>
+                <p>Prends ton temps et réponds avec ce que tu as compris.</p>
+                <p class="sr-only">Le bouton ci-dessous correspond à l'état réel de la séance.</p>
+            </div>
             {% if has_active_session %}
                 {% if accepting_responses %}
                     {% if module.code == "MODULE_2" %}
@@ -116,7 +102,7 @@
                 <p class="muted">Aucune session active pour ce module. Reviens plus tard ou demande au formateur.</p>
             {% endif %}
 
-            <a class="text-link" href="{% url 'surveys:student_modules' %}">&larr; Retour aux modules</a>
+            <a class="text-link" href="{% url 'surveys:student_modules' %}">Retour aux modules</a>
         </div>
     </section>
 </main>

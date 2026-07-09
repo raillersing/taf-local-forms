@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid student-questionnaire-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 2 — Questionnaire" %}
@@ -21,12 +21,8 @@
     </section>
     {% endif %}
 
-    <section class="card intro-card" aria-labelledby="intro-title">
-        <div id="intro-title">
-            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 2 — Comprendre Internet" module_summary=module_2_summary %}
-        </div>
-        {% include "surveys/partials/module_2_pedagogy.html" %}
-    </section>
+    {% include "surveys/partials/student_questionnaire_header.html" with module_heading="Module 2 — Comprendre Internet" module_summary=module_2_summary %}
+    {% include "surveys/partials/questionnaire_course_review.html" with module_number="2" %}
 
     <form method="post" class="card form-card">
         {% csrf_token %}

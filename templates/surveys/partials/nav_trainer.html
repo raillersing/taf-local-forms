@@ -18,7 +18,7 @@
             </li>
         </ul>
         <details class="shell-tools-menu" {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' or request.resolver_match.view_name == 'surveys:dashboard_network_control' or request.resolver_match.view_name == 'surveys:dashboard_settings' or request.resolver_match.view_name == 'surveys:dashboard_backup' %}open{% endif %}>
-            <summary class="shell-tools-summary"><span class="p6-nav-emoji" aria-hidden="true">🧰</span>Outils</summary>
+            <summary class="shell-tools-summary"><span class="p6-nav-emoji" aria-hidden="true">🧰</span>Ouvrir les outils <span class="tools-chevron" aria-hidden="true">⌄</span></summary>
             <div class="shell-tools-panel" aria-label="Accès secondaires formateur">
                 <a class="shell-tools-link" href="{% url 'surveys:dashboard_network' %}">Réseau</a>
                 <a class="shell-tools-link" href="{% url 'surveys:dashboard_network_control' %}">Contrôle LAN</a>

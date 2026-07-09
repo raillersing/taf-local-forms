@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid student-questionnaire-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 4 — Questionnaire" %}
@@ -19,12 +19,8 @@
     </section>
     {% endif %}
 
-    <section class="card intro-card" aria-labelledby="intro-heading">
-        <div id="intro-heading">
-            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 4 — Sources fiables" module_summary=module_4_summary %}
-        </div>
-        {% include "surveys/partials/module_4_pedagogy.html" %}
-    </section>
+    {% include "surveys/partials/student_questionnaire_header.html" with module_heading="Module 4 — Sources fiables" module_summary=module_4_summary %}
+    {% include "surveys/partials/questionnaire_course_review.html" with module_number="4" %}
 
     <section class="card" aria-labelledby="objectifs-heading">
         <h2 id="objectifs-heading">Objectifs de la séance</h2>

@@ -12,14 +12,11 @@
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Élève" crumb_1_url=home_url current_label="Modules" %}
 
-    <nav class="prototype-page-tabs" aria-label="Affichage modules">
-        <span class="page-tab active">▣ Liste</span>
-    </nav>
-
     <section class="p6-section-head" aria-labelledby="welcome-heading">
         <div>
+            <span class="section-kicker">Parcours d’apprentissage</span>
             <h1 id="welcome-heading">Modules TAfHSSiM</h1>
-            <p class="text-secondary">Choisis le module indiqué par le formateur. Les cartes gardent le style simple et lisible sur téléphone.</p>
+            <p class="text-secondary">Choisis le module indiqué par le formateur, découvre l’objectif puis commence l’activité.</p>
         </div>
         <span class="pill ok p6-badge p6-badge-soft">Modules 2 à 8</span>
     </section>
@@ -38,7 +35,7 @@
                     <span class="badge badge-success p6-badge">Ouvert</span>
                     <span class="sr-only">Réponses ouvertes</span>
                     <span class="sr-only">Ouvrir le module</span>
-                    <a class="btn btn-sm btn-primary p6-button" href="{{ item.detail_url }}">Répondre</a>
+                    <a class="btn btn-sm btn-primary p6-button" href="{{ item.detail_url }}">Découvrir</a>
                     {% else %}
                     <span class="badge badge-warning p6-badge">Préparé</span>
                     <span class="sr-only">Consultation seulement</span>
