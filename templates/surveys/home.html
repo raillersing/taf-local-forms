@@ -29,7 +29,11 @@
             </div>
             <article class="landing-url-card">
                 <strong>URL élèves</strong>
-                <p>Disponible depuis le cockpit formateur</p>
+                {% if student_access_ready %}
+                <p>{{ student_access_url }}/</p>
+                {% else %}
+                <p>Disponible après configuration réseau</p>
+                {% endif %}
             </article>
             <div class="footer-note">Aucun compte élève requis. Utilise l'identifiant à 2 chiffres donné en classe.</div>
         </aside>
@@ -50,11 +54,11 @@
                 <a class="btn btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
             </div>
         </article>
-        <article id="espace-formateur" class="card p6-card landing-entry-card">
+        <article id="futur-scolaire" class="card p6-card landing-entry-card">
             <div class="card-body">
                 <h2 class="mb-2"><span aria-hidden="true">🏫</span> Futur scolaire</h2>
                 <p class="text-secondary mb-4">Préparer la suite avec les futures ressources par matière, niveau et chapitre, sans perdre les accès déjà en place.</p>
-                <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_home' %}">Explorer</a>
+                <a class="btn btn-secondary p6-button" href="{% url 'surveys:school_subjects' %}">Explorer</a>
             </div>
         </article>
     </section>

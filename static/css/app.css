@@ -1410,10 +1410,15 @@ textarea:focus {
   background: var(--surface);
 }
 
+.checkbox-list .field label.choice,
 .checkbox-list .field label {
   grid-column: 2;
   grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
+  font-weight: 700;
 }
 
 .checkbox-list .field input[type="checkbox"] {
@@ -1422,6 +1427,40 @@ textarea:focus {
   width: 20px;
   height: 20px;
   margin: 0;
+  accent-color: var(--primary);
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.1s;
+  font-weight: 700;
+}
+
+.choice:hover {
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+
+.choice input[type="radio"],
+.choice input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
   accent-color: var(--primary);
 }
 

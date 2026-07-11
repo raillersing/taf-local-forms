@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -69,10 +69,12 @@ def _mark_presence_submitted(request, module_code, session):
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    return render(request, "surveys/home.html", _build_home_context())
+    return render(request, "surveys/home.html", _build_home_context(request))
 
 
-def _build_home_context() -> dict:
+def _build_home_context(request: HttpRequest | None = None) -> dict:
+    from .network import get_network_access_context
+
     modules_total = TrainingModule.objects.count() or 7
     modules_open = (
         TrainingSession.objects.filter(is_active=True, accepting_responses=True)
@@ -89,11 +91,15 @@ def _build_home_context() -> dict:
         + Module7Submission.objects.count()
         + Module8Submission.objects.count()
     )
+    net_ctx = get_network_access_context(request) if request else {}
     return {
         "modules_total": modules_total,
         "modules_open": modules_open,
         "total_submissions": total_submissions,
         "published_resources_count": _published_resources_queryset().count(),
+        "network": net_ctx,
+        "student_access_url": net_ctx.get("recommended_student_base_url", ""),
+        "student_access_ready": bool(net_ctx.get("recommended_student_base_url", "")),
     }
 
 
@@ -240,6 +246,15 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
         "accepting_responses": accepting,
         "summary": summary,
     })
+
+
+def project(request: HttpRequest) -> HttpResponse:
+    return render(request, "surveys/project.html", {})
+
+
+def school_subjects(request: HttpRequest) -> HttpResponse:
+    subjects = Subject.objects.filter(is_active=True).order_by("sort_order", "name")
+    return render(request, "surveys/school_subjects.html", {"subjects": subjects})
 
 
 def support_list(request: HttpRequest) -> HttpResponse:
@@ -401,6 +416,17 @@ def module_2_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 @login_required
 def dashboard_home(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_home.html", _build_cockpit_context(request))
+
+
+@staff_member_required
+def dashboard_advanced(request: HttpRequest) -> HttpResponse:
+    return render(
+        request,
+        "surveys/dashboard_advanced.html",
+        {
+            "db_engine": connection.vendor,
+        },
+    )
 
 
 @login_required

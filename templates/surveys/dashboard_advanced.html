@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Admin avancé — Cockpit formateur{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid dashboard-advanced-page">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Admin avancé" %}
+
+    <section class="p6-section-head" aria-labelledby="advanced-heading">
+        <div>
+            <h1 id="advanced-heading">Admin avancé</h1>
+            <p class="text-secondary mb-4">Zone séparée pour contrôles techniques non destructifs.</p>
+        </div>
+        <span class="pill danger p6-badge p6-badge-soft">Accès restreint</span>
+    </section>
+
+    <section class="grid cols-2 p6-grid">
+        <article class="card p6-card">
+            <div class="card-header"><div class="card-title">État système</div></div>
+            <div class="card-body">
+                <div class="taf-table-wrap">
+                    <table class="taf-table">
+                        <thead>
+                            <tr><th>Contrôle</th><th>Statut</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Django check</td><td><span class="pill warn">À lancer hors requête</span></td></tr>
+                            <tr><td>Migrations</td><td><span class="pill warn">À lancer hors requête</span></td></tr>
+                            <tr><td>Secrets affichés</td><td><span class="pill ok">Non</span></td></tr>
+                            <tr><td>Moteur de base</td><td><span class="pill ok">{{ db_engine|title }}</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+
+        <article class="card p6-card">
+            <div class="card-header"><div class="card-title">Actions verrouillées</div></div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    Les suppressions de volume, flush base ou nettoyage global ne doivent pas être exposés comme boutons standards.
+                </div>
+                <ul class="steps">
+                    <li class="step"><strong>Ne jamais exécuter</strong><span class="text-secondary"><code>docker compose down --volumes</code> — supprime les volumes persistants.</span></li>
+                    <li class="step"><strong>Ne jamais exécuter</strong><span class="text-secondary"><code>docker system prune --all-volumes</code> — détruit toutes les données non attachées.</span></li>
+                    <li class="step"><strong>Ne jamais exécuter</strong><span class="text-secondary"><code>flush</code> — vide la base de données.</span></li>
+                </ul>
+            </div>
+        </article>
+    </section>
+
+    <section class="card p6-card">
+        <div class="card-header"><div class="card-title">Contrôles à lancer en terminal</div></div>
+        <div class="card-body">
+            <pre class="code-block">.venv-wsl/bin/python manage.py check
+.venv-wsl/bin/python manage.py makemigrations --check --dry-run
+.venv-wsl/bin/python manage.py test surveys.tests</pre>
+        </div>
+    </section>
+
+    <div class="back-links">
+        <a class="text-link" href="{% url 'surveys:dashboard_home' %}">← Retour au cockpit</a>
+        <a class="text-link" href="{% url 'admin:index' %}">Admin Django →</a>
+    </div>
+</main>
+{% endblock %}

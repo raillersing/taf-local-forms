@@ -4,11 +4,14 @@
             <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
                 <a href="{% url 'surveys:home' %}"><span class="p6-nav-emoji" aria-hidden="true">🏠</span>Accueil</a>
             </li>
-            <li class="nav-item">
-                <a href="{% url 'surveys:home' %}#le-projet"><span class="p6-nav-emoji" aria-hidden="true">ℹ️</span>Le projet</a>
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:project' %}active{% endif %}">
+                <a href="{% url 'surveys:project' %}"><span class="p6-nav-emoji" aria-hidden="true">ℹ️</span>Le projet</a>
             </li>
             <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' or request.resolver_match and 'module' in request.resolver_match.view_name %}active{% endif %}">
                 <a href="{% url 'surveys:student_modules' %}"><span class="p6-nav-emoji" aria-hidden="true">📚</span>Modules</a>
+            </li>
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:school_subjects' %}active{% endif %}">
+                <a href="{% url 'surveys:school_subjects' %}"><span class="p6-nav-emoji" aria-hidden="true">🏫</span>Matières</a>
             </li>
             <li class="nav-item {% if request.resolver_match and 'support' in request.resolver_match.view_name %}active{% endif %}">
                 <a href="{% url 'surveys:support_list' %}"><span class="p6-nav-emoji" aria-hidden="true">🎒</span>Supports</a>

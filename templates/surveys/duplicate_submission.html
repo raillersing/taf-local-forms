@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Réponse déjà envoyée{% endblock %}
+{% block page_header %}{% endblock %}
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid duplicate-page">
+    {% url 'surveys:home' as home_url %}
+    {% url 'surveys:student_modules' as modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Doublon" %}
+
+    <section class="card student-state-card student-state-card-warning" role="alert" aria-live="polite">
+        <div class="student-state-icon" aria-hidden="true">⚠️</div>
+        <h1 style="font-size:1.7rem; font-weight:800;">Réponse déjà envoyée</h1>
+        <p class="text-secondary mt-2 mb-4">Une réponse existe déjà pour cet identifiant dans cette session. Le système empêche les doublons accidentels.</p>
+
+        <div class="alert alert-warning text-center">
+            <div>
+                <strong>Action recommandée</strong>
+                <p class="text-sm">Appelle le formateur si tu penses qu'il y a une erreur. Ne change pas d'identifiant seul.</p>
+            </div>
+        </div>
+
+        <a class="btn btn-secondary" href="{% url 'surveys:student_modules' %}">Retour aux modules</a>
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% load static %}
+<section class="card success-card student-state-card" role="status" aria-live="polite">
+    <div class="student-state-icon" aria-hidden="true">✓</div>
+    <span class="taf-pill">Confirmation</span>
+    <h2>Réponse enregistrée. Merci.</h2>
+    <p class="text-secondary mb-4">Ta participation au <strong>{{ module_title }}</strong> est comptabilisée pour cette séance.</p>
+
+    <div class="grid cols-2 mb-4" style="text-align:left;">
+        <div class="card"><div class="card-body"><div class="kpi-label">Module</div><div class="kpi-value" style="font-size:1.2rem">{{ module_title }}</div></div></div>
+        <div class="card"><div class="card-body"><div class="kpi-label">Score estimé</div><div class="kpi-value">{{ score }} / {{ max_score }}</div></div></div>
+    </div>
+
+    <div class="hero-actions" style="justify-content:center;">
+        <a class="btn btn-primary" href="{% url 'surveys:support_list' %}">Voir les supports publiés</a>
+        <a class="btn btn-secondary" href="{% url 'surveys:student_modules' %}">Retour aux modules</a>
+    </div>
+</section>

@@ -1,7 +1,13 @@
 <fieldset class="choice-fieldset {% if field.errors %}field-error{% endif %}">
     <legend>{{ field.label }}</legend>
-    {{ field }}
+    <div class="choices">
+        {% for choice in field %}
+        <label class="choice">
+            {{ choice.tag }}
+            <span>{{ choice.choice_label }}</span>
+        </label>
+        {% endfor %}
+    </div>
     {% for error in field.errors %}
         <p class="error-text">{{ error }}</p>
-    {% endfor %}
-</fieldset>
+    {% endfor %}</fieldset>

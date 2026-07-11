@@ -22,8 +22,8 @@
             <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_backup' %}active{% endif %}">
                 <a href="{% url 'surveys:dashboard_backup' %}"><span class="p6-nav-emoji" aria-hidden="true">💾</span>Sauvegarde</a>
             </li>
-            <li class="nav-item">
-                <a href="{% url 'admin:index' %}"><span class="p6-nav-emoji" aria-hidden="true">🛡️</span>Admin avancé</a>
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_advanced' %}active{% endif %}">
+                <a href="{% url 'surveys:dashboard_advanced' %}"><span class="p6-nav-emoji" aria-hidden="true">🛡️</span>Admin avancé</a>
             </li>
         </ul>
         <span class="sr-only">Outils</span>

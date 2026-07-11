@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     dashboard_backup,
     dashboard_exports,
+    dashboard_advanced,
     dashboard_home,
     dashboard_module_2,
     dashboard_module_3,
@@ -42,6 +43,8 @@ from .views import (
     network_access_dashboard,
     network_control,
     presence_heartbeat,
+    project,
+    school_subjects,
     support_detail,
     support_download,
     support_list,
@@ -56,6 +59,8 @@ app_name = "surveys"
 
 urlpatterns = [
     path("", home, name="home"),
+    path("project/", project, name="project"),
+    path("school/", school_subjects, name="school_subjects"),
     path("supports/", support_list, name="support_list"),
     path("supports/<slug:slug>/", support_detail, name="support_detail"),
     path("supports/<slug:slug>/watch/", support_watch, name="support_watch"),
@@ -83,6 +88,7 @@ urlpatterns = [
     path("module-8/", module_8_form, name="module_8"),
     path("module-8/success/<int:submission_id>/", module_8_success, name="module_8_success"),
     path("dashboard/", dashboard_home, name="dashboard_home"),
+    path("dashboard/advanced/", dashboard_advanced, name="dashboard_advanced"),
     path("dashboard/exports/", dashboard_exports, name="dashboard_exports"),
     path("dashboard/module-2/", dashboard_module_2, name="dashboard_module_2"),
     path("dashboard/module-3/", dashboard_module_3, name="dashboard_module_3"),

@@ -26,10 +26,11 @@
 
     <section class="p6-section-head dashboard-list-head dashboard-cockpit-head" aria-labelledby="dashboard-heading">
         <div>
-            <h1 id="dashboard-heading">Bonjour, Formateur</h1>
+            <span class="eyebrow">Modules de formation</span>
+            <h1 id="dashboard-heading">Bonjour, Formateur 👋</h1>
             <p class="text-secondary">Vue terrain pour démarrer, surveiller, exporter et sauvegarder.</p>
         </div>
-        <a class="btn btn-primary p6-button" href="{% url 'surveys:dashboard_projection' %}">Mode projection</a>
+        <a class="btn btn-primary p6-button" href="{% url 'surveys:dashboard_projection' %}">📺 Mode projection</a>
     </section>
 
     <section class="kpi-grid cols-4 dashboard-kpi-grid">
@@ -67,7 +68,11 @@
                     {% if active_module %}{{ active_module.display_title }}.{% else %}Aucune session active.{% endif %}
                 </p>
                 {% if active_module %}
-                <a class="btn btn-primary p6-button" href="#modules">Voir dashboard</a>
+                {% with active_num=active_module.module.code|slice:"7:" %}
+                {% with active_dashboard_url='surveys:dashboard_module_'|add:active_num %}
+                <a class="btn btn-primary p6-button" href="{% url active_dashboard_url %}">Voir dashboard</a>
+                {% endwith %}
+                {% endwith %}
                 {% else %}
                 <a class="btn btn-secondary p6-button" href="#modules">Voir les modules</a>
                 {% endif %}
@@ -89,17 +94,14 @@
         </article>
     </section>
 
-    <details id="modules" class="dashboard-complementary p6-card">
-        <summary>Gestion des modules</summary>
-        <div class="dashboard-complementary-body">
-            <section class="p6-section-head dashboard-list-head dashboard-inline-head" aria-labelledby="modules-heading">
-                <div>
-                    <h2 id="modules-heading">Gestion des modules</h2>
-                    <p class="text-secondary">Ouvrir ou fermer les sessions, accéder aux dashboards et garder les exports proches.</p>
-                </div>
-                <a class="btn btn-secondary btn-sm p6-button" href="{% url 'surveys:dashboard_exports' %}">Exports CSV</a>
-            </section>
-            <section class="dashboard-module-table-card" aria-label="Modules de formation">
+    <section id="modules" class="p6-card dashboard-module-table-card" aria-labelledby="modules-heading">
+        <div class="card-header table-card-header">
+            <div>
+                <h2 id="modules-heading">Gestion des modules</h2>
+                <p class="text-secondary">Ouvrir ou fermer les sessions, accéder aux dashboards et garder les exports proches.</p>
+            </div>
+            <a class="btn btn-secondary btn-sm p6-button" href="{% url 'surveys:dashboard_exports' %}">Exports CSV</a>
+        </div>
         <div class="taf-table-wrap">
             <table class="taf-table dashboard-module-table">
                 <thead>
@@ -158,15 +160,13 @@
                 </tbody>
             </table>
         </div>
-            </section>
-        </div>
-    </details>
+    </section>
 
-    <details class="dashboard-complementary p6-card"{% if request.GET.tools == "open" %} open{% endif %}>
-        <summary>Fonctions complémentaires</summary>
-        <div class="dashboard-complementary-body">
-            <section id="presence" aria-labelledby="presence-title">
-                <h2 id="presence-title">Présence en direct</h2>
+    <section class="grid cols-2 p6-grid dashboard-complementary-grid">
+        <h2 class="sr-only" id="complementary-heading">Fonctions complémentaires</h2>
+        <section id="presence" class="card p6-card" aria-labelledby="presence-title">
+            <div class="card-header"><div class="card-title" id="presence-title">Présence en direct</div></div>
+            <div class="card-body">
                 <div id="presence-container" class="presence-grid presence-grid-compact">
                     <span id="presence-module-2" class="presence-count">…</span>
                     <span id="presence-module-3" class="presence-count">…</span>
@@ -177,9 +177,11 @@
                     <span id="presence-module-8" class="presence-count">…</span>
                     <span id="presence-total" class="presence-count">…</span>
                 </div>
-            </section>
-            <section id="exports" aria-labelledby="exports-title">
-                <h2 id="exports-title">Exports CSV</h2>
+            </div>
+        </section>
+        <section id="exports" class="card p6-card" aria-labelledby="exports-title">
+            <div class="card-header"><div class="card-title" id="exports-title">Exports CSV</div></div>
+            <div class="card-body">
                 <div class="compact-link-list">
                     <a href="{% url 'surveys:export_module_2_csv' %}">Export Module 2</a>
                     <a href="{% url 'surveys:export_module_3_csv' %}">Export Module 3</a>
@@ -189,9 +191,9 @@
                     <a href="{% url 'surveys:export_module_7_csv' %}">Export Module 7</a>
                     <a href="{% url 'surveys:export_module_8_csv' %}">Export Module 8</a>
                 </div>
-            </section>
-        </div>
-    </details>
+            </div>
+        </section>
+    </section>
 </main>
 {% endblock %}
 
