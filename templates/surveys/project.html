@@ -11,33 +11,32 @@
 <main id="content" class="content-grid project-page">
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Le projet" %}
-
-    <section class="p6-section-head" aria-labelledby="project-heading">
-        <div>
-            <span class="section-kicker">Présentation</span>
+    <section class="public-editorial-hero project-editorial-intro" aria-labelledby="project-heading">
+        <div class="public-editorial-copy">
+            <span class="section-kicker">Internet Society Madagascar · Mission</span>
             <h1 id="project-heading">À propos de TAfHSSiM</h1>
-            <p class="text-secondary">Faire d'Internet un outil d'éducation, d'autonomie et d'espoir.</p>
+            <p>Faire d’Internet un outil d’éducation, d’autonomie et d’espoir pour les lycéens des établissements publics malgaches.</p>
         </div>
-        <span class="pill ok p6-badge p6-badge-soft">Phase pilote — Lycée Andohalo Antananarivo</span>
+        <div class="public-editorial-signal"><strong>01</strong><span>Lycée pilote</span><small>Andohalo · Antananarivo</small></div>
     </section>
 
     <section class="hero p6-hero project-hero">
         <article class="hero-card p6-card p6-hero-card">
-            <span class="eyebrow">🎯 Mission</span>
-            <h2 style="font-size:1.5rem;">Réduire la fracture numérique dans l'éducation publique à Madagascar</h2>
+            <span class="eyebrow">Mission</span>
+            <h2 class="project-hero-title">Réduire la fracture numérique dans l'éducation publique à Madagascar</h2>
             <p class="lead">TAfHSSiM (Technology Access for High School Students in Madagascar) est porté par l'Internet Society Madagascar Chapter. La Phase 1 pilote au Lycée Andohalo Antananarivo offre aux élèves un premier accès structuré à Internet, à des laptops et à une formation en culture numérique.</p>
             <p class="lead">Le projet vise à transformer Internet en outil concret pour apprendre, rechercher, préparer les examens et construire un avenir professionnel.</p>
         </article>
 
-        <div class="grid p6-grid project-stats" style="gap:16px;">
-            <div class="card p6-card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>1</strong><span>lycée pilote</span></div></div></div>
-            <div class="card p6-card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>100</strong><span>élèves formés maximum</span></div></div></div>
-            <div class="card p6-card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>3</strong><span>niveaux touchés : Seconde, Première, Terminale</span></div></div></div>
-            <div class="card p6-card"><div class="card-body"><div class="stat-card" style="margin:0;"><strong>7</strong><span>compétences numériques de base ciblées</span></div></div></div>
+        <div class="grid p6-grid project-stats">
+            <div class="card p6-card"><div class="card-body"><div class="stat-card project-stat-card"><strong>1</strong><span>lycée pilote</span></div></div></div>
+            <div class="card p6-card"><div class="card-body"><div class="stat-card project-stat-card"><strong>100</strong><span>élèves formés maximum</span></div></div></div>
+            <div class="card p6-card"><div class="card-body"><div class="stat-card project-stat-card"><strong>3</strong><span>niveaux touchés : Seconde, Première, Terminale</span></div></div></div>
+            <div class="card p6-card"><div class="card-body"><div class="stat-card project-stat-card"><strong>7</strong><span>compétences numériques de base ciblées</span></div></div></div>
         </div>
     </section>
 
-    <section class="grid cols-2 p6-grid project-problem-objectives" style="margin-bottom:24px;">
+    <section class="grid cols-2 p6-grid project-problem-objectives project-section-spaced">
         <article class="card p6-card">
             <div class="card-header"><div class="card-title">Le problème</div></div>
             <div class="card-body">
@@ -62,18 +61,18 @@
         <div class="card-header"><div class="card-title">Contenu de la formation</div></div>
         <div class="card-body">
             <div class="grid cols-3 p6-grid project-training-grid">
-                <div class="step"><strong>🔍 Recherche efficace</strong><span class="text-secondary">Mots-clés, moteurs de recherche et validation rapide.</span></div>
-                <div class="step"><strong>📚 Sources fiables</strong><span class="text-secondary">Repérer les indices de confiance et éviter les rumeurs.</span></div>
-                <div class="step"><strong>✉️ Email</strong><span class="text-secondary">Créer un compte, rédiger un message clair.</span></div>
-                <div class="step"><strong>🛡️ Sécurité en ligne</strong><span class="text-secondary">Mots de passe, messages suspects, comportements sûrs.</span></div>
-                <div class="step"><strong>🎓 Ressources éducatives</strong><span class="text-secondary">Sites et chaînes utiles pour réviser les cours.</span></div>
-                <div class="step"><strong>💻 Bureautique de base</strong><span class="text-secondary">Saisie, organisation de fichiers, outils collaboratifs.</span></div>
+                <div class="step"><strong>Recherche efficace</strong><span class="text-secondary">Mots-clés, moteurs de recherche et validation rapide.</span></div>
+                <div class="step"><strong>Sources fiables</strong><span class="text-secondary">Repérer les indices de confiance et éviter les rumeurs.</span></div>
+                <div class="step"><strong>Email</strong><span class="text-secondary">Créer un compte, rédiger un message clair.</span></div>
+                <div class="step"><strong>Sécurité en ligne</strong><span class="text-secondary">Mots de passe, messages suspects, comportements sûrs.</span></div>
+                <div class="step"><strong>Ressources éducatives</strong><span class="text-secondary">Sites et chaînes utiles pour réviser les cours.</span></div>
+                <div class="step"><strong>Bureautique de base</strong><span class="text-secondary">Saisie, organisation de fichiers, outils collaboratifs.</span></div>
             </div>
         </div>
     </section>
 
     <section class="alert alert-info project-partner">
-        <span aria-hidden="true">ℹ️</span>
+        <span class="alert-mark" aria-hidden="true">i</span>
         <div>
             <strong>Partenaire financier</strong>
             <p class="text-sm">This project was made possible through funding from the Internet Society Foundation.</p>

@@ -14,8 +14,7 @@
     {% url 'surveys:support_list' as support_list_url %}
     {% url 'surveys:support_detail' resource.slug as support_detail_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Supports" crumb_2_url=support_list_url crumb_3_label=resource.title crumb_3_url=support_detail_url current_label="Regarder" %}
-
-    <section class="panel p6-card resource-detail-panel video-watch-panel">
+    <section class="panel p6-card resource-detail-panel video-watch-panel student-video-stage">
         <div class="panel-title">
             <div>
                 <h2>{{ resource.title }}</h2>

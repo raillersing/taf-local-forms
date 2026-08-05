@@ -11,14 +11,13 @@
 <main id="content" class="content-grid school-subjects-page">
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Matières" %}
-
-    <section class="p6-section-head" aria-labelledby="school-heading">
-        <div>
+    <section class="public-editorial-hero school-editorial-intro" aria-labelledby="school-heading">
+        <div class="public-editorial-copy">
             <span class="section-kicker">Extension prévue</span>
             <h1 id="school-heading">Ressources scolaires futures</h1>
-            <p class="text-secondary">Classer les supports par matière, niveau et chapitre pour préparer la suite du parcours.</p>
+            <p>Retrouvez progressivement les supports par matière, niveau et chapitre pour prolonger l’apprentissage numérique.</p>
         </div>
-        <span class="pill warn p6-badge p6-badge-soft">Périmètre futur</span>
+        <div class="public-editorial-signal"><strong>04</strong><span>familles de matières</span><small>Extension progressive</small></div>
     </section>
 
     <section class="grid cols-4 p6-grid school-subjects-grid" aria-label="Matières">

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Module 1 indisponible{% endblock %}
+{% block page_header %}{% endblock %}
+{% block main_nav %}{% include "surveys/partials/nav_student.html" %}{% endblock %}
+{% block content %}
+<main id="content" class="content-grid">
+    <section class="card alert-warning" role="status">
+        <h2>Aucune session active pour ce module.</h2>
+        <p>Demande au formateur d’ouvrir la séance avant de numériser les feuilles.</p>
+        <a class="btn btn-secondary" href="{% url 'surveys:student_modules' %}">Retour aux modules</a>
+    </section>
+</main>
+{% endblock %}

@@ -5,62 +5,63 @@
 
 {% block content %}
 <main id="content" class="content-grid content-grid-home p6-home-page">
-    <section class="hero p6-hero" aria-labelledby="landing-heading">
-        <article id="le-projet" class="hero-card p6-card p6-hero-card">
-            <span class="eyebrow">Formation numérique locale</span>
-            <h1 id="landing-heading">Bienvenue sur TAf Local Forms</h1>
-            <p class="lead">Une interface simple pour répondre aux modules, consulter les supports et apprendre en salle sans dépendre d'Internet public.</p>
+    <section class="landing-hero" aria-labelledby="landing-heading">
+        <div id="le-projet" class="landing-hero-copy">
+            <span class="landing-kicker">Bienvenue sur TAf Local Forms</span>
+            <h1 id="landing-heading">Découvre Internet. <span>Apprends à t’en servir.</span></h1>
+            <p class="landing-lead">Un parcours simple pour comprendre le numérique, chercher de bonnes informations et apprendre avec confiance — directement dans ta salle de classe.</p>
             <div class="hero-actions p6-actions">
-                <a class="btn btn-primary btn-lg p6-button" href="{% url 'surveys:student_modules' %}">Voir les modules</a>
-                <a class="btn btn-secondary btn-lg p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
+                <a class="btn btn-primary btn-lg p6-button" href="{% url 'surveys:student_modules' %}">Répondre à un module</a>
+                <a class="landing-text-action" href="{% url 'surveys:support_list' %}">Consulter les supports <span aria-hidden="true">→</span></a>
             </div>
-        </article>
+            <p class="landing-access-note">Aucun compte nécessaire. Utilise simplement l’identifiant à 2 chiffres donné en classe.</p>
+        </div>
 
-        <aside class="panel p6-card landing-session-panel">
-            <div class="panel-title">
-                <h2>Séance en cours</h2>
-                <span class="pill ok p6-badge p6-badge-soft">Ouverte</span>
-            </div>
-            <div class="stat-grid p6-stats">
-                <div class="stat-card"><strong>{{ modules_total }}</strong><span>Modules disponibles</span></div>
-                <div class="stat-card"><strong>{{ modules_open }}</strong><span>Modules ouverts</span></div>
-                <div class="stat-card"><strong>{{ total_submissions }}</strong><span>Réponses reçues</span></div>
-                <div class="stat-card"><strong>{{ published_resources_count }}</strong><span>Supports publiés</span></div>
-            </div>
-            <article class="landing-url-card">
-                <strong>URL élèves</strong>
-                {% if student_access_ready %}
-                <p>{{ student_access_url }}/</p>
-                {% else %}
-                <p>Disponible après configuration réseau</p>
-                {% endif %}
-            </article>
-            <div class="footer-note">Aucun compte élève requis. Utilise l'identifiant à 2 chiffres donné en classe.</div>
-        </aside>
+        <div class="landing-signal" aria-hidden="true">
+            <div class="signal-orbit signal-orbit-outer"></div>
+            <div class="signal-orbit signal-orbit-inner"></div>
+            <div class="signal-core"><span>TAf</span><small>Connecté en classe</small></div>
+            <span class="signal-node signal-node-one"></span>
+            <span class="signal-node signal-node-two"></span>
+            <span class="signal-node signal-node-three"></span>
+        </div>
     </section>
 
-    <section class="grid cols-3 p6-grid landing-entry-grid" aria-label="Entrées principales">
-        <article class="card p6-card landing-entry-card">
-            <div class="card-body">
-                <h2 class="mb-2"><span aria-hidden="true">📚</span> Répondre</h2>
-                <p class="text-secondary mb-4">Accéder aux modules 2 à 8 avec consignes courtes, badges lisibles et boutons larges.</p>
-                <a class="btn btn-primary p6-button" href="{% url 'surveys:student_modules' %}">Voir les modules</a>
-            </div>
-        </article>
-        <article class="card p6-card landing-entry-card">
-            <div class="card-body">
-                <h2 class="mb-2"><span aria-hidden="true">🎒</span> Réviser</h2>
-                <p class="text-secondary mb-4">Consulter documents et vidéos publiés par le formateur sur le réseau local de la classe.</p>
-                <a class="btn btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir les supports</a>
-            </div>
-        </article>
-        <article id="futur-scolaire" class="card p6-card landing-entry-card">
-            <div class="card-body">
-                <h2 class="mb-2"><span aria-hidden="true">🏫</span> Futur scolaire</h2>
-                <p class="text-secondary mb-4">Préparer la suite avec les futures ressources par matière, niveau et chapitre, sans perdre les accès déjà en place.</p>
-                <a class="btn btn-secondary p6-button" href="{% url 'surveys:school_subjects' %}">Explorer</a>
-            </div>
-        </article>
+    <section class="landing-journey" aria-labelledby="journey-heading">
+        <div class="landing-journey-intro">
+            <span class="section-kicker">Ton parcours</span>
+            <h2 id="journey-heading">Trois étapes pour avancer</h2>
+            <p>Le formateur t’indique le module du jour. Ensuite, tout est guidé.</p>
+        </div>
+        <ol class="landing-journey-steps">
+            <li>
+                <span class="journey-number">01</span>
+                <div><h3>Choisis ton module</h3><p>Repère le module ouvert par le formateur.</p></div>
+            </li>
+            <li>
+                <span class="journey-number">02</span>
+                <div><h3>Découvre et réponds</h3><p>Lis les explications, puis réponds à ton rythme.</p></div>
+            </li>
+            <li>
+                <span class="journey-number">03</span>
+                <div><h3>Continue à apprendre</h3><p>Retrouve les documents et vidéos utiles après la séance.</p></div>
+            </li>
+        </ol>
+    </section>
+
+    <section class="landing-paths" aria-label="Autres espaces d’apprentissage">
+        <a class="landing-path landing-path-supports" href="{% url 'surveys:support_list' %}">
+            <span class="landing-path-label">Réviser</span>
+            <h2>Documents et vidéos</h2>
+            <p>Consulte les supports choisis par ton formateur, même sans Internet public.</p>
+            <strong>Ouvrir la médiathèque <span aria-hidden="true">→</span></strong>
+        </a>
+        <a id="futur-scolaire" class="landing-path landing-path-school" href="{% url 'surveys:school_subjects' %}">
+            <span class="landing-path-label">Explorer</span>
+            <h2>Ton futur scolaire</h2>
+            <p>Découvre des ressources organisées par matière, niveau et chapitre.</p>
+            <strong>Voir les matières <span aria-hidden="true">→</span></strong>
+        </a>
     </section>
 </main>
 {% endblock %}

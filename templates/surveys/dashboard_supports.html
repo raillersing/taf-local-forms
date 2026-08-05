@@ -14,31 +14,32 @@
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Supports" %}
 
-    <nav class="prototype-page-tabs" aria-label="Sous-navigation supports formateur">
-        <span class="page-tab active">🗂 Gestion</span>
-        <a class="page-tab" href="{% url 'surveys:dashboard_support_upload' %}">➕ Ajouter</a>
-    </nav>
-
-    <section class="panel p6-card">
-        <div class="panel-title">
-            <h2>Catalogue formateur des supports</h2>
-            <div class="dashboard-support-actions">
-                <div class="badge-group">
-                    <span class="badge badge-success">{{ published_count }} publié{{ published_count|pluralize }}</span>
-                    <span class="badge badge-warning">{{ draft_count }} brouillon{{ draft_count|pluralize }}</span>
-                </div>
+    <section class="trainer-operation-hero" aria-labelledby="supports-heading">
+        <div class="trainer-operation-copy">
+            <span class="trainer-command-kicker">Ressources locales · Médiathèque</span>
+            <h1 id="supports-heading">Supports pédagogiques</h1>
+            <p>Préparez les documents et vidéos accessibles aux élèves, même sans Internet public.</p>
+            <div class="trainer-hero-actions">
                 <a class="btn btn-primary" href="{% url 'surveys:dashboard_support_upload' %}">Ajouter un support</a>
+                <a class="btn btn-secondary" href="{% url 'surveys:support_list' %}" target="_blank" rel="noopener noreferrer">Voir le catalogue public</a>
             </div>
         </div>
-        <p class="muted">Upload, publication, brouillon, licence et classement restent pilotés ici avant correction avancée éventuelle dans l’admin.</p>
+        <div class="trainer-operation-signal"><strong>{{ published_count }}</strong><span>support{{ published_count|pluralize }} publié{{ published_count|pluralize }}</span><small>{{ draft_count }} brouillon{{ draft_count|pluralize }} à finaliser</small></div>
+    </section>
+
+    <section class="trainer-support-admin-links" aria-label="Gestion avancée des supports">
+        <p>Upload, publication, licence et classement sont pilotés dans cet espace.</p>
         <div class="back-links">
             <a class="text-link" href="{% url 'admin:surveys_learningresource_changelist' %}">Gérer dans l'admin &rarr;</a>
-            <a class="text-link" href="{% url 'surveys:support_list' %}" target="_blank" rel="noopener noreferrer">Voir le catalogue public &rarr;</a>
         </div>
     </section>
 
     {% if resources %}
-    <section class="panel p6-card">
+    <section class="panel p6-card trainer-support-ledger">
+        <div class="trainer-support-ledger-heading">
+            <h2>Catalogue formateur des supports</h2>
+            <span>{{ resources|length }} ressource{{ resources|length|pluralize }}</span>
+        </div>
         <div class="dashboard-support-filters">
             <span class="filter-pill active">Tous les statuts</span>
             <span class="filter-pill">Publiés</span>

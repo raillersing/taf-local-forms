@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Paramètres réseau — Cockpit formateur{% endblock %}
+{% block title %}Configuration — Cockpit formateur{% endblock %}
 {% block page_header %}{% endblock %}
-{% block hero_title %}Paramètres réseau{% endblock %}
+{% block hero_title %}Configuration{% endblock %}
 {% block hero_text %}Vérifie et modifie les paramètres réseau utiles à la séance locale depuis l'interface formateur.{% endblock %}
 
 {% block main_nav %}
@@ -15,16 +15,22 @@
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Configuration" %}
 
-    <nav class="prototype-page-tabs" aria-label="Sous-navigation configuration">
-        <span class="page-tab active">⚙️ Général</span>
-        <a class="page-tab" href="{% url 'surveys:dashboard_advanced' %}">🛡️ Admin avancé</a>
-    </nav>
+    <section class="trainer-operation-hero" aria-labelledby="settings-heading">
+        <div class="trainer-operation-copy">
+            <span class="trainer-command-kicker">Outils terrain · Configuration</span>
+            <h1 id="settings-heading">Configuration</h1>
+            <p>Ajustez uniquement les paramètres nécessaires à l’accès local et à la séance en cours.</p>
+            <div class="trainer-hero-actions"><a class="btn btn-primary" href="{% url 'surveys:dashboard_network_control' %}#helper-actions">Configurer l’accès élèves</a></div>
+        </div>
+        <div class="trainer-operation-signal"><strong>{% if current_request_is_lan %}OK{% else %}LAN{% endif %}</strong><span>accès local</span><small>Aucun secret affiché</small></div>
+    </section>
 
     {% if current_request_is_lan %}
     <div class="alert alert-success">
         <p><strong>Adresse LAN détectée : <code>{{ recommended_lan_host }}:{{ recommended_lan_port }}</code></strong></p>
         <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}">
             {% csrf_token %}
+            <input type="hidden" name="lan_host" value="{{ recommended_lan_host }}">
             <button type="submit" class="btn btn-primary">
                 Utiliser l'adresse actuelle
             </button>
@@ -38,6 +44,23 @@
         <p><strong>L'IP configurée diffère de l'adresse actuelle. Utilise le bouton ci-dessus si tu accèdes via l'adresse LAN.</strong></p>
     </div>
     {% endif %}
+
+    <section class="network-auto-detect p6-card" id="network-auto-detect" data-helper-url="{{ helper_url }}" data-localhost="{{ is_localhost|yesno:'true,false' }}">
+        <div>
+            <span class="eyebrow">Synchronisation du PC</span>
+            <h2>Adresse réseau détectée</h2>
+            <p class="text-secondary">L’IP Wi-Fi du laptop est lue par le helper Windows local. Elle ne peut pas être déduite correctement depuis le conteneur Docker.</p>
+        </div>
+        <div class="network-auto-detect-state" role="status" aria-live="polite">
+            <strong id="detected-network-ip">Détection en cours…</strong>
+            <span id="detected-network-help" class="muted">Actualisation depuis le helper local.</span>
+        </div>
+        <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}" id="apply-detected-address-form">
+            {% csrf_token %}
+            <input type="hidden" name="lan_host" id="detected-lan-host" value="">
+            <button type="submit" class="btn btn-primary" id="apply-detected-address" disabled>Utiliser l’adresse détectée</button>
+        </form>
+    </section>
 
     <div class="alert alert-warning">
         <p><strong>Cette page ne montre pas les secrets. Les changements réseau peuvent nécessiter un redémarrage Docker.</strong></p>
@@ -58,13 +81,6 @@
     </div>
     {% endif %}
 
-    <section class="p6-section-head" aria-labelledby="settings-heading">
-        <div>
-            <h1 id="settings-heading">Configuration</h1>
-            <p class="text-secondary">Paramètres non destructifs pour la séance, l’accès LAN et l’interface locale.</p>
-        </div>
-        <span class="pill warn">Formateur avancé</span>
-    </section>
 
     <section class="grid cols-2 dashboard-settings-primary">
         <article class="card p6-card">
@@ -107,12 +123,12 @@
         </article>
     </section>
 
-    <section class="card p6-card">
-        <div class="card-header">
-            <h2>Champs modifiables</h2>
-            <span class="pill">Sans secrets</span>
-        </div>
-        <div class="card-body">
+    <details class="network-directory p6-card settings-advanced-fields">
+        <summary>
+            <span><strong>Champs modifiables</strong><small>Configuration avancée, sans secrets</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <div class="network-details-body">
             <p class="muted">Modifie uniquement ce qui est nécessaire, puis redémarre Docker si la configuration réseau change.</p>
             <div class="settings-grid">
             {% for key, value in settings.editable.items %}
@@ -169,7 +185,7 @@
             {% endfor %}
             </div>
         </div>
-    </section>
+    </details>
 
     <details class="network-directory p6-card">
         <summary>
@@ -181,7 +197,10 @@
             {% for key, value in settings.readonly.items %}
             <dt class="muted setting-label"><code>{{ key }}</code></dt>
             <dd class="setting-value">
-                {% if key == "DEBUG" %}
+                {% if key == "DATABASE_ENGINE" %}
+                    <strong class="database-status database-status-{{ value|lower }}">{{ value }}</strong>
+                    {% if value == "PostgreSQL" %}<span class="muted">Base active pour Docker et les séances multi-utilisateurs.</span>{% else %}<span class="muted">Mode de secours local.</span>{% endif %}
+                {% elif key == "DEBUG" %}
                     {% if value == "true" or value == "True" or value == "1" %}Activé{% else %}Désactivé{% endif %}
                 {% else %}
                     {{ value }}
@@ -196,10 +215,6 @@
         </div>
     </details>
 
-    <div class="back-links">
-        <a class="text-link" href="{% url 'surveys:dashboard_home' %}">&larr; Cockpit formateur</a>
-        <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Voir l'accès réseau &rarr;</a>
-    </div>
 </main>
 
 <script>
@@ -228,6 +243,56 @@
                 }
             }
         });
+    });
+
+    var detectPanel = document.getElementById('network-auto-detect');
+    if (!detectPanel || detectPanel.dataset.localhost !== 'true') {
+        return;
+    }
+    var detectedIp = document.getElementById('detected-network-ip');
+    var detectedHelp = document.getElementById('detected-network-help');
+    var detectedInput = document.getElementById('detected-lan-host');
+    var applyButton = document.getElementById('apply-detected-address');
+
+    fetch(detectPanel.dataset.helperUrl + '/status', {
+        headers: { 'Origin': window.location.origin }
+    }).then(function(response) {
+        if (!response.ok) throw new Error('helper unavailable');
+        return response.json();
+    }).then(function(data) {
+        var status = data.status || data;
+        var ip = status.lan_ip || '';
+        if (!ip) throw new Error('no LAN IP');
+        detectedIp.textContent = ip;
+        detectedHelp.textContent = 'IP Wi-Fi active du PC. Valide pour synchroniser les paramètres LAN.';
+        detectedInput.value = ip;
+        applyButton.disabled = false;
+        document.querySelectorAll('input[name="value"]').forEach(function(input) {
+            var card = input.closest('.setting-card');
+            var key = card && card.querySelector('input[name="key"]');
+            if (!key) return;
+            if (key.value === 'TAF_LAN_HOST') input.value = ip;
+            if (key.value === 'ALLOWED_HOSTS') {
+                var hosts = input.value.split(',').map(function(value) { return value.trim(); }).filter(Boolean);
+                if (hosts.indexOf(ip) === -1) hosts.push(ip);
+                input.value = hosts.join(',');
+            }
+            if (key.value === 'CSRF_TRUSTED_ORIGINS') {
+                var port = '8010';
+                document.querySelectorAll('input[name="value"]').forEach(function(candidate) {
+                    var candidateCard = candidate.closest('.setting-card');
+                    var candidateKey = candidateCard && candidateCard.querySelector('input[name="key"]');
+                    if (candidateKey && candidateKey.value === 'TAF_HOST_PORT' && candidate.value) port = candidate.value.trim();
+                });
+                var origins = input.value.split(',').map(function(value) { return value.trim(); }).filter(Boolean);
+                var origin = 'http://' + ip + ':' + port;
+                if (origins.indexOf(origin) === -1) origins.push(origin);
+                input.value = origins.join(',');
+            }
+        });
+    }).catch(function() {
+        detectedIp.textContent = 'Helper Windows non disponible';
+        detectedHelp.textContent = 'Lance taf-lan-helper-start.ps1 en administrateur, puis recharge cette page.';
     });
 })();
 </script>

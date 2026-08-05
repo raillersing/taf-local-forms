@@ -10,7 +10,8 @@
 <main id="content" class="content-grid success-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Confirmation" %}
+    {% url 'surveys:student_module_6_detail' as module_detail_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url crumb_3_label="Module 6" crumb_3_url=module_detail_url current_label="Confirmation" %}
     {% include "surveys/partials/success_panel.html" with module_title="Ressources éducatives en ligne" score=submission.computed_score max_score=7 %}
 </main>
 {% endblock %}

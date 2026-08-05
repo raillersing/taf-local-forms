@@ -2,8 +2,7 @@
 {% load static %}
 
 {% block title %}TAfHSSiM — {{ module.title }}{% endblock %}
-{% block hero_title %}{{ module.title }}{% endblock %}
-{% block hero_text %}Découvre le module et réponds aux questions.{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
@@ -13,35 +12,46 @@
 <main id="content" class="content-grid student-detail-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
+    {% if module.code == "MODULE_1" %}{% url 'surveys:module_1' as questionnaire_url %}{% endif %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label=module.title %}
-    <section class="panel p6-card student-detail-hero learning-page" aria-labelledby="module-detail-heading">
-        <div class="learning-hero">
-            <div>
-                <span class="section-kicker">Cours interactif</span>
-                <h2 id="module-detail-heading">{{ module.title }}</h2>
-                <p class="text-secondary">{{ module.description|default:"Découvre les notions essentielles, avance chapitre par chapitre puis vérifie ce que tu as appris." }}</p>
-            </div>
-            <div class="badge-group">
-                {% if has_active_session %}
-                    {% if accepting_responses %}
-                        <span class="badge badge-success">Réponses ouvertes</span>
+    {% if module.code == "MODULE_2" %}{% url 'surveys:module_2' as questionnaire_url %}{% endif %}
+    {% if module.code == "MODULE_3" %}{% url 'surveys:module_3' as questionnaire_url %}{% endif %}
+    {% if module.code == "MODULE_4" %}{% url 'surveys:module_4' as questionnaire_url %}{% endif %}
+    {% if module.code == "MODULE_5" %}{% url 'surveys:module_5' as questionnaire_url %}{% endif %}
+    {% if module.code == "MODULE_6" %}{% url 'surveys:module_6' as questionnaire_url %}{% endif %}
+    {% if module.code == "MODULE_7" %}{% url 'surveys:module_7' as questionnaire_url %}{% endif %}
+    {% if module.code == "MODULE_8" %}{% url 'surveys:module_8' as questionnaire_url %}{% endif %}
+    <section class="student-detail-hero learning-page" aria-labelledby="module-detail-heading">
+        <header class="learning-hero">
+            <div class="learning-hero-number" aria-hidden="true">{{ module.code|slice:"7:" }}</div>
+            <div class="learning-hero-copy">
+                <span class="section-kicker">Cours interactif · Module {{ module.code|slice:"7:" }}</span>
+                <h1 id="module-detail-heading">{{ module.title }}</h1>
+                <p>{{ module.description|default:"Découvre les notions essentielles, avance chapitre par chapitre puis vérifie ce que tu as appris." }}</p>
+                <div class="learning-state">
+                    {% if has_active_session %}
+                        {% if accepting_responses %}
+                            <span class="module-state module-state-open">Réponses ouvertes</span>
+                        {% else %}
+                            <span class="module-state module-state-ready">Consultation seulement</span>
+                        {% endif %}
                     {% else %}
-                        <span class="badge badge-warning">Consultation seulement</span>
+                        <span class="module-state module-state-closed">Indisponible</span>
                     {% endif %}
-                {% else %}
-                    <span class="badge badge-muted">Indisponible</span>
-                {% endif %}
+                </div>
             </div>
-        </div>
+        </header>
 
-        <div class="learning-overview" aria-label="Organisation du cours">
-            <div><strong>1</strong><span>Lis le résumé</span></div>
-            <div><strong>2</strong><span>Explore les chapitres</span></div>
-            <div><strong>3</strong><span>Teste tes acquis</span></div>
-        </div>
+        <ol class="learning-overview" aria-label="Organisation du cours">
+            <li><strong>01</strong><span>Lis le résumé</span></li>
+            <li><strong>02</strong><span>Explore les chapitres</span></li>
+            <li><strong>03</strong><span>Teste tes acquis</span></li>
+        </ol>
 
         <div class="learning-content">
-            {% if module.code == "MODULE_2" %}
+            {% if module.code == "MODULE_1" %}
+                <p>Ce questionnaire de première prise de contact aide à mieux connaître ton expérience, ton accès au numérique et tes besoins. Ce n’est pas un examen : réponds simplement et honnêtement.</p>
+            {% elif module.code == "MODULE_2" %}
                 {% include "surveys/partials/module_2_pedagogy.html" %}
             {% elif module.code == "MODULE_3" %}
                 {% include "surveys/partials/module_3_pedagogy.html" %}
@@ -58,7 +68,7 @@
             {% endif %}
         </div>
 
-        <div class="cta-section student-detail-actions learning-cta">
+        <div class="student-detail-actions learning-cta">
             <div>
                 <strong>Prêt à vérifier tes connaissances ?</strong>
                 <p>Prends ton temps et réponds avec ce que tu as compris.</p>
@@ -66,7 +76,9 @@
             </div>
             {% if has_active_session %}
                 {% if accepting_responses %}
-                    {% if module.code == "MODULE_2" %}
+                    {% if module.code == "MODULE_1" %}
+                        <a class="cta-student" href="{% url 'surveys:module_1' %}">Commencer le questionnaire</a>
+                    {% elif module.code == "MODULE_2" %}
                         <a class="cta-student" href="{% url 'surveys:module_2' %}">Commencer le questionnaire</a>
                     {% elif module.code == "MODULE_3" %}
                         <a class="cta-student" href="{% url 'surveys:module_3' %}">Commencer le questionnaire</a>
@@ -82,7 +94,9 @@
                         <a class="cta-student" href="{% url 'surveys:module_8' %}">Commencer le questionnaire</a>
                     {% endif %}
                 {% else %}
-                    {% if module.code == "MODULE_2" %}
+                    {% if module.code == "MODULE_1" %}
+                        <a class="cta-consult" href="{% url 'surveys:module_1' %}">Consulter le questionnaire</a>
+                    {% elif module.code == "MODULE_2" %}
                         <a class="cta-consult" href="{% url 'surveys:module_2' %}">Consulter le questionnaire</a>
                     {% elif module.code == "MODULE_3" %}
                         <a class="cta-consult" href="{% url 'surveys:module_3' %}">Consulter le questionnaire</a>

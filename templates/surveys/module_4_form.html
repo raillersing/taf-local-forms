@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Module 4 - Sources fiables{% endblock %}
-{% block hero_title %}Module 4 - Sources fiables{% endblock %}
-{% block hero_text %}Apprends à reconnaître une information fiable sur Internet.{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
@@ -12,7 +11,8 @@
 <main id="content" class="content-grid student-questionnaire-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 4 — Questionnaire" %}
+    {% url 'surveys:student_module_4_detail' as module_detail_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url crumb_3_label="Module 4" crumb_3_url=module_detail_url current_label="Questionnaire" %}
     {% if not accepting_responses %}
     <section class="card alert-warning" role="alert" aria-live="polite">
         <p>Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.</p>

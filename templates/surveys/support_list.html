@@ -11,14 +11,13 @@
 <main id="content" class="content-grid supports-page">
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Élève" crumb_1_url=home_url current_label="Supports" %}
-
-    <section class="p6-section-head" aria-labelledby="supports-heading">
-        <div>
+    <section class="public-editorial-hero" aria-labelledby="supports-heading">
+        <div class="public-editorial-copy">
             <span class="section-kicker">Bibliothèque d’apprentissage</span>
             <h1 id="supports-heading">Médiathèque locale</h1>
-            <p class="text-secondary"><strong>Catalogue public</strong> de documents et vidéos publiés par le formateur, disponibles sur le réseau local.</p>
+            <p>Documents et vidéos choisis par le formateur, accessibles sur le réseau de la classe même sans Internet public.</p>
         </div>
-        <span class="pill ok p6-badge p6-badge-soft">{{ resources|length }} support{{ resources|length|pluralize }}</span>
+        <div class="public-editorial-signal"><strong>{{ resources|length }}</strong><span>support{{ resources|length|pluralize }}</span><small>Disponibles localement</small></div>
     </section>
 
     <section class="support-filter-card">
@@ -26,9 +25,9 @@
             <a class="filter-pill {% if not selected_type %}active{% endif %}" href="{% url 'surveys:support_list' %}">Tous</a>
             <a class="filter-pill {% if selected_type == 'document' %}active{% endif %}" href="?type=document">Documents</a>
             <a class="filter-pill {% if selected_type == 'video' %}active{% endif %}" href="?type=video">Vidéos</a>
-            <span class="filter-pill">Module 2</span>
-            <span class="filter-pill">Module 8</span>
-            <span class="filter-pill">Matières</span>
+            <a class="filter-pill{% if selected_module == '2' %} active{% endif %}" href="?module=2">Module 2</a>
+            <a class="filter-pill{% if selected_module == '8' %} active{% endif %}" href="?module=8">Module 8</a>
+            <a class="filter-pill" href="{% url 'surveys:school_subjects' %}">Matières</a>
         </div>
         <details class="support-advanced-filters">
             <summary>Filtres avancés</summary>
@@ -73,7 +72,7 @@
         {% for resource in resources %}
         <article class="resource-card p6-card resource-card-enhanced">
             <div class="resource-thumb{% if resource.is_video %} video{% endif %}">
-                {% if resource.is_video %}▶️{% else %}📄{% endif %}
+                <span class="resource-thumb-label">{% if resource.is_video %}Vidéo{% else %}Document{% endif %}</span>
             </div>
             <div class="resource-body">
                 <div class="tag-list">

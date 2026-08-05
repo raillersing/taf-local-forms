@@ -13,8 +13,8 @@
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Doublon" %}
 
     <section class="card student-state-card student-state-card-warning" role="alert" aria-live="polite">
-        <div class="student-state-icon" aria-hidden="true">⚠️</div>
-        <h1 style="font-size:1.7rem; font-weight:800;">Réponse déjà envoyée</h1>
+        <div class="student-state-icon" aria-hidden="true">!</div>
+        <h1 class="student-state-title">Réponse déjà envoyée</h1>
         <p class="text-secondary mt-2 mb-4">Une réponse existe déjà pour cet identifiant dans cette session. Le système empêche les doublons accidentels.</p>
 
         <div class="alert alert-warning text-center">

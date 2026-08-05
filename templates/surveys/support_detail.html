@@ -13,8 +13,7 @@
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:support_list' as support_list_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Supports" crumb_2_url=support_list_url current_label=resource.title %}
-
-    <section class="split support-detail-split">
+    <section class="split support-detail-split student-resource-layout">
         <article class="panel p6-card resource-detail-panel">
             <div class="tag-list">
                 <span class="badge badge-info">{% if resource.is_video %}Vidéo{% else %}{{ resource.get_resource_type_display }}{% endif %}</span>

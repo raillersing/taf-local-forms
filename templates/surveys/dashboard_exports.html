@@ -10,21 +10,18 @@
 {% block content %}
 <main id="content" class="content-grid dashboard-exports-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Formateur" crumb_1_url=dashboard_home_url current_label="Exports" %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Exports" %}
 
-    <nav class="prototype-page-tabs" aria-label="Exports formateur">
-        <span class="page-tab active">Exports CSV</span>
-    </nav>
-
-    <section class="p6-section-head" aria-labelledby="exports-heading">
-        <div>
+    <section class="trainer-operation-hero" aria-labelledby="exports-heading">
+        <div class="trainer-operation-copy">
+            <span class="trainer-command-kicker">Après la séance · Exports</span>
             <h1 id="exports-heading">Résultats et exports CSV</h1>
-            <p class="text-secondary">Fichiers protégés par login, encodés en UTF-8 et neutralisés contre les formules tableur.</p>
+            <p>Récupérez les réponses de chaque module dans un format sûr, lisible et prêt pour l’analyse.</p>
         </div>
-        <span class="pill ok">UTF-8</span>
+        <div class="trainer-operation-signal"><strong>{{ module_list|length }}</strong><span>exports disponibles</span><small>UTF-8 · Formules neutralisées</small></div>
     </section>
 
-    <section class="p6-card dashboard-export-table-card">
+    <section class="trainer-operation-ledger dashboard-export-table-card">
         <div class="card-header">
             <h2>Modules disponibles</h2>
             <span class="pill">UTF-8</span>

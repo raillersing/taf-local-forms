@@ -12,40 +12,52 @@
     {% url 'surveys:home' as home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Élève" crumb_1_url=home_url current_label="Modules" %}
 
-    <section class="p6-section-head" aria-labelledby="welcome-heading">
-        <div>
+    <section class="module-catalog-hero" aria-labelledby="welcome-heading">
+        <div class="module-catalog-copy">
             <span class="section-kicker">Parcours d’apprentissage</span>
-            <h1 id="welcome-heading">Modules TAfHSSiM</h1>
-            <p class="text-secondary">Choisis le module indiqué par le formateur, découvre l’objectif puis commence l’activité.</p>
+            <h1 id="welcome-heading">Quel module vas-tu découvrir aujourd’hui&nbsp;?</h1>
+            <p>Choisis celui indiqué par ton formateur. Un module marqué «&nbsp;ouvert&nbsp;» est prêt pour toi.</p>
         </div>
-        <span class="pill ok p6-badge p6-badge-soft">Modules 2 à 8</span>
+        <div class="module-catalog-mark" aria-hidden="true">
+            <span>01</span><i></i><span>08</span>
+        </div>
     </section>
 
-    <section class="module-grid p6-grid module-grid-enhanced" aria-label="Catalogue des modules">
+    <section class="module-grid module-grid-editorial" aria-label="Catalogue des modules">
         {% for item in module_data %}
-        <article class="module-card p6-card module-card-enhanced" aria-labelledby="module-title-{{ forloop.counter }}">
-            <div class="module-number">{{ item.module.code|slice:"7:" }}</div>
-            <h2 id="module-title-{{ forloop.counter }}" class="module-title">{{ item.display_title }}</h2>
-            <span class="sr-only">{{ item.module.title }}</span>
-            <p class="module-desc">{{ item.module.description|default:"Ce module fait partie du parcours de formation TAfHSSiM." }}</p>
-            <div class="progress"><span style="width:{% if item.has_active_session %}{% if item.active_session.accepting_responses %}100{% else %}62{% endif %}{% else %}18{% endif %}%"></span></div>
-            <div class="module-footer">
+        <article class="module-card{% if item.has_active_session and item.active_session.accepting_responses %} module-card-open{% elif item.has_active_session %} module-card-ready{% else %} module-card-closed{% endif %}" aria-labelledby="module-title-{{ forloop.counter }}">
+            <header class="module-card-head">
+                <span class="module-index">Module {{ item.module.code|slice:"7:" }}</span>
                 {% if item.has_active_session %}
                     {% if item.active_session.accepting_responses %}
-                    <span class="badge badge-success p6-badge">Ouvert</span>
+                    <span class="module-state module-state-open">Le module du jour</span>
                     <span class="sr-only">Réponses ouvertes</span>
-                    <span class="sr-only">Ouvrir le module</span>
-                    <a class="btn btn-sm btn-primary p6-button" href="{{ item.detail_url }}">Découvrir</a>
                     {% else %}
-                    <span class="badge badge-warning p6-badge">Préparé</span>
+                    <span class="module-state module-state-ready">À consulter</span>
                     <span class="sr-only">Consultation seulement</span>
-                    <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Supports</a>
                     {% endif %}
                 {% else %}
-                <span class="badge badge-warning p6-badge">Bientôt</span>
+                <span class="module-state module-state-closed">Bientôt</span>
                 <span class="sr-only">Indisponible</span>
                 <span class="sr-only">Aucune session active</span>
-                <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Supports</a>
+                {% endif %}
+            </header>
+
+            <div class="module-card-body">
+                <span class="module-number" aria-hidden="true">{{ item.module.code|slice:"7:" }}</span>
+                <h2 id="module-title-{{ forloop.counter }}" class="module-title">{{ item.display_title }}</h2>
+                <span class="sr-only">{{ item.module.title }}</span>
+                <p class="module-desc">{{ item.module.description|default:"Ce module fait partie du parcours de formation TAfHSSiM." }}</p>
+            </div>
+
+            <div class="module-footer">
+                {% if item.has_active_session %}
+                    <a class="module-action" href="{{ item.detail_url }}">
+                        {% if item.active_session.accepting_responses %}<span class="sr-only">Ouvrir le module</span>Découvrir et répondre{% else %}Voir le module{% endif %}
+                        <span aria-hidden="true">→</span>
+                    </a>
+                {% else %}
+                    <a class="module-action module-action-secondary" href="{% url 'surveys:support_list' %}">Voir les supports <span aria-hidden="true">→</span></a>
                 {% endif %}
             </div>
         </article>

@@ -22,13 +22,17 @@
     </div>
     {% endif %}
 
-    <section class="panel p6-card network-control-shell">
-        <div class="panel-title">
+    <section class="panel p6-card network-control-shell trainer-network-control-shell">
+        <div class="panel-title network-control-hero">
             <div>
+                <span class="trainer-command-kicker">Outils terrain · Contrôle LAN</span>
                 <h1>Configuration LAN</h1>
                 <p class="text-secondary">Configurer, tester et désactiver l'accès des élèves depuis l'interface locale du formateur.</p>
             </div>
-            <span class="pill ok p6-badge p6-badge-soft">Helper Windows : 127.0.0.1:{{ helper_port }}</span>
+            <div>
+                <span class="pill ok p6-badge p6-badge-soft">Suivi en direct</span>
+                <p class="muted">Actualisation automatique toutes les 10 secondes.</p>
+            </div>
         </div>
 
         <div class="grid cols-3 p6-grid network-control-summary">
@@ -116,7 +120,7 @@
         </div>
     </section>
 
-    <section id="helper-actions" class="card p6-card card-compact">
+    <section id="helper-actions" class="card p6-card card-compact trainer-network-actions">
         <div class="card-body">
             <h2>Actions</h2>
             <p class="muted">
@@ -202,7 +206,7 @@
                     <h2>Liens de diagnostic</h2>
                     <div class="back-links">
                         <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Diagnostic reseau complet &rarr;</a>
-                        <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configuration reseau &rarr;</a>
+                        <a class="text-link" href="{% url 'surveys:dashboard_network' %}">Réseau local &rarr;</a>
                     </div>
                 </div>
             </section>
@@ -230,6 +234,14 @@
     function showSuccess(msg) {
         document.getElementById('helper-message').innerHTML =
             '<div class="alert alert-success">' + msg + '</div>';
+    }
+
+    function showOperationResult(data) {
+        if (data.success === false) {
+            showError(data.message || 'La configuration LAN est incomplète.');
+        } else if (data.message) {
+            showSuccess(data.message);
+        }
     }
 
     function clearMessage() {
@@ -262,8 +274,8 @@
         BUTTON_IDS.forEach(function(id) { setButtonLoading(id, false); });
     }
 
-    function callHelper(endpoint, method, label, btnId) {
-        clearMessage();
+    function callHelper(endpoint, method, label, btnId, silent) {
+        if (!silent) clearMessage();
         if (!isLocalhost) {
             showError('Le helper n\'est accessible que depuis localhost:8010.');
             return;
@@ -300,8 +312,10 @@
                     return r.json().catch(function() {
                         return { success: false, message: 'Erreur HTTP ' + r.status };
                     }).then(function(errData) {
-                        showRawResult(errData);
-                        showError(errData.message || 'Erreur ' + r.status);
+                        if (!silent) {
+                            showRawResult(errData);
+                            showError(errData.message || 'Erreur ' + r.status);
+                        }
                         if (btnId) setButtonLoading(btnId, false);
                         return null;
                     });
@@ -310,10 +324,8 @@
             })
             .then(function(data) {
                 if (!data) return;
-                showRawResult(data);
-                if (data.message) {
-                    showSuccess(data.message);
-                }
+                if (!silent) showRawResult(data);
+                if (!silent) showOperationResult(data);
                 if (endpoint === 'status' || endpoint === 'sync' || endpoint === 'test') {
                     updateStatusDisplay(data);
                 }
@@ -324,9 +336,9 @@
             .catch(function(err) {
                 clearTimeout(timer);
                 if (err.name === 'AbortError') {
-                    showError('Le helper ne repond pas (timeout 8s). Verifie qu\'il est lance (voir ci-dessous).');
+                    if (!silent) showError('Le helper ne repond pas (timeout 8s). Verifie qu\'il est lance (voir ci-dessous).');
                 } else {
-                    showError('Impossible de contacter le helper (' + helperUrl + '). Verifie qu\'il est lance (voir ci-dessous).');
+                    if (!silent) showError('Impossible de contacter le helper (' + helperUrl + '). Verifie qu\'il est lance (voir ci-dessous).');
                 }
                 document.getElementById('helper-not-found').hidden = false;
                 document.getElementById('helper-status-content').innerHTML =
@@ -354,27 +366,36 @@
     function updateStatusDisplay(data) {
         var status = data.status || data;
         var helperOk = status.helper_running !== false;
+        var localAppOk = status.local_app_ok !== undefined ? status.local_app_ok : status.local_ok;
+        var portproxyOk = status.portproxy_ok !== undefined ? status.portproxy_ok : status.portproxy;
+        var firewallOk = status.firewall_ok !== undefined ? status.firewall_ok : status.firewall;
+        var djangoAllowsIp = status.django_allows_ip;
+        var studentUrlOk = status.student_url_ok !== undefined ? status.student_url_ok : status.lan_ok;
         var studentUrlStep = document.getElementById('step-student-url');
         document.getElementById('global-status-text').textContent = helperOk ? 'Helper joignable et état réseau récupéré.' : 'Helper joignable mais LAN incomplet.';
 
         setStepState('step-helper', helperOk ? 'ok' : 'warn', '1. Helper local');
-        setStepState('step-local-app', status.local_app_ok ? 'ok' : 'warn', '2. Application locale');
+        setStepState('step-local-app', localAppOk ? 'ok' : 'warn', '2. Application locale');
         setStepState('step-lan-ip', status.lan_ip ? 'ok' : 'warn', '3. IP Wi-Fi');
-        setStepState('step-portproxy', status.portproxy_ok ? 'ok' : 'warn', '4. Portproxy');
-        setStepState('step-firewall', status.firewall_ok ? 'ok' : 'warn', '5. Pare-feu');
-        setStepState('step-django', status.django_allows_ip ? 'ok' : 'warn', '6. Django autorise l\'IP');
-        setStepState('step-student-url', status.student_url ? 'ok' : 'warn', '7. URL élèves accessible');
+        setStepState('step-portproxy', portproxyOk ? 'ok' : 'warn', '4. Portproxy');
+        setStepState('step-firewall', firewallOk ? 'ok' : 'warn', '5. Pare-feu');
+        setStepState('step-django', djangoAllowsIp ? 'ok' : 'warn', '6. Django autorise l\'IP');
+        setStepState('step-student-url', studentUrlOk ? 'ok' : 'warn', '7. URL élèves accessible');
         if (studentUrlStep && status.student_url) {
             studentUrlStep.dataset.studentUrl = status.student_url;
         }
 
-        setStatus('status-local-app', !!status.local_app_ok, status.local_app_ok ? '<strong>OK</strong>' : '<span class="muted">Indisponible</span>');
+        setStatus('status-local-app', !!localAppOk, localAppOk ? '<strong>OK</strong>' : '<span class="muted">Indisponible</span>');
         setStatus('status-lan-ip', !!status.lan_ip, status.lan_ip ? '<code>' + status.lan_ip + '</code>' : '<span class="muted">Non détectée</span>');
-        setStatus('status-portproxy', !!status.portproxy_ok, status.portproxy_ok ? '<strong>Configuré</strong>' : '<span class="muted">Absent</span>');
-        setStatus('status-firewall', !!status.firewall_ok, status.firewall_ok ? '<strong>Ouvert</strong>' : '<span class="muted">À vérifier</span>');
-        setStatus('status-django', !!status.django_allows_ip, status.django_allows_ip ? '<strong>OK</strong>' : '<span class="muted">À mettre à jour</span>');
-        setStatus('status-student-url', !!status.student_url, status.student_url ? '<code>' + status.student_url + '</code>' : '<span class="muted">Non disponible</span>');
-        setStatus('status-lan-test', !!status.student_url_ok, status.student_url_ok ? '<strong>Accessible</strong>' : '<span class="muted">Test à lancer</span>');
+        setStatus('status-portproxy', !!portproxyOk, portproxyOk ? '<strong>Configuré</strong>' : '<span class="muted">Absent</span>');
+        setStatus('status-firewall', !!firewallOk, firewallOk ? '<strong>Ouvert</strong>' : '<span class="muted">À vérifier</span>');
+        setStatus('status-django', !!djangoAllowsIp, djangoAllowsIp ? '<strong>OK</strong>' : '<span class="muted">À mettre à jour</span>');
+        setStatus('status-student-url', !!studentUrlOk && !!status.student_url, studentUrlOk && status.student_url ? '<code>' + status.student_url + '</code>' : '<span class="muted">Non disponible</span>');
+        setStatus('status-lan-test', !!studentUrlOk, studentUrlOk ? '<strong>Accessible</strong>' : '<span class="muted">Échec du test</span>');
+
+        document.getElementById('helper-status-content').innerHTML = helperOk
+            ? '<div class="alert alert-success"><strong>Helper joignable.</strong> Le statut réseau vient d’être actualisé.</div>'
+            : '<div class="alert"><strong>Helper joignable mais configuration LAN incomplète.</strong></div>';
 
         if (status.student_url) {
             lastStudentUrl = status.student_url;
@@ -439,6 +460,11 @@
 
     resetAllButtons();
     callHelper('status', 'GET', 'Initialisation', 'btn-check-status');
+    window.setInterval(function() {
+        if (!activeController) {
+            callHelper('status', 'GET', 'Suivi en direct', null, true);
+        }
+    }, 10000);
 })();
 </script>
 {% endblock %}

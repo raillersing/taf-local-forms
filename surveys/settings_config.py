@@ -18,6 +18,9 @@ WHITELIST_EDITABLE = {
 WHITELIST_READONLY = {
     "DEBUG",
     "DATABASE_PATH",
+    "DATABASE_ENGINE",
+    "DATABASE_HOST",
+    "DATABASE_NAME",
 }
 
 DEFAULT_EDITABLE = {
@@ -48,7 +51,18 @@ def get_filtered_settings():
         editable[key] = value
     readonly = {}
     for key in sorted(WHITELIST_READONLY):
-        value = os.environ.get(key, "")
+        if key == "DATABASE_PATH" and os.environ.get("DB_HOST", "").strip():
+            # The SQLite path is only a fallback; do not present it as active
+            # when the Docker service is connected to PostgreSQL.
+            continue
+        if key == "DATABASE_ENGINE":
+            value = "PostgreSQL" if os.environ.get("DB_HOST", "").strip() else "SQLite"
+        elif key == "DATABASE_HOST":
+            value = os.environ.get("DB_HOST", "")
+        elif key == "DATABASE_NAME":
+            value = os.environ.get("DB_NAME", "") or os.environ.get("POSTGRES_DB", "")
+        else:
+            value = os.environ.get(key, "")
         readonly[key] = value
     has_secret = bool(os.environ.get("SECRET_KEY"))
     return {

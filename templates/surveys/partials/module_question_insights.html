@@ -1,0 +1,63 @@
+<section id="insights" class="trainer-question-insights" aria-labelledby="question-insights-heading">
+    <header class="trainer-insights-heading">
+        <div>
+            <span class="section-kicker">Lecture pédagogique</span>
+            <h2 id="question-insights-heading">Résumé de toutes les réponses</h2>
+            <p>Chaque question est agrégée sur les réponses actuellement filtrées. Les interprétations indiquent une tendance à vérifier avec le groupe.</p>
+        </div>
+        <span class="trainer-insights-badge">Question par question</span>
+    </header>
+
+    {% if question_insights %}
+    <div class="trainer-insight-sections">
+        {% for section in question_insights %}
+        <details class="trainer-insight-section"{% if forloop.first %} open{% endif %}>
+            <summary>
+                <strong>{{ section.title }}</strong>
+                <span>{{ section.questions|length }} question{{ section.questions|length|pluralize }}</span>
+            </summary>
+            <div class="trainer-insight-grid">
+                {% for question in section.questions %}
+                <article class="trainer-question-card trainer-question-{{ question.kind }}">
+                    <div class="trainer-question-head">
+                        <h3>{{ question.label }}</h3>
+                        <span>{{ question.answered }}/{{ question.total }} réponse{{ question.answered|pluralize }}</span>
+                    </div>
+
+                    {% if question.options %}
+                    <div class="trainer-answer-distribution">
+                        {% for option in question.options %}
+                        <div class="trainer-answer-row">
+                            <div><span>{{ option.label }}</span><strong>{{ option.count }} · {{ option.rate|floatformat:0 }} %</strong></div>
+                            <meter min="0" max="100" value="{{ option.rate|stringformat:'s' }}">{{ option.rate }} %</meter>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% elif question.kind == "number" %}
+                    <div class="trainer-number-summary">
+                        <div><strong>{{ question.average|floatformat:1 }}</strong><span>Moyenne</span></div>
+                        <div><strong>{{ question.minimum|floatformat:0 }}</strong><span>Minimum</span></div>
+                        <div><strong>{{ question.maximum|floatformat:0 }}</strong><span>Maximum</span></div>
+                    </div>
+                    {% elif question.excerpts %}
+                    <ul class="trainer-answer-excerpts">
+                        {% for excerpt in question.excerpts %}<li>« {{ excerpt }}{% if excerpt|length >= 180 %}…{% endif %} »</li>{% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="trainer-no-answer">Aucune réponse exploitable pour cette question.</p>
+                    {% endif %}
+
+                    <p class="trainer-question-interpretation"><strong>Interprétation</strong>{{ question.interpretation }}</p>
+                </article>
+                {% endfor %}
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="trainer-insights-empty">
+        <strong>Aucune tendance disponible</strong>
+        <p>Les résumés apparaîtront dès que des réponses seront enregistrées pour ce module.</p>
+    </div>
+    {% endif %}
+</section>

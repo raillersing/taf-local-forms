@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Formulaire non disponible{% endblock %}
-{% block hero_title %}Formulaire non disponible{% endblock %}
-{% block hero_text %}Le formulaire n'est pas disponible maintenant.{% endblock %}
+{% block page_header %}{% endblock %}
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
 {% endblock %}
@@ -10,7 +9,9 @@
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
     {% url 'surveys:support_list' as supports_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 7 indisponible" %}
+    {% url 'surveys:student_module_7_detail' as module_detail_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url crumb_3_label="Module 7" crumb_3_url=module_detail_url current_label="Indisponible" %}
+
     <section class="card empty-state student-state-card student-state-card-warning">
         <div class="student-state-icon" aria-hidden="true">!</div>
         <span class="taf-pill">Module indisponible</span>
