@@ -260,6 +260,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     total_resources_count = LearningResource.objects.count()
     total_submissions = (
         Submission.objects.count()
+        + Module1Submission.objects.count()
         + Module3Submission.objects.count()
         + Module4Submission.objects.count()
         + Module5Submission.objects.count()
