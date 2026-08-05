@@ -4497,16 +4497,7 @@ table th {
 .trainer-app-shell .shell-tools-link { position: relative; border-radius: 10px; transition: background .16s ease, color .16s ease, padding .16s ease; }
 .trainer-app-shell .shell-nav-inner-trainer .nav-item a:hover,
 .trainer-app-shell .shell-tools-link:hover { padding-left: 18px; }
-.trainer-app-shell .shell-tools-link.active::before {
-  content: "";
-  position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 7px;
-  width: 3px;
-  border-radius: 999px;
-  background: #1559e0;
-}
+.trainer-app-shell .shell-tools-link.active::before { content: none; }
 
 .trainer-app-shell .shell-tools-group-label {
   display: block;
