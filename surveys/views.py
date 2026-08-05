@@ -377,6 +377,7 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
     })
 
 
+@never_cache
 def project(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/project.html", {})
 
@@ -411,6 +412,7 @@ def _module1_form_sections(form):
     ]
 
 
+@never_cache
 def module_1_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -481,6 +483,7 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
     })
 
 
+@never_cache
 def module_1_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_module1_submission_id") != submission_id:
         return redirect("surveys:module_1")
@@ -516,6 +519,7 @@ def _module1_export_value(field_name, value):
     return choice_map.get(field_name, {}).get(value, value or "")
 
 
+@never_cache
 @login_required
 def export_module_1_csv(request: HttpRequest) -> HttpResponse:
     submissions = Module1Submission.objects.select_related("student", "session").filter(session__module__code="MODULE_1").order_by("-created_at")
@@ -597,6 +601,7 @@ def support_download(request: HttpRequest, slug: str) -> FileResponse:
     return response
 
 
+@never_cache
 def module_2_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -683,6 +688,7 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def module_2_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_submission_id") != submission_id:
         return redirect("surveys:module_2")
@@ -783,6 +789,7 @@ MODULE_8_SUMMARY = (
 )
 
 
+@never_cache
 def module_5_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -871,6 +878,7 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def module_5_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_module5_submission_id") != submission_id:
         return redirect("surveys:module_5")
@@ -926,6 +934,7 @@ def dashboard_module_5(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_module_5.html", context)
 
 
+@never_cache
 @login_required
 def export_module_5_csv(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1016,6 +1025,7 @@ def export_module_5_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
+@never_cache
 def module_6_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -1104,6 +1114,7 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def module_6_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_module6_submission_id") != submission_id:
         return redirect("surveys:module_6")
@@ -1159,6 +1170,7 @@ def dashboard_module_6(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_module_6.html", context)
 
 
+@never_cache
 @login_required
 def export_module_6_csv(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1295,6 +1307,7 @@ def dashboard_module_2(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_module_2.html", context)
 
 
+@never_cache
 @login_required
 def export_module_2_csv(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1382,6 +1395,7 @@ MODULE_3_SUMMARY = (
 )
 
 
+@never_cache
 def module_3_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -1470,6 +1484,7 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def module_3_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_module3_submission_id") != submission_id:
         return redirect("surveys:module_3")
@@ -1527,6 +1542,7 @@ def dashboard_module_3(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_module_3.html", context)
 
 
+@never_cache
 @login_required
 def export_module_3_csv(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1628,6 +1644,7 @@ MODULE_4_SUMMARY = (
 )
 
 
+@never_cache
 def module_4_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -1716,6 +1733,7 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def module_4_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_module4_submission_id") != submission_id:
         return redirect("surveys:module_4")
@@ -1779,6 +1797,7 @@ def dashboard_module_4(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_module_4.html", context)
 
 
+@never_cache
 @login_required
 def export_module_4_csv(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1879,6 +1898,7 @@ def export_module_4_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
+@never_cache
 def module_7_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -1967,6 +1987,7 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def module_7_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_module7_submission_id") != submission_id:
         return redirect("surveys:module_7")
@@ -2022,6 +2043,7 @@ def dashboard_module_7(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_module_7.html", context)
 
 
+@never_cache
 @login_required
 def export_module_7_csv(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -2114,6 +2136,7 @@ def export_module_7_csv(request: HttpRequest) -> HttpResponse:
 
 # ---- Module 8 ----
 
+@never_cache
 def module_8_form(request: HttpRequest) -> HttpResponse:
     session = (
         TrainingSession.objects.select_related("module")
@@ -2202,6 +2225,7 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def module_8_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     if request.session.get("last_module8_submission_id") != submission_id:
         return redirect("surveys:module_8")
@@ -2263,6 +2287,7 @@ def dashboard_module_8(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 @login_required
 def export_module_8_csv(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -2337,6 +2362,7 @@ def export_module_8_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
+@never_cache
 @login_required
 def network_access_dashboard(request: HttpRequest) -> HttpResponse:
     from .network import get_network_access_context
@@ -2345,6 +2371,7 @@ def network_access_dashboard(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_network.html", ctx)
 
 
+@never_cache
 def presence_heartbeat(request: HttpRequest) -> JsonResponse:
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
@@ -2476,6 +2503,7 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
 
 
 @staff_member_required
+@never_cache
 @login_required
 @require_POST
 def dashboard_use_current_address(request: HttpRequest) -> HttpResponse:
@@ -2506,6 +2534,7 @@ def dashboard_use_current_address(request: HttpRequest) -> HttpResponse:
 
 
 @staff_member_required
+@never_cache
 @login_required
 @require_POST
 def toggle_module_responses(request: HttpRequest, module_code: str) -> HttpResponse:
@@ -2524,6 +2553,7 @@ def toggle_module_responses(request: HttpRequest, module_code: str) -> HttpRespo
     return redirect("surveys:dashboard_home")
 
 
+@never_cache
 @staff_member_required
 @login_required
 def network_control(request: HttpRequest) -> HttpResponse:
