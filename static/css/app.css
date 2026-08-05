@@ -4814,7 +4814,7 @@ table th {
 .trainer-app-shell .trainer-rail-list .nav-item a:focus-visible,
 .trainer-app-shell .trainer-rail-links .shell-tools-link:hover,
 .trainer-app-shell .trainer-rail-links .shell-tools-link:focus-visible { border-color: rgba(121, 183, 255, .25); background: rgba(121, 183, 255, .1); }
-.trainer-app-shell .trainer-rail-list .nav-item.active a { border-color: #b8d7fb; background: #eef7ff; color: #071a42; box-shadow: 0 8px 22px rgba(0, 0, 0, .13); }
+.trainer-app-shell .trainer-rail-list .nav-item.active a { border-color: #b8d7fb; border-left: 0; background: #eef7ff; color: #071a42; box-shadow: 0 8px 22px rgba(0, 0, 0, .13); }
 .trainer-app-shell .trainer-rail-list .nav-item.active a > span { color: #1766d2; }
 .trainer-app-shell .trainer-rail-list .nav-item.active a small { color: #54708f; }
 .trainer-rail-links { display: grid; gap: 3px; }
