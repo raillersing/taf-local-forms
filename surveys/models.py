@@ -1070,6 +1070,98 @@ class Module8Submission(models.Model):
         super().save(*args, **kwargs)
 
 
+class Module1Submission(models.Model):
+    """Digitised answers for the paper first-contact questionnaire.
+
+    The paper identity fields are kept as snapshots so later edits to the
+    reusable Student record cannot change what was written on the sheet.
+    """
+
+    student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module1_submissions")
+    session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module1_submissions")
+    school_id_number_snapshot = models.CharField(
+        max_length=2,
+        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
+    )
+    paper_full_name = models.CharField(max_length=255)
+    paper_class_level = models.CharField(max_length=100)
+    paper_school_name = models.CharField(max_length=255)
+    paper_date = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    q1_age = models.CharField(max_length=40, blank=True)
+    q2_gender = models.CharField(max_length=40, blank=True)
+    q3_location = models.CharField(max_length=60, blank=True)
+    q3_location_other = models.CharField(max_length=255, blank=True)
+    q4_device_use = models.CharField(max_length=40, blank=True)
+    q5_home_devices = models.JSONField(default=list)
+    q6_device_owner = models.CharField(max_length=60, blank=True)
+    q7_device_frequency = models.CharField(max_length=60, blank=True)
+    q8_keyboard = models.CharField(max_length=40, blank=True)
+    q9_mouse = models.CharField(max_length=50, blank=True)
+    q10_internet_use = models.CharField(max_length=40, blank=True)
+    q11_internet_location = models.CharField(max_length=80, blank=True)
+    q12_internet_problems = models.JSONField(default=list)
+    q12_internet_problems_other = models.CharField(max_length=255, blank=True)
+    q13_internet_uses = models.JSONField(default=list)
+    q14_power_device = models.CharField(max_length=30, blank=True)
+    q15_wifi = models.CharField(max_length=30, blank=True)
+    q16_open_app = models.CharField(max_length=30, blank=True)
+    q17_write_text = models.CharField(max_length=30, blank=True)
+    q18_save_file = models.CharField(max_length=30, blank=True)
+    q19_find_file = models.CharField(max_length=30, blank=True)
+    q20_photo_scan = models.CharField(max_length=30, blank=True)
+    q21_email = models.CharField(max_length=40, blank=True)
+    q22_create_email = models.CharField(max_length=30, blank=True)
+    q23_send_email = models.CharField(max_length=30, blank=True)
+    q24_attach_email = models.CharField(max_length=30, blank=True)
+    q25_apps = models.JSONField(default=list)
+    q26_search_method = models.CharField(max_length=80, blank=True)
+    q27_google_search = models.CharField(max_length=50, blank=True)
+    q28_verify_information = models.CharField(max_length=60, blank=True)
+    q29_internet_truth = models.CharField(max_length=30, blank=True)
+    q30_search_explanation = models.CharField(max_length=30, blank=True)
+    q31_secure_password = models.CharField(max_length=30, blank=True)
+    q32_share_password = models.CharField(max_length=40, blank=True)
+    q33_suspect_message = models.CharField(max_length=40, blank=True)
+    q34_online_harassment_actions = models.JSONField(default=list)
+    q35_protect_personal_information = models.CharField(max_length=30, blank=True)
+    q36_learn_lesson = models.CharField(max_length=40, blank=True)
+    q37_educational_video = models.CharField(max_length=40, blank=True)
+    q38_pdf = models.CharField(max_length=50, blank=True)
+    q39_dictionary_translation = models.CharField(max_length=50, blank=True)
+    q40_subjects = models.JSONField(default=list)
+    q40_subject_other = models.CharField(max_length=255, blank=True)
+    q41_motivations = models.JSONField(default=list)
+    q41_motivation_other = models.CharField(max_length=255, blank=True)
+    q42_first_learning = models.JSONField(default=list)
+    q43_training_commitment = models.CharField(max_length=40, blank=True)
+    q44_regular_attendance = models.CharField(max_length=60, blank=True)
+    q45_preferred_schedule = models.JSONField(default=list)
+    q45_schedule_other = models.CharField(max_length=255, blank=True)
+    q46_digital_level = models.PositiveSmallIntegerField(blank=True, null=True)
+    q47_search_level = models.PositiveSmallIntegerField(blank=True, null=True)
+    q48_device_confidence = models.PositiveSmallIntegerField(blank=True, null=True)
+    q49_greatest_difficulty = models.TextField(blank=True)
+    q50_after_training = models.TextField(blank=True)
+    q51_question_or_concern = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "school_id_number_snapshot"],
+                name="unique_module1_submission_per_session_school_id",
+            )
+        ]
+        verbose_name = "Module 1 submission"
+        verbose_name_plural = "Module 1 submissions"
+
+    def __str__(self) -> str:
+        return f"M1-{self.school_id_number_snapshot} - {self.session.session_code}"
+
+
 class FormPresence(models.Model):
     STATUS_ACTIVE = "active"
     STATUS_SUBMITTED = "submitted"

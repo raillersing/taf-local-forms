@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Réponses enregistrées — Module 1{% endblock %}
+{% block hero_title %}Réponses enregistrées{% endblock %}
+{% block hero_text %}La feuille de première prise de contact a bien été numérisée.{% endblock %}
+{% block main_nav %}{% include "surveys/partials/nav_student.html" %}{% endblock %}
+{% block content %}
+<main id="content" class="content-grid">
+    <section class="card success-card" role="status">
+        <h2>Merci pour ta participation.</h2>
+        <p>Les réponses de <strong>{{ submission.paper_full_name }}</strong> ont été enregistrées pour la séance {{ submission.session.session_code }}.</p>
+        <div class="cta-section"><a class="cta-student" href="{% url 'surveys:student_modules' %}">Retour aux modules</a></div>
+    </section>
+</main>
+{% endblock %}

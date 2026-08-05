@@ -1,0 +1,23 @@
+<details class="questionnaire-course-review p6-card">
+    <summary>
+        <span><strong>Revoir le cours avant de répondre</strong><small>Résumé, notions clés et activités du module</small></span>
+        <span class="details-action">Ouvrir</span>
+    </summary>
+    <div class="questionnaire-course-review-body">
+        {% if module_number == "2" %}
+            {% include "surveys/partials/module_2_pedagogy.html" %}
+        {% elif module_number == "3" %}
+            {% include "surveys/partials/module_3_pedagogy.html" %}
+        {% elif module_number == "4" %}
+            {% include "surveys/partials/module_4_pedagogy.html" %}
+        {% elif module_number == "5" %}
+            {% include "surveys/partials/module_5_pedagogy.html" %}
+        {% elif module_number == "6" %}
+            {% include "surveys/partials/module_6_pedagogy.html" %}
+        {% elif module_number == "7" %}
+            {% include "surveys/partials/module_7_pedagogy.html" %}
+        {% elif module_number == "8" %}
+            {% include "surveys/partials/module_8_pedagogy.html" %}
+        {% endif %}
+    </div>
+</details>

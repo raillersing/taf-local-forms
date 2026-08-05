@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Dashboard Module 2{% endblock %}
+{% block page_header %}{% endblock %}
 {% block hero_title %}Dashboard Module 2{% endblock %}
 {% block hero_text %}Vue formateur pour suivre les réponses, le score moyen et l'avancement des activités.{% endblock %}
 
@@ -9,11 +10,13 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-module-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Module 2" %}
+    {% url 'surveys:dashboard_modules' as dashboard_modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Modules" crumb_2_url=dashboard_modules_url current_label="Module 2" %}
+    {% include "surveys/partials/trainer_module_tabs.html" %}
 
-    <section class="card stats-grid">
+    <section id="overview" class="card stats-grid dashboard-module-summary">
         <article class="stat-card">
             <p class="stat-label">Réponses</p>
             <p class="stat-value">{{ total_submissions }}</p>
@@ -28,7 +31,7 @@
         </article>
     </section>
 
-    <section class="card">
+    <section class="card dashboard-module-panel">
         <h2>Filtres</h2>
         <form method="get" class="filter-grid">
             <div class="field">
@@ -48,18 +51,13 @@
         </form>
     </section>
 
-    <section class="card">
+    {% include "surveys/partials/module_question_insights.html" %}
+
+    <section id="todo" class="card dashboard-module-panel">
         <div class="section-row">
             <h2>Progression des activités</h2>
             <a class="text-link" href="{% url 'surveys:export_module_2_csv' %}">Exporter le CSV</a>
         </div>
-        <style>
-            {% for item in todo_completion %}
-            .progress-list .progress-item:nth-child({{ forloop.counter }}) .progress-bar span {
-                --w: {{ item.rate }}%;
-            }
-            {% endfor %}
-        </style>
         <div class="progress-list">
             {% for item in todo_completion %}
                 <div class="progress-item">
@@ -67,15 +65,13 @@
                         <span>{{ item.label }}</span>
                         <strong>{{ item.rate }}%</strong>
                     </div>
-                    <div class="progress-bar">
-                        <span></span>
-                    </div>
+                    <progress class="trainer-activity-progress" max="100" value="{{ item.rate|stringformat:'s' }}">{{ item.rate }}%</progress>
                 </div>
             {% endfor %}
         </div>
     </section>
 
-    <section class="card">
+    <section id="submissions" class="card dashboard-module-panel">
         <h2>Liste des réponses</h2>
         <div class="table-wrap">
             <table>

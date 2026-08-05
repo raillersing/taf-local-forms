@@ -2,21 +2,82 @@
 {% load static %}
 
 {% block title %}Réseau local — Cockpit formateur{% endblock %}
+{% block page_header %}{% endblock %}
 {% block hero_title %}Réseau local{% endblock %}
-{% block hero_text %}Vérifie les adresses utiles pour les élèves et les liens internes du formateur, sans modifier la logique applicative.{% endblock %}
+{% block hero_text %}Prépare l’accès de la classe, vérifie l’état du réseau puis partage une seule adresse aux élèves.{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-network-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Réseau local" %}
 
+    <section class="network-live-overview trainer-operation-hero trainer-operation-network" aria-labelledby="network-live-heading">
+        <div class="network-live-heading">
+            <div>
+                <span class="trainer-command-kicker">Accès élèves · Réseau local</span>
+                <h1 id="network-live-heading">État du réseau local</h1>
+                <p>Vérifie l’adresse à partager avant de lancer la séance.</p>
+            </div>
+            <a class="btn btn-primary" href="{% url 'surveys:dashboard_network_control' %}#helper-actions">Configurer automatiquement</a>
+        </div>
+        <section class="network-status-banner {% if recommended_lan_host and not lan_host_stale %}ok{% elif current_request_is_lan %}warn{% else %}off{% endif %}">
+            {% if recommended_lan_host and not lan_host_stale %}
+            <strong>Adresse prête à être testée</strong>
+            <span>IP détectée : {{ recommended_lan_host }} · Port élèves : 8011</span>
+            {% elif current_request_is_lan %}
+            <strong>Adresse LAN détectée</strong>
+            <span>Synchronise-la avant de partager l’URL aux élèves.</span>
+            {% else %}
+            <strong>Configuration à terminer</strong>
+            <span>Configure l’adresse LAN et vérifie le port élèves avant la séance.</span>
+            {% endif %}
+        </section>
+        <div class="network-live-facts" aria-label="Résumé du réseau">
+            <div><span>IP configurée</span><strong>{% if configured_host %}{{ configured_host }}{% else %}Non définie{% endif %}</strong></div>
+            <div><span>Port élèves</span><strong>8011</strong></div>
+            <div><span>Port application</span><strong>{% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</strong></div>
+            <div><span>Test téléphone</span><strong>À confirmer</strong></div>
+        </div>
+    </section>
+
+    <section class="network-helper-launch p6-card" id="helper-start" aria-labelledby="helper-start-heading">
+        <div class="network-helper-launch-copy">
+            <span class="section-kicker">Préparation Windows</span>
+            <h2 id="helper-start-heading">Démarrer le helper LAN</h2>
+            <p class="text-secondary">Le helper autorise les actions réseau depuis cette page. Il doit être lancé une fois dans PowerShell administrateur sur le laptop.</p>
+            <ol class="network-helper-steps">
+                <li>Ouvre PowerShell en administrateur.</li>
+                <li>Place-toi dans le dépôt du projet.</li>
+                <li>Lance la commande ci-dessous.</li>
+                <li>Reviens ici et clique sur « Actualiser l’état ».</li>
+            </ol>
+        </div>
+        <div class="network-helper-launch-action">
+            <code class="network-helper-command" id="helper-start-command">.scripts\windows\taf-lan-helper-start.ps1</code>
+            <button type="button" class="btn btn-primary" data-copy-helper-command>Copier la commande</button>
+            <a class="btn btn-secondary" href="{% url 'surveys:dashboard_network_control' %}#helper-actions">Actualiser l’état</a>
+            <p class="student-access-feedback" data-helper-copy-feedback aria-live="polite"></p>
+        </div>
+    </section>
+
+    <details class="network-directory p6-card network-operational-details">
+        <summary>
+            <span><strong>Parcours de mise en service</strong><small>Vérifier, projeter puis dépanner si nécessaire</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+    <section class="network-command-bar" aria-label="Parcours réseau">
+        <div class="network-command-step active"><span>1</span><div><strong>Vérifier</strong><small>Contrôler l’adresse et le statut</small></div></div>
+        <div class="network-command-step"><span>2</span><div><strong>Projeter</strong><small>Afficher le QR code en classe</small></div></div>
+        <div class="network-command-step"><span>3</span><div><strong>Dépanner</strong><small>Ouvrir le contrôle LAN si nécessaire</small></div></div>
+    </section>
+
     {% if lan_host_stale %}
     <section class="card alert-warning">
-        <p><strong>⚠ L'IP configurée (<code>{{ configured_host }}</code>) diffère de l'adresse LAN actuelle (<code>{{ current_host }}</code>).
+        <p><strong>Attention : l'IP configurée (<code>{{ configured_host }}</code>) diffère de l'adresse LAN actuelle (<code>{{ current_host }}</code>).
             <a href="{% url 'surveys:dashboard_settings' %}">Mets à jour la configuration.</a>
         </strong></p>
         <p class="muted">
@@ -25,172 +86,182 @@
     </section>
     {% endif %}
 
-    <section class="card">
-        <h2>Adresse recommandée (accueil élèves)</h2>
-        <p>
-            Donne cette adresse aux élèves pour accéder à l'application&nbsp;:
-        </p>
-        {% if recommended_lan_host %}
-        <p class="network-url-box">{{ recommended_student_base_url }}/</p>
-        <p class="muted">
-            Source : <strong>
+    </details>
+
+    <section class="split network-hero-split">
+        <article class="panel p6-card">
+            <div class="panel-title">
+                <div>
+                    <h2>Adresse recommandée</h2>
+                    <p class="text-secondary">Donne cette adresse aux élèves pour accéder à l’accueil local.</p>
+                </div>
+                <span class="pill{% if recommended_lan_host %} ok{% endif %}">{% if recommended_lan_host %}Prête{% else %}À configurer{% endif %}</span>
+            </div>
+            {% if recommended_lan_host %}
+            <p class="network-url-box">{{ recommended_student_base_url }}/</p>
+            <p class="text-secondary">
+                Source :
                 {% if lan_host_source == "request" %}Adresse détectée depuis cette connexion.
                 {% elif lan_host_source == "settings" %}Adresse configurée.
                 {% elif lan_host_source == "candidate" %}Adresse détectée automatiquement.
-                {% else %}Non configurée.{% endif %}
-            </strong>
-        </p>
-        {% else %}
-        <p class="network-url-box alert-warning">IP locale non configurée</p>
-        {% endif %}
-    </section>
+                {% else %}non configurée.{% endif %}
+            </p>
+            {% else %}
+            <p class="network-url-box alert-warning">IP locale non configurée</p>
+            {% endif %}
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="{% url 'surveys:dashboard_projection' %}">Projection</a>
+                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_network_control' %}">Contrôle LAN</a>
+            </div>
+            <p class="text-secondary">L’adresse <code>localhost</code> ne fonctionne que sur cet ordinateur formateur.</p>
+        </article>
 
-    <section class="card{% if not configured_host and not current_request_is_lan %} alert-warning{% endif %}">
-        <h2>État réseau</h2>
-        <dl class="setting-list">
-            <dt class="muted setting-label">IP de cette requête</dt>
-            <dd><code>{{ current_host }}{% if current_port %}:{{ current_port }}{% endif %}</code>
-                {% if current_request_is_lan %}<span class="badge badge-success">LAN</span>{% endif %}
-            </dd>
-
-            <dt class="muted setting-label">IP configurée (TAF_LAN_HOST)</dt>
-            <dd>{% if configured_host %}<code>{{ configured_host }}</code>{% else %}<span class="muted">Non définie</span>{% endif %}</dd>
-
-            <dt class="muted setting-label">IP recommandée</dt>
-            <dd>{% if recommended_lan_host %}<code>{{ recommended_lan_host }}</code>{% else %}<span class="muted">Non disponible</span>{% endif %}</dd>
-
-            <dt class="muted setting-label">Port LAN élèves</dt>
-            <dd><code>8011</code> <small class="muted">(portproxy → localhost:8010)</small></dd>
-
-            <dt class="muted setting-label">Port local Docker</dt>
-            <dd><code>8010</code></dd>
-
-            <dt class="muted setting-label">Port configuré (TAF_HOST_PORT)</dt>
-            <dd>{% if configured_port %}<code>{{ configured_port }}</code>{% else %}<span class="muted">8010 (défaut)</span>{% endif %}</dd>
-
-            <dt class="muted setting-label">Source de l'adresse</dt>
-            <dd>
-                {% if lan_host_source == "request" %}
-                <span class="badge badge-success">Requête LAN</span>
-                {% elif lan_host_source == "settings" %}
-                <span class="badge badge-success">Configuration</span>
-                {% elif lan_host_source == "candidate" %}
-                <span class="badge badge-warning">Détection automatique</span>
-                {% else %}
-                <span class="badge badge-danger">Non configurée</span>
-                {% endif %}
-            </dd>
-
-            <dt class="muted setting-label">Statut</dt>
-            <dd>
+        <aside class="panel p6-card{% if not configured_host and not current_request_is_lan %} alert-warning{% endif %}">
+            <div class="panel-title">
+                <div>
+                    <h2>État réseau</h2>
+                    <p class="text-secondary">Résumé rapide avant de partager l’URL en classe.</p>
+                </div>
                 {% if configured_host and not lan_host_stale %}
-                <span class="badge badge-success">✅ Configuré et à jour</span>
-                {% elif configured_host and lan_host_stale %}
-                <span class="badge badge-warning">⚠ À synchroniser</span>
+                <span class="pill ok">À jour</span>
                 {% elif current_request_is_lan %}
-                <span class="badge badge-warning">🔍 Détecté — à configurer</span>
+                <span class="pill warn">Détecté</span>
                 {% else %}
-                <span class="badge badge-danger">❌ Non configuré</span>
+                <span class="pill">Vérifier</span>
                 {% endif %}
-            </dd>
-        </dl>
+            </div>
+            <div class="steps">
+                <div class="step"><strong>Requête courante</strong><span class="text-secondary"><code>{{ current_host }}{% if current_port %}:{{ current_port }}{% endif %}</code>{% if current_request_is_lan %} · LAN{% endif %}</span></div>
+                <div class="step"><strong>IP configurée</strong><span class="text-secondary">{% if configured_host %}<code>{{ configured_host }}</code>{% else %}Non définie{% endif %}</span></div>
+                <div class="step"><strong>Port élèves</strong><span class="text-secondary"><code>8011</code> via portproxy → localhost:8010</span></div>
+                <div class="step"><strong>Port Docker</strong><span class="text-secondary"><code>{% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</code></span></div>
+            </div>
+        </aside>
     </section>
 
-    <section class="card">
-        <h2>Modules élèves</h2>
-        <ul class="network-url-list">
-            <li>
-                <span class="muted">Module 2 – Comprendre Internet :</span><br>
-                <a class="text-link" href="{{ module_2_url }}" target="_blank" rel="noopener noreferrer">{{ module_2_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Module 3 – Recherche efficace :</span><br>
-                <a class="text-link" href="{{ module_3_url }}" target="_blank" rel="noopener noreferrer">{{ module_3_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Module 4 – Sources fiables :</span><br>
-                <a class="text-link" href="{{ module_4_url }}" target="_blank" rel="noopener noreferrer">{{ module_4_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Module 5 – Email et outils de communication :</span><br>
-                <a class="text-link" href="{{ module_5_url }}" target="_blank" rel="noopener noreferrer">{{ module_5_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Module 6 – Ressources educatives en ligne :</span><br>
-                <a class="text-link" href="{{ module_6_url }}" target="_blank" rel="noopener noreferrer">{{ module_6_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Module 7 – Securite en ligne :</span><br>
-                <a class="text-link" href="{{ module_7_url }}" target="_blank" rel="noopener noreferrer">{{ module_7_url }}</a>
-            </li>
-        </ul>
+    <section class="kpi-grid cols-3 network-kpi-grid">
+        <article class="kpi-card">
+            <div class="kpi-label">Port formateur</div>
+            <div class="kpi-value network-kpi-text">localhost:{% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</div>
+            <p class="dashboard-kpi-note">Interface locale</p>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-label">Port élèves</div>
+            <div class="kpi-value network-kpi-text">{% if recommended_lan_host %}{{ recommended_lan_host }}:8011{% else %}8011{% endif %}</div>
+            <p class="dashboard-kpi-note">Adresse à partager en classe</p>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-label">Portproxy</div>
+            <div class="kpi-value network-kpi-text">8011 → {% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</div>
+            <p class="dashboard-kpi-note">{% if recommended_lan_host %}Configuré{% else %}À vérifier{% endif %}</p>
+        </article>
     </section>
 
-    <section class="card">
-        <h2>Adresses formateur</h2>
-        <ul class="network-url-list">
-            <li>
-                <span class="muted">Cockpit formateur :</span><br>
-                <a class="text-link" href="{{ cockpit_url }}" target="_blank" rel="noopener noreferrer">{{ cockpit_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Dashboard Module 2 :</span><br>
-                <a class="text-link" href="{{ dashboard_module_2_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_2_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Dashboard Module 3 :</span><br>
-                <a class="text-link" href="{{ dashboard_module_3_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_3_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Dashboard Module 4 :</span><br>
-                <a class="text-link" href="{{ dashboard_module_4_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_4_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Dashboard Module 5 :</span><br>
-                <a class="text-link" href="{{ dashboard_module_5_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_5_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Dashboard Module 6 :</span><br>
-                <a class="text-link" href="{{ dashboard_module_6_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_6_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Dashboard Module 7 :</span><br>
-                <a class="text-link" href="{{ dashboard_module_7_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_7_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Export CSV Module 2 :</span><br>
-                <a class="text-link" href="{{ csv_module_2_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_2_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Export CSV Module 3 :</span><br>
-                <a class="text-link" href="{{ csv_module_3_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_3_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Export CSV Module 4 :</span><br>
-                <a class="text-link" href="{{ csv_module_4_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_4_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Export CSV Module 5 :</span><br>
-                <a class="text-link" href="{{ csv_module_5_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_5_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Export CSV Module 6 :</span><br>
-                <a class="text-link" href="{{ csv_module_6_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_6_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Export CSV Module 7 :</span><br>
-                <a class="text-link" href="{{ csv_module_7_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_7_url }}</a>
-            </li>
-            <li>
-                <span class="muted">Admin :</span><br>
-                <a class="text-link" href="{{ admin_url }}" target="_blank" rel="noopener noreferrer">{{ admin_url }}</a>
-            </li>
-        </ul>
+    <section class="card p6-card network-qr-stage" data-student-access data-student-url="{% if recommended_student_base_url %}{{ recommended_student_base_url }}/{% endif %}">
+        <div class="card-header network-qr-stage-head">
+            <div>
+                <h2>URL pour les élèves</h2>
+                <p class="text-secondary">Scanne ce QR code ou copie l’adresse avant d’ouvrir un module.</p>
+            </div>
+            {% if recommended_lan_host %}
+            <span class="pill ok">Prête</span>
+            {% else %}
+            <span class="pill warn">À configurer</span>
+            {% endif %}
+        </div>
+        <div class="network-qr-stage-body">
+            <div class="network-qr-copy">
+                <p class="projection-url network-stage-url">
+                    {% if recommended_student_base_url %}{{ recommended_student_base_url }}/{% else %}URL LAN non configurée{% endif %}
+                </p>
+                <p class="projection-note">
+                    Le téléphone doit être sur le même Wi-Fi ou hotspot que l’ordinateur formateur.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="{% url 'surveys:dashboard_projection' %}">Mode projection</a>
+                    <button type="button" class="btn btn-secondary" data-copy-url {% if not recommended_student_base_url %}disabled{% endif %}>Copier</button>
+                    <a class="btn btn-secondary" href="{% url 'surveys:dashboard_network_control' %}">Tester l’URL</a>
+                </div>
+                <p class="student-access-feedback" data-copy-feedback aria-live="polite"></p>
+            </div>
+            <div class="projection-qr-column">
+                <div class="projection-qr-frame">
+                    <div class="student-qr-code student-qr-code-large" data-qr-target data-qr-size="224" aria-label="QR code d'accès élèves"></div>
+                </div>
+                <p class="muted">Le QR code ne contient que l’URL locale de l’application.</p>
+            </div>
+        </div>
     </section>
 
-    <section class="card">
-        <h2>Configuration actuelle</h2>
-        <dl class="setting-list">
+    <section class="card p6-card network-checklist" aria-labelledby="network-checklist-heading">
+        <div class="card-header">
+            <div>
+                <h2 id="network-checklist-heading">Checklist réseau</h2>
+                <p class="text-secondary">Vérifie les conditions essentielles avant de partager l’adresse aux élèves.</p>
+            </div>
+            <span class="pill ok">LAN</span>
+        </div>
+        <div class="network-checklist-grid">
+            <label class="network-check-item"><input type="checkbox" checked><span><strong>Wi-Fi partagé</strong><small>Ordinateur et téléphones sur le même réseau.</small></span></label>
+            <label class="network-check-item"><input type="checkbox" checked><span><strong>Docker démarré</strong><small>L’application locale répond sur le laptop.</small></span></label>
+            <label class="network-check-item"><input type="checkbox" checked><span><strong>Port élèves ouvert</strong><small>Adresse locale prête à être partagée.</small></span></label>
+            <label class="network-check-item"><input type="checkbox"><span><strong>Test téléphone réel</strong><small>À confirmer depuis un appareil élève.</small></span></label>
+        </div>
+    </section>
+
+    <details class="network-directory p6-card">
+        <summary>
+            <span><strong>Répertoire des adresses</strong><small>Modules publics, dashboards et exports protégés</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <section class="grid cols-2 network-directory-grid">
+        <article class="panel">
+            <div class="panel-title">
+                <h2>Modules élèves</h2>
+                <span class="pill ok">Public</span>
+            </div>
+            <ul class="network-url-list">
+                <li><span class="muted">Module 2 – Comprendre Internet</span><a class="text-link" href="{{ module_2_url }}" target="_blank" rel="noopener noreferrer">{{ module_2_url }}</a></li>
+                <li><span class="muted">Module 3 – Recherche efficace</span><a class="text-link" href="{{ module_3_url }}" target="_blank" rel="noopener noreferrer">{{ module_3_url }}</a></li>
+                <li><span class="muted">Module 4 – Sources fiables</span><a class="text-link" href="{{ module_4_url }}" target="_blank" rel="noopener noreferrer">{{ module_4_url }}</a></li>
+                <li><span class="muted">Module 5 – Email et outils de communication</span><a class="text-link" href="{{ module_5_url }}" target="_blank" rel="noopener noreferrer">{{ module_5_url }}</a></li>
+                <li><span class="muted">Module 6 – Ressources educatives en ligne</span><a class="text-link" href="{{ module_6_url }}" target="_blank" rel="noopener noreferrer">{{ module_6_url }}</a></li>
+                <li><span class="muted">Module 7 – Securite en ligne</span><a class="text-link" href="{{ module_7_url }}" target="_blank" rel="noopener noreferrer">{{ module_7_url }}</a></li>
+            </ul>
+        </article>
+
+        <article class="panel">
+            <div class="panel-title">
+                <h2>Adresses formateur</h2>
+                <span class="pill">Protégé</span>
+            </div>
+            <ul class="network-url-list">
+                <li><span class="muted">Cockpit formateur</span><a class="text-link" href="{{ cockpit_url }}" target="_blank" rel="noopener noreferrer">{{ cockpit_url }}</a></li>
+                <li><span class="muted">Dashboard Module 2</span><a class="text-link" href="{{ dashboard_module_2_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_2_url }}</a></li>
+                <li><span class="muted">Dashboard Module 3</span><a class="text-link" href="{{ dashboard_module_3_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_3_url }}</a></li>
+                <li><span class="muted">Dashboard Module 4</span><a class="text-link" href="{{ dashboard_module_4_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_4_url }}</a></li>
+                <li><span class="muted">Dashboard Module 5</span><a class="text-link" href="{{ dashboard_module_5_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_5_url }}</a></li>
+                <li><span class="muted">Dashboard Module 6</span><a class="text-link" href="{{ dashboard_module_6_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_6_url }}</a></li>
+                <li><span class="muted">Dashboard Module 7</span><a class="text-link" href="{{ dashboard_module_7_url }}" target="_blank" rel="noopener noreferrer">{{ dashboard_module_7_url }}</a></li>
+                <li><span class="muted">Export CSV Module 2</span><a class="text-link" href="{{ csv_module_2_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_2_url }}</a></li>
+                <li><span class="muted">Export CSV Module 3</span><a class="text-link" href="{{ csv_module_3_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_3_url }}</a></li>
+                <li><span class="muted">Export CSV Module 4</span><a class="text-link" href="{{ csv_module_4_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_4_url }}</a></li>
+                <li><span class="muted">Export CSV Module 5</span><a class="text-link" href="{{ csv_module_5_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_5_url }}</a></li>
+                <li><span class="muted">Export CSV Module 6</span><a class="text-link" href="{{ csv_module_6_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_6_url }}</a></li>
+                <li><span class="muted">Export CSV Module 7</span><a class="text-link" href="{{ csv_module_7_url }}" target="_blank" rel="noopener noreferrer">{{ csv_module_7_url }}</a></li>
+                <li><span class="muted">Admin</span><a class="text-link" href="{{ admin_url }}" target="_blank" rel="noopener noreferrer">{{ admin_url }}</a></li>
+            </ul>
+        </article>
+        </section>
+    </details>
+
+    <details class="network-directory p6-card">
+        <summary>
+            <span><strong>Configuration actuelle</strong><small>Valeurs détectées et paramètres utilisés</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <div class="network-details-body">
+            <dl class="setting-list">
             <dt class="muted setting-label">TAF_LAN_HOST configuré</dt>
             <dd>{% if configured_host %}{{ configured_host }}{% else %}<span class="muted">Non défini</span>{% endif %}</dd>
 
@@ -209,21 +280,24 @@
                     <span class="muted">Aucune IP candidate détectée.</span>
                 {% endif %}
             </dd>
-        </dl>
-        <div class="back-links">
-            <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configurer depuis l'interface &rarr;</a>
-            {% if current_request_is_lan %}
-            <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-primary">Utiliser l'adresse actuelle</button>
-            </form>
-            {% endif %}
+            </dl>
+            <div class="back-links">
+                {% if current_request_is_lan %}
+                <form method="post" action="{% url 'surveys:dashboard_use_current_address' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Utiliser l'adresse actuelle</button>
+                </form>
+                {% endif %}
+            </div>
         </div>
-    </section>
+    </details>
 
     {% if warnings %}
-    <section class="card">
-        <h2>Avertissements</h2>
+    <section class="panel p6-card">
+        <div class="panel-title">
+            <h2>Avertissements</h2>
+            <span class="pill warn">Attention</span>
+        </div>
         <ul class="warning-list">
             {% for warning in warnings %}
             <li class="alert">{{ warning }}</li>
@@ -232,8 +306,9 @@
     </section>
     {% endif %}
 
-    <section class="card">
-        <h2>Diagnostic LAN (côté serveur)</h2>
+    <details class="diagnostics">
+        <summary>Diagnostic technique avancé</summary>
+        <div>
         <dl class="setting-list">
             <dt class="muted setting-label">Environnement WSL</dt>
             <dd>{% if under_wsl %}Oui (WSL2){% else %}Non détecté{% endif %}</dd>
@@ -253,10 +328,15 @@
             <dt class="muted setting-label">Ouvrir le port (Windows Admin)</dt>
             <dd><code class="code-block">.\scripts\windows\taf-lan-open-port.ps1</code></dd>
         </dl>
-    </section>
+        </div>
+    </details>
 
-    <section class="card">
-        <h2>Si les élèves ne voient pas la page</h2>
+    <details class="network-directory p6-card">
+        <summary>
+            <span><strong>Si les élèves ne voient pas la page</strong><small>Checklist de dépannage en classe</small></span>
+            <span class="details-action">Afficher</span>
+        </summary>
+        <div class="network-details-body">
         <ul class="troubleshoot-list">
             <li>Vérifie que le téléphone et l'ordinateur sont sur le <strong>même Wi-Fi ou hotspot</strong>.</li>
             <li>Vérifie que l'adresse ci-dessus est bien l'IP de l'ordinateur (pas une IP WSL ou Docker).</li>
@@ -271,11 +351,50 @@
         <p class="muted">
             Configure automatiquement le portproxy, le pare-feu et synchronise l'application.
         </p>
-    </section>
+        </div>
+    </details>
 
-    <div class="back-links">
-        <a class="text-link" href="{% url 'surveys:dashboard_home' %}">&larr; Cockpit formateur</a>
-        <a class="text-link" href="{% url 'surveys:dashboard_settings' %}">Configuration réseau &rarr;</a>
-    </div>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/vendor/qrcode.js' %}"></script>
+<script src="{% static 'js/taf_projection.js' %}"></script>
+<script>
+(function() {
+    var button = document.querySelector('[data-copy-helper-command]');
+    var command = document.getElementById('helper-start-command');
+    var feedback = document.querySelector('[data-helper-copy-feedback]');
+    if (!button || !command || !feedback) return;
+
+    function showFeedback(message) {
+        feedback.textContent = message;
+    }
+
+    function fallbackCopy(text) {
+        var input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        var copied = false;
+        try { copied = document.execCommand('copy'); } catch (error) { copied = false; }
+        document.body.removeChild(input);
+        showFeedback(copied ? 'Commande copiée.' : 'Copie impossible : sélectionne la commande manuellement.');
+    }
+
+    button.addEventListener('click', function() {
+        var text = command.textContent.trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showFeedback('Commande copiée.');
+            }).catch(function() { fallbackCopy(text); });
+        } else {
+            fallbackCopy(text);
+        }
+    });
+})();
+</script>
 {% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Ressources scolaires futures{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_public_landing.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid school-subjects-page">
+    {% url 'surveys:home' as home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url current_label="Matières" %}
+    <section class="public-editorial-hero school-editorial-intro" aria-labelledby="school-heading">
+        <div class="public-editorial-copy">
+            <span class="section-kicker">Extension prévue</span>
+            <h1 id="school-heading">Ressources scolaires futures</h1>
+            <p>Retrouvez progressivement les supports par matière, niveau et chapitre pour prolonger l’apprentissage numérique.</p>
+        </div>
+        <div class="public-editorial-signal"><strong>04</strong><span>familles de matières</span><small>Extension progressive</small></div>
+    </section>
+
+    <section class="grid cols-4 p6-grid school-subjects-grid" aria-label="Matières">
+        <article class="card p6-card school-subject-card">
+            <div class="card-body">
+                <h2>Mathématiques</h2>
+                <p class="text-secondary">Fiches, exercices et corrigés.</p>
+                <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir supports</a>
+            </div>
+        </article>
+
+        <article class="card p6-card school-subject-card">
+            <div class="card-body">
+                <h2>Français / Malagasy</h2>
+                <p class="text-secondary">Lecture, grammaire, expression écrite.</p>
+                <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir supports</a>
+            </div>
+        </article>
+
+        <article class="card p6-card school-subject-card">
+            <div class="card-body">
+                <h2>Sciences</h2>
+                <p class="text-secondary">Cours, expériences, vidéos courtes.</p>
+                <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir supports</a>
+            </div>
+        </article>
+
+        <article class="card p6-card school-subject-card">
+            <div class="card-body">
+                <h2>Informatique</h2>
+                <p class="text-secondary">Internet, sécurité, email, recherche.</p>
+                <a class="btn btn-sm btn-secondary p6-button" href="{% url 'surveys:support_list' %}">Voir supports</a>
+            </div>
+        </article>
+    </section>
+
+    {% if subjects %}
+    <section class="card p6-card" aria-labelledby="subjects-list-heading">
+        <div class="card-header"><div class="card-title" id="subjects-list-heading">Matières actives dans la médiathèque</div></div>
+        <div class="card-body">
+            <ul class="steps">
+                {% for subject in subjects %}
+                <li class="step"><strong>{{ subject.name }}</strong><span class="text-secondary">{{ subject.get_class_level_display }}{% if subject.description %} · {{ subject.description }}{% endif %}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

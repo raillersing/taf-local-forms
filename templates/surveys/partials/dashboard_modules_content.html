@@ -1,0 +1,57 @@
+<section id="presence" class="trainer-presence-strip" aria-labelledby="presence-title">
+    <div>
+        <span class="trainer-live-dot" aria-hidden="true"></span>
+        <div>
+            <span class="trainer-presence-label">Présence en direct</span>
+            <strong id="presence-title">Qui est connecté maintenant ?</strong>
+        </div>
+    </div>
+    <div id="presence-container" class="presence-grid presence-grid-compact">
+        {% for number in "12345678" %}<span id="presence-module-{{ number }}" class="presence-count">…</span>{% endfor %}
+        <span id="presence-total" class="presence-count presence-count-total">…</span>
+    </div>
+</section>
+
+<section id="modules" class="trainer-module-ledger" aria-labelledby="modules-heading">
+    <div class="trainer-ledger-heading">
+        <div>
+            <span class="section-kicker">Pilotage des parcours</span>
+            <h2 id="modules-heading">Gestion des modules</h2>
+            <p>Repérez l’état de chaque parcours, ouvrez les réponses et consultez son analyse pédagogique.</p>
+        </div>
+        <span>Session · Réponses · Actions</span>
+    </div>
+    <div class="trainer-module-management-grid">
+        {% for item in module_list %}
+        {% with num=item.module.code|slice:"7:" %}
+        {% with dashboard_url='surveys:dashboard_module_'|add:num module_url='surveys:module_'|add:num %}
+        <article class="trainer-module-management-card{% if item.accepting_responses %} is-open{% endif %}">
+            <div class="trainer-module-card-topline">
+                <span class="trainer-module-number">0{{ num }}</span>
+                {% if item.has_active_session %}
+                    {% if item.accepting_responses %}<span class="badge badge-success p6-badge">Réponses ouvertes</span>{% else %}<span class="badge badge-warning p6-badge">Réponses fermées</span>{% endif %}
+                {% else %}<span class="badge badge-neutral p6-badge">Session à préparer</span>{% endif %}
+            </div>
+            <div class="trainer-module-card-copy">
+                <h3>{{ item.display_title }}</h3>
+                <p><strong>{{ item.submission_count }}</strong> réponse{{ item.submission_count|pluralize }} enregistrée{{ item.submission_count|pluralize }}</p>
+            </div>
+            <div class="trainer-module-card-links">
+                <a href="{% url module_url %}" target="_blank" rel="noopener noreferrer">Voir le formulaire élève</a>
+                {% if item.has_active_session %}<a href="{% url dashboard_url %}">Analyser les résultats</a>{% endif %}
+            </div>
+            <div class="trainer-module-card-action">
+                {% if item.has_active_session %}
+                <a class="btn btn-primary p6-button" href="{% url dashboard_url %}">Ouvrir le dashboard</a>
+                <form method="post" action="{% url 'surveys:toggle_module_responses' module_code=item.module.code %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary toggle-btn {% if item.accepting_responses %}toggle-on{% else %}toggle-off{% endif %}">{% if item.accepting_responses %}Fermer{% else %}Ouvrir{% endif %}</button>
+                </form>
+                {% else %}<span class="trainer-module-unavailable">Préparer la session dans Admin avancé</span>{% endif %}
+            </div>
+        </article>
+        {% endwith %}
+        {% endwith %}
+        {% empty %}<div class="trainer-insights-empty">Aucun module enregistré.</div>{% endfor %}
+    </div>
+</section>

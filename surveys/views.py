@@ -1,13 +1,15 @@
 import csv
 import json
 import mimetypes
+from collections import Counter
 from datetime import datetime, timedelta
 
+from django import forms as django_forms
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -15,6 +17,8 @@ from django.views.decorators.http import require_POST
 
 from .forms import (
     LearningResourceForm,
+    MODULE1_FIELD_DEFINITIONS,
+    Module1SubmissionForm,
     Module2SubmissionForm,
     Module3SubmissionForm,
     Module4SubmissionForm,
@@ -26,6 +30,7 @@ from .forms import (
 from .models import (
     FormPresence,
     LearningResource,
+    Module1Submission,
     Module3Submission,
     Module4Submission,
     Module5Submission,
@@ -47,6 +52,12 @@ MODULE_2_SUMMARY = (
     "savoir chercher correctement et rester prudent."
 )
 
+MODULE_1_SUMMARY = (
+    "Ce questionnaire de première prise de contact aide l'équipe TAfHSSiM à "
+    "mieux connaître ton accès aux outils numériques, tes habitudes, tes "
+    "besoins et ce que tu aimerais apprendre. Ce n'est pas un examen."
+)
+
 
 def sanitize_csv_cell(value):
     if value is None:
@@ -55,6 +66,114 @@ def sanitize_csv_cell(value):
     if text.startswith(("=", "+", "-", "@")):
         return f"'{text}"
     return text
+
+
+QUESTION_INSIGHT_EXCLUDED_FIELDS = {
+    "school_id_number", "full_name", "class_level", "group_name",
+    "paper_full_name", "paper_class_level", "paper_school_name", "paper_date",
+}
+
+
+def _question_section(field_name: str) -> str:
+    prefixes = {
+        "auto_eval_": "Auto-évaluation",
+        "todo_": "Activités réalisées",
+        "quiz_": "Compréhension",
+        "practical_": "Mise en pratique",
+        "feedback_": "Retour des élèves",
+    }
+    for prefix, label in prefixes.items():
+        if field_name.startswith(prefix):
+            return label
+    return "Questionnaire"
+
+
+def _insight_interpretation(kind: str, answered: int, top_label: str = "", top_rate: float = 0) -> str:
+    if not answered:
+        return "Pas encore assez de réponses pour dégager une tendance."
+    if kind == "boolean":
+        if top_rate >= 75:
+            return "Étape largement réalisée par le groupe. L’acquis paraît bien installé."
+        if top_rate >= 50:
+            return "Étape réalisée par une majorité, mais encore à consolider avec une partie du groupe."
+        return "Étape encore peu réalisée. Prévoir une reprise ou un accompagnement ciblé."
+    if kind in {"choice", "multiple"}:
+        if top_rate >= 60:
+            return f"Une tendance nette se dégage vers « {top_label} » ({top_rate:.0f} %)."
+        return "Les réponses sont partagées. Vérifier les écarts avec le groupe avant de poursuivre."
+    if kind == "number":
+        return "La moyenne situe le groupe, mais les valeurs basses et hautes restent utiles pour adapter l’accompagnement."
+    return "Réponses qualitatives : les extraits anonymisés permettent de repérer les besoins et difficultés récurrents."
+
+
+def _build_question_insights(submissions, form_class, field_definitions=None) -> list[dict]:
+    records = list(submissions)
+    if field_definitions is None:
+        fields = [
+            (name, field.label or name.replace("_", " "), field)
+            for name, field in form_class.base_fields.items()
+            if name not in QUESTION_INSIGHT_EXCLUDED_FIELDS and records and hasattr(records[0], name)
+        ]
+    else:
+        fields = []
+        for name, label, kind, choices in field_definitions:
+            if kind == "multiple":
+                field = django_forms.MultipleChoiceField(choices=choices or [], required=False)
+            elif kind == "choice":
+                field = django_forms.ChoiceField(choices=choices or [], required=False)
+            elif kind == "boolean":
+                field = django_forms.BooleanField(required=False)
+            else:
+                field = django_forms.CharField(required=False)
+            fields.append((name, label, field))
+
+    sections: dict[str, list[dict]] = {}
+    for name, label, field in fields:
+        raw_values = [getattr(record, name, None) for record in records]
+        values = [value for value in raw_values if value not in (None, "", [])]
+        insight = {"name": name, "label": label, "answered": len(values), "total": len(records)}
+
+        if isinstance(field, django_forms.BooleanField):
+            completed = sum(bool(value) for value in raw_values)
+            rate = round((completed / len(records)) * 100, 1) if records else 0
+            insight.update(kind="boolean", value=rate, options=[
+                {"label": "Réalisé", "count": completed, "rate": rate},
+                {"label": "À faire", "count": len(records) - completed, "rate": round(100 - rate, 1) if records else 0},
+            ], interpretation=_insight_interpretation("boolean", len(records), "Réalisé", rate))
+        elif isinstance(field, django_forms.MultipleChoiceField):
+            choice_labels = dict(field.choices)
+            counts = Counter(item for value in values for item in value)
+            options = [
+                {"label": str(choice_labels.get(value, value)), "count": count,
+                 "rate": round((count / len(values)) * 100, 1) if values else 0}
+                for value, count in counts.most_common()
+            ]
+            top = options[0] if options else {"label": "", "rate": 0}
+            insight.update(kind="multiple", options=options,
+                           interpretation=_insight_interpretation("multiple", len(values), top["label"], top["rate"]))
+        elif isinstance(field, django_forms.ChoiceField):
+            choice_labels = dict(field.choices)
+            counts = Counter(values)
+            options = [
+                {"label": str(choice_labels.get(value, value)), "count": count,
+                 "rate": round((count / len(values)) * 100, 1) if values else 0}
+                for value, count in counts.most_common()
+            ]
+            top = options[0] if options else {"label": "", "rate": 0}
+            insight.update(kind="choice", options=options,
+                           interpretation=_insight_interpretation("choice", len(values), top["label"], top["rate"]))
+        elif isinstance(field, (django_forms.IntegerField, django_forms.FloatField, django_forms.DecimalField)):
+            numeric_values = [float(value) for value in values]
+            insight.update(kind="number", average=round(sum(numeric_values) / len(numeric_values), 1) if numeric_values else 0,
+                           minimum=min(numeric_values) if numeric_values else 0, maximum=max(numeric_values) if numeric_values else 0,
+                           interpretation=_insight_interpretation("number", len(numeric_values)))
+        else:
+            excerpts = [str(value).strip()[:180] for value in values if str(value).strip()][:3]
+            insight.update(kind="text", excerpts=excerpts,
+                           interpretation=_insight_interpretation("text", len(values)))
+
+        sections.setdefault(_question_section(name), []).append(insight)
+    return [{"title": title, "questions": questions} for title, questions in sections.items()]
 
 
 def _mark_presence_submitted(request, module_code, session):
@@ -69,7 +188,62 @@ def _mark_presence_submitted(request, module_code, session):
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    return render(request, "surveys/home.html")
+    return render(request, "surveys/home.html", _build_home_context(request))
+
+
+def _build_home_context(request: HttpRequest | None = None) -> dict:
+    from .network import get_network_access_context
+
+    modules_total = TrainingModule.objects.count() or 7
+    modules_open = (
+        TrainingSession.objects.filter(is_active=True, accepting_responses=True)
+        .values("module_id")
+        .distinct()
+        .count()
+    )
+    total_submissions = (
+        Submission.objects.count()
+        + Module1Submission.objects.count()
+        + Module3Submission.objects.count()
+        + Module4Submission.objects.count()
+        + Module5Submission.objects.count()
+        + Module6Submission.objects.count()
+        + Module7Submission.objects.count()
+        + Module8Submission.objects.count()
+        + Module1Submission.objects.count()
+    )
+    net_ctx = get_network_access_context(request) if request else {}
+    return {
+        "modules_total": modules_total,
+        "modules_open": modules_open,
+        "total_submissions": total_submissions,
+        "published_resources_count": _published_resources_queryset().count(),
+        "network": net_ctx,
+        "student_access_url": net_ctx.get("recommended_student_base_url", ""),
+        "student_access_ready": bool(net_ctx.get("recommended_student_base_url", "")),
+    }
+
+
+def _prototype_module_title(module: TrainingModule) -> str:
+    prefix = f"Module {module.code.removeprefix('MODULE_')} - "
+    if module.title.startswith(prefix):
+        return module.title[len(prefix):]
+    return module.title
+
+
+def _submission_count_for_module(module_code: str) -> int:
+    counters = {
+        "MODULE_2": Submission.objects.count,
+        "MODULE_1": Module1Submission.objects.count,
+        "MODULE_3": Module3Submission.objects.count,
+        "MODULE_4": Module4Submission.objects.count,
+        "MODULE_5": Module5Submission.objects.count,
+        "MODULE_6": Module6Submission.objects.count,
+        "MODULE_7": Module7Submission.objects.count,
+        "MODULE_8": Module8Submission.objects.count,
+    }
+    counter = counters.get(module_code)
+    return counter() if counter else 0
 
 
 def _published_resources_queryset():
@@ -103,17 +277,26 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     modules = TrainingModule.objects.all().order_by("code")
     module_list = []
     modules_open = 0
+    active_module = None
     for mod in modules:
+        module_number = mod.code.removeprefix("MODULE_")
         active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
         accepting = active_session.accepting_responses if active_session else False
         if accepting:
             modules_open += 1
-        module_list.append({
+        module_item = {
             "module": mod,
+            "module_number": module_number,
+            "export_url_name": f"surveys:export_module_{module_number}_csv",
+            "display_title": _prototype_module_title(mod),
             "has_active_session": active_session is not None,
             "accepting_responses": accepting,
             "active_session_id": active_session.pk if active_session else None,
-        })
+            "submission_count": _submission_count_for_module(mod.code),
+        }
+        module_list.append(module_item)
+        if active_module is None and active_session is not None:
+            active_module = module_item
 
     student_access_url = ""
     if net_ctx.get("recommended_lan_host"):
@@ -125,6 +308,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         "average_score": avg_score,
         "module_list": module_list,
         "modules_open": modules_open,
+        "active_module": active_module,
         "network": net_ctx,
         "student_access_url": student_access_url,
         "student_access_ready": bool(student_access_url),
@@ -138,6 +322,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
 def student_modules(request: HttpRequest) -> HttpResponse:
     from django.urls import reverse
     URL_MAP = {
+        "MODULE_1": "surveys:student_module_1_detail",
         "MODULE_2": "surveys:student_module_2_detail",
         "MODULE_3": "surveys:student_module_3_detail",
         "MODULE_4": "surveys:student_module_4_detail",
@@ -153,6 +338,7 @@ def student_modules(request: HttpRequest) -> HttpResponse:
         detail_url = reverse(URL_MAP[mod.code])
         module_data.append({
             "module": mod,
+            "display_title": _prototype_module_title(mod),
             "has_active_session": active_session is not None,
             "active_session": active_session,
             "detail_url": detail_url,
@@ -166,6 +352,7 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
     accepting = active_session.accepting_responses if active_session else False
 
     summary_map = {
+        "MODULE_1": MODULE_1_SUMMARY,
         "MODULE_2": MODULE_2_SUMMARY,
         "MODULE_3": MODULE_3_SUMMARY,
         "MODULE_4": MODULE_4_SUMMARY,
@@ -185,6 +372,158 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
     })
 
 
+def project(request: HttpRequest) -> HttpResponse:
+    return render(request, "surveys/project.html", {})
+
+
+def school_subjects(request: HttpRequest) -> HttpResponse:
+    subjects = Subject.objects.filter(is_active=True).order_by("sort_order", "name")
+    return render(request, "surveys/school_subjects.html", {"subjects": subjects})
+
+
+def _module1_form_sections(form):
+    sections = [
+        ("Partie 1 — Informations générales", ["q1_age", "q2_gender", "q3_location", "q3_location_other", "q4_device_use"]),
+        ("Partie 2 — Accès aux équipements numériques", ["q5_home_devices", "q6_device_owner", "q7_device_frequency", "q8_keyboard", "q9_mouse"]),
+        ("Partie 3 — Accès à Internet", ["q10_internet_use", "q11_internet_location", "q12_internet_problems", "q12_internet_problems_other", "q13_internet_uses"]),
+        ("Partie 4 — Compétences numériques de base", [f"q{i}_{name}" for i, name in [(14, "power_device"), (15, "wifi"), (16, "open_app"), (17, "write_text"), (18, "save_file"), (19, "find_file"), (20, "photo_scan")]]),
+        ("Partie 5 — Email et communication", ["q21_email", "q22_create_email", "q23_send_email", "q24_attach_email", "q25_apps"]),
+        ("Partie 6 — Recherche d’information", ["q26_search_method", "q27_google_search", "q28_verify_information", "q29_internet_truth", "q30_search_explanation"]),
+        ("Partie 7 — Sécurité numérique", ["q31_secure_password", "q32_share_password", "q33_suspect_message", "q34_online_harassment_actions", "q35_protect_personal_information"]),
+        ("Partie 8 — Utilisation du numérique pour les études", ["q36_learn_lesson", "q37_educational_video", "q38_pdf", "q39_dictionary_translation", "q40_subjects", "q40_subject_other"]),
+        ("Partie 9 — Motivation et besoins", ["q41_motivations", "q41_motivation_other", "q42_first_learning", "q43_training_commitment", "q44_regular_attendance", "q45_preferred_schedule", "q45_schedule_other"]),
+        ("Partie 10 — Petite auto-évaluation", ["q46_digital_level", "q47_search_level", "q48_device_confidence"]),
+        ("Partie 11 — Questions ouvertes simples", ["q49_greatest_difficulty", "q50_after_training", "q51_question_or_concern"]),
+    ]
+    multiple_names = {name for name, _label, kind, _choices in MODULE1_FIELD_DEFINITIONS if kind == "multiple"}
+    return [
+        {
+            "title": title,
+            "fields": [{"field": form[name], "kind": "choice" if name in multiple_names or form[name].field.widget.__class__.__name__ == "RadioSelect" else "field"} for name in names],
+        }
+        for title, names in sections
+    ]
+
+
+def module_1_form(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_1", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_1_unavailable.html", status=503)
+
+    accepting = session.accepting_responses
+    if request.method == "POST":
+        if not accepting:
+            form = Module1SubmissionForm()
+            return render(request, "surveys/module_1_form.html", {
+                "form": form, "sections": _module1_form_sections(form), "session": session,
+                "module": session.module, "module_1_summary": MODULE_1_SUMMARY,
+                "accepting_responses": False,
+            }, status=403)
+        form = Module1SubmissionForm(request.POST)
+        if form.is_valid():
+            school_id_number = form.cleaned_data["school_id_number"]
+            if Module1Submission.objects.filter(session=session, school_id_number_snapshot=school_id_number).exists():
+                form.add_error("school_id_number", "Une réponse existe déjà pour ce numéro pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                paper_class = form.cleaned_data["paper_class_level"].strip().casefold()
+                if "seconde" in paper_class:
+                    student_class_level = Student.CLASS_LEVEL_SECONDE
+                elif "première" in paper_class or "premiere" in paper_class:
+                    student_class_level = Student.CLASS_LEVEL_PREMIERE
+                else:
+                    student_class_level = Student.CLASS_LEVEL_AUTRE
+                student = Student.objects.create(
+                    school_id_number=school_id_number,
+                    full_name=form.cleaned_data["paper_full_name"],
+                    class_level=student_class_level,
+                    group_name="",
+                )
+                submission_data = {
+                    key: value for key, value in form.cleaned_data.items()
+                    if key != "school_id_number"
+                }
+                for field_name in ("q46_digital_level", "q47_search_level", "q48_device_confidence"):
+                    if submission_data[field_name] == "":
+                        submission_data[field_name] = None
+                    elif submission_data[field_name] is not None:
+                        submission_data[field_name] = int(submission_data[field_name])
+                try:
+                    submission = Module1Submission.objects.create(
+                        student=student, session=session,
+                        school_id_number_snapshot=school_id_number,
+                        **submission_data,
+                    )
+                except IntegrityError:
+                    student.delete()
+                    form.add_error("school_id_number", "Une réponse existe déjà pour ce numéro pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+                else:
+                    request.session["last_module1_submission_id"] = submission.pk
+                    _mark_presence_submitted(request, "MODULE_1", session)
+                    return redirect("surveys:module_1_success", submission_id=submission.pk)
+    else:
+        form = Module1SubmissionForm()
+
+    return render(request, "surveys/module_1_form.html", {
+        "form": form, "sections": _module1_form_sections(form), "session": session,
+        "module": session.module, "module_1_summary": MODULE_1_SUMMARY,
+        "accepting_responses": accepting,
+    })
+
+
+def module_1_success(request: HttpRequest, submission_id: int) -> HttpResponse:
+    if request.session.get("last_module1_submission_id") != submission_id:
+        return redirect("surveys:module_1")
+    submission = get_object_or_404(Module1Submission.objects.select_related("session", "student"), pk=submission_id)
+    return render(request, "surveys/module_1_success.html", {"submission": submission})
+
+
+@login_required
+def dashboard_module_1(request: HttpRequest) -> HttpResponse:
+    submissions = Module1Submission.objects.select_related("student", "session").filter(session__module__code="MODULE_1").order_by("-created_at")
+    rows = []
+    for submission in submissions:
+        rows.append({
+            "submission": submission,
+            "answers": [(label, _module1_export_value(name, getattr(submission, name))) for name, label, _kind, _choices in MODULE1_FIELD_DEFINITIONS],
+        })
+    return render(request, "surveys/dashboard_module_1.html", {
+        "submissions": submissions,
+        "rows": rows,
+        "total_count": submissions.count(),
+        "question_insights": _build_question_insights(submissions, Module1SubmissionForm, MODULE1_FIELD_DEFINITIONS),
+        "breadcrumbs": [("Modules", "surveys:dashboard_modules"), "Module 1"],
+    })
+
+
+def _module1_export_value(field_name, value):
+    choice_map = {
+        name: dict(choices or []) for name, _label, kind, choices in MODULE1_FIELD_DEFINITIONS if kind in {"choice", "multiple"}
+    }
+    if isinstance(value, list):
+        return " | ".join(choice_map.get(field_name, {}).get(item, item) for item in value)
+    return choice_map.get(field_name, {}).get(value, value or "")
+
+
+@login_required
+def export_module_1_csv(request: HttpRequest) -> HttpResponse:
+    submissions = Module1Submission.objects.select_related("student", "session").filter(session__module__code="MODULE_1").order_by("-created_at")
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="module-1-prise-contact.csv"'
+    response.write("\ufeff")
+    writer = csv.writer(response)
+    writer.writerow(["Date d'enregistrement", "Session", "Numéro technique", "Nom et prénom(s)", "Classe / Niveau", "Établissement", "Date du questionnaire"] + [label for _name, label, _kind, _choices in MODULE1_FIELD_DEFINITIONS])
+    for submission in submissions:
+        row = [submission.created_at, submission.session.session_code, submission.school_id_number_snapshot, submission.paper_full_name, submission.paper_class_level, submission.paper_school_name, submission.paper_date]
+        row.extend(_module1_export_value(name, getattr(submission, name)) for name, _label, _kind, _choices in MODULE1_FIELD_DEFINITIONS)
+        writer.writerow([sanitize_csv_cell(value) for value in row])
+    return response
+
+
 def support_list(request: HttpRequest) -> HttpResponse:
     resources = _published_resources_queryset().order_by(
         "module_number",
@@ -196,12 +535,15 @@ def support_list(request: HttpRequest) -> HttpResponse:
     selected_subject = request.GET.get("subject", "").strip()
     selected_level = request.GET.get("level", "").strip()
     selected_module = request.GET.get("module", "").strip()
+    selected_type = request.GET.get("type", "").strip()
     if selected_subject:
         resources = resources.filter(subject__slug=selected_subject)
     if selected_level:
         resources = resources.filter(subject__class_level=selected_level)
     if selected_module.isdigit():
         resources = resources.filter(module_number=int(selected_module))
+    if selected_type in {LearningResource.RESOURCE_TYPE_DOCUMENT, LearningResource.RESOURCE_TYPE_VIDEO}:
+        resources = resources.filter(resource_type=selected_type)
     return render(
         request,
         "surveys/support_list.html",
@@ -213,6 +555,7 @@ def support_list(request: HttpRequest) -> HttpResponse:
             "selected_subject": selected_subject,
             "selected_level": selected_level,
             "selected_module": selected_module,
+            "selected_type": selected_type,
         },
     )
 
@@ -343,8 +686,29 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+def dashboard_modules(request: HttpRequest) -> HttpResponse:
+    return render(request, "surveys/dashboard_modules.html", _build_cockpit_context(request))
+
+
+@staff_member_required
+def dashboard_advanced(request: HttpRequest) -> HttpResponse:
+    return render(
+        request,
+        "surveys/dashboard_advanced.html",
+        {
+            "db_engine": connection.vendor,
+        },
+    )
+
+
+@login_required
 def dashboard_projection(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_projection.html", _build_cockpit_context(request))
+
+
+@login_required
+def dashboard_exports(request: HttpRequest) -> HttpResponse:
+    return render(request, "surveys/dashboard_exports.html", _build_cockpit_context(request))
 
 
 @login_required
@@ -540,6 +904,7 @@ def dashboard_module_5(request: HttpRequest) -> HttpResponse:
         "selected_class_level": class_level,
         "selected_group_name": group_name,
     }
+    context["question_insights"] = _build_question_insights(submissions, Module5SubmissionForm)
     return render(request, "surveys/dashboard_module_5.html", context)
 
 
@@ -771,6 +1136,7 @@ def dashboard_module_6(request: HttpRequest) -> HttpResponse:
         "selected_class_level": class_level,
         "selected_group_name": group_name,
     }
+    context["question_insights"] = _build_question_insights(submissions, Module6SubmissionForm)
     return render(request, "surveys/dashboard_module_6.html", context)
 
 
@@ -905,6 +1271,7 @@ def dashboard_module_2(request: HttpRequest) -> HttpResponse:
         "selected_class_level": class_level,
         "selected_group_name": group_name,
     }
+    context["question_insights"] = _build_question_insights(submissions, Module2SubmissionForm)
     return render(request, "surveys/dashboard_module_2.html", context)
 
 
@@ -1135,6 +1502,7 @@ def dashboard_module_3(request: HttpRequest) -> HttpResponse:
         "selected_class_level": class_level,
         "selected_group_name": group_name,
     }
+    context["question_insights"] = _build_question_insights(submissions, Module3SubmissionForm)
     return render(request, "surveys/dashboard_module_3.html", context)
 
 
@@ -1385,6 +1753,7 @@ def dashboard_module_4(request: HttpRequest) -> HttpResponse:
         "selected_class_level": class_level,
         "selected_group_name": group_name,
     }
+    context["question_insights"] = _build_question_insights(submissions, Module4SubmissionForm)
     return render(request, "surveys/dashboard_module_4.html", context)
 
 
@@ -1626,6 +1995,7 @@ def dashboard_module_7(request: HttpRequest) -> HttpResponse:
         "selected_class_level": class_level,
         "selected_group_name": group_name,
     }
+    context["question_insights"] = _build_question_insights(submissions, Module7SubmissionForm)
     return render(request, "surveys/dashboard_module_7.html", context)
 
 
@@ -1825,30 +2195,46 @@ def dashboard_module_8(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_8")
         .order_by("-created_at")
     )
+    class_level = request.GET.get("class_level", "").strip()
+    group_name = request.GET.get("group_name", "").strip()
+    if class_level:
+        submissions = submissions.filter(student__class_level=class_level)
+    if group_name:
+        submissions = submissions.filter(student__group_name__iexact=group_name)
+
     todo_fields = [
-        "todo_chose_subject", "todo_written_question", "todo_transformed_keywords",
-        "todo_found_first_source", "todo_found_second_source", "todo_checked_source_quality",
-        "todo_chose_most_useful", "todo_noted_three_ideas", "todo_prepared_synthesis",
-        "todo_presented_explained",
+        ("todo_chose_subject", "Matière choisie"),
+        ("todo_written_question", "Question formulée"),
+        ("todo_transformed_keywords", "Mots-clés préparés"),
+        ("todo_found_first_source", "Première source trouvée"),
+        ("todo_found_second_source", "Deuxième source trouvée"),
+        ("todo_checked_source_quality", "Qualité des sources vérifiée"),
+        ("todo_chose_most_useful", "Source utile choisie"),
+        ("todo_noted_three_ideas", "Trois idées notées"),
+        ("todo_prepared_synthesis", "Synthèse préparée"),
+        ("todo_presented_explained", "Présentation réalisée"),
     ]
-    total_count = submissions.count()
-    todo_counts = {}
-    for field in todo_fields:
-        completed = submissions.filter(**{field: True}).count()
-        todo_counts[field] = completed
-    avg_score = submissions.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    from django.urls import reverse
-    breadcrumbs = [("Modules", "surveys:dashboard_modules"), "Module 8"]
+    total_submissions = submissions.count()
+    todo_completion = []
+    for field_name, label in todo_fields:
+        completed = submissions.filter(**{field_name: True}).count()
+        rate = round((completed / total_submissions) * 100, 1) if total_submissions else 0
+        todo_completion.append({"label": label, "rate": rate})
+
     return render(
         request,
         "surveys/dashboard_module_8.html",
         {
             "submissions": submissions,
-            "total_count": total_count,
-            "todo_counts": todo_counts,
-            "todo_fields": todo_fields,
-            "avg_score": round(avg_score, 1),
-            "breadcrumbs": breadcrumbs,
+            "total_submissions": total_submissions,
+            "total_students": submissions.values("student_id").distinct().count(),
+            "average_score": submissions.aggregate(avg=Avg("computed_score"))["avg"] or 0,
+            "todo_completion": todo_completion,
+            "class_level_choices": Student.CLASS_LEVEL_CHOICES,
+            "selected_class_level": class_level,
+            "selected_group_name": group_name,
+            "question_insights": _build_question_insights(submissions, Module8SubmissionForm),
+            "breadcrumbs": [("Modules", "surveys:dashboard_modules"), "Module 8"],
         },
     )
 
@@ -2029,6 +2415,9 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
     from .network import get_network_access_context
     from .settings_config import apply_setting, get_filtered_settings
 
+    if request.method == "GET":
+        return redirect("surveys:dashboard_network")
+
     saved = None
     error = None
     if request.method == "POST":
@@ -2054,8 +2443,10 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
         "recommended_lan_port": net_ctx["recommended_lan_port"],
         "lan_host_source": net_ctx["lan_host_source"],
         "lan_host_stale": net_ctx["lan_host_stale"],
+        "helper_url": "http://127.0.0.1:8019",
+        "is_localhost": net_ctx["current_request_host"] in ("localhost", "127.0.0.1", "[::1]"),
     }
-    return render(request, "surveys/dashboard_settings.html", context)
+    return redirect("surveys:dashboard_network")
 
 
 @staff_member_required
@@ -2066,11 +2457,18 @@ def dashboard_use_current_address(request: HttpRequest) -> HttpResponse:
     from .settings_config import apply_lan_settings
 
     net_ctx = get_network_access_context(request)
-    if not net_ctx["current_request_is_lan"]:
+    posted_host = request.POST.get("lan_host", "").strip()
+    if posted_host:
+        host = posted_host
+        if not _is_private_ip(host):
+            messages.error(request, "L'adresse détectée n'est pas une IP LAN valide.")
+            return redirect("surveys:dashboard_settings")
+    elif net_ctx["current_request_is_lan"]:
+        host = net_ctx["current_request_host"]
+    else:
         messages.error(request, "L'adresse actuelle n'est pas une IP LAN valide.")
         return redirect("surveys:dashboard_settings")
 
-    host = net_ctx["current_request_host"]
     port = net_ctx["current_port"] or net_ctx.get("configured_port") or "8010"
 
     ok, msg = apply_lan_settings(host, port)
@@ -2078,7 +2476,7 @@ def dashboard_use_current_address(request: HttpRequest) -> HttpResponse:
         messages.success(request, msg)
     else:
         messages.error(request, msg)
-    return redirect("surveys:dashboard_settings")
+    return redirect("surveys:dashboard_network")
 
 
 @staff_member_required

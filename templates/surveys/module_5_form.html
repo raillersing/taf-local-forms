@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
 {% block title %}Module 5 - Email et outils de communication{% endblock %}
-{% block hero_title %}Module 5 - Email et outils de communication{% endblock %}
-{% block hero_text %}Apprends à utiliser l'email pour communiquer clairement et poliment.{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid student-questionnaire-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 5 — Questionnaire" %}
+    {% url 'surveys:student_module_5_detail' as module_detail_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url crumb_3_label="Module 5" crumb_3_url=module_detail_url current_label="Questionnaire" %}
     {% if not accepting_responses %}
     <section class="card alert-warning" role="alert" aria-live="polite">
         <p>
@@ -21,12 +21,8 @@
     </section>
     {% endif %}
 
-    <section class="card intro-card" aria-labelledby="intro-heading">
-        <div id="intro-heading">
-            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 5 — Email et outils de communication" module_summary=module_5_summary %}
-        </div>
-        {% include "surveys/partials/module_5_pedagogy.html" %}
-    </section>
+    {% include "surveys/partials/student_questionnaire_header.html" with module_heading="Module 5 — Email et outils de communication" module_summary=module_5_summary %}
+    {% include "surveys/partials/questionnaire_course_review.html" with module_number="5" %}
 
     <section class="card" aria-labelledby="objectives-heading">
         <h2 id="objectives-heading">Objectifs de la séance</h2>

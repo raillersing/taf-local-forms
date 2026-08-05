@@ -92,7 +92,7 @@ Guides pour la séance :
 DEBUG=false
 SECRET_KEY=change-me-for-real-use
 ALLOWED_HOSTS=localhost,127.0.0.1,[::1],<LAPTOP_LAN_IP>
-CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000,http://<LAPTOP_LAN_IP>:8000
+CSRF_TRUSTED_ORIGINS=http://localhost:8010,http://127.0.0.1:8010,http://<LAPTOP_LAN_IP>:8010,http://<LAPTOP_LAN_IP>:8011
 DATABASE_PATH=/app/data/db.sqlite3
 TIME_ZONE=Indian/Antananarivo
 
@@ -108,7 +108,7 @@ Exemple :
 
 ```env
 ALLOWED_HOSTS=localhost,127.0.0.1,[::1],192.168.1.23
-CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000,http://192.168.1.23:8000
+CSRF_TRUSTED_ORIGINS=http://localhost:8010,http://127.0.0.1:8010,http://192.168.1.23:8010,http://192.168.1.23:8011
 ```
 
 Important :
@@ -126,8 +126,8 @@ docker compose up --build
 
 L'application sera accessible sur l'ordinateur ici :
 
-- `http://127.0.0.1:8000/module-2/`
-- `http://localhost:8000/module-2/`
+- `http://127.0.0.1:8010/module-2/`
+- `http://localhost:8010/module-2/`
 
 ### Base de données
 
@@ -156,21 +156,26 @@ docker compose exec web python manage.py seed_module2
 
 ## Adresse à donner aux élèves
 
-Donnez aux élèves l'URL avec l'IP de l'ordinateur, par exemple :
+Donnez aux élèves l'URL avec l'IP de l'ordinateur. Avec le portproxy Windows
+recommandé, utilisez :
 
-`http://192.168.1.23:8000/module-2/`
+`http://192.168.1.23:8011/module-2/`
+
+Sans portproxy, si le pare-feu autorise directement Docker, l'adresse peut être :
+
+`http://192.168.1.23:8010/module-2/`
 
 Rappel : ne donnez pas `localhost`.
 
 ## Accès formateur
 
-- Cockpit formateur (tableau de bord centralisé) : `http://192.168.1.23:8000/dashboard/`
-- Admin avancé : `http://192.168.1.23:8000/admin/`
+- Cockpit formateur (tableau de bord centralisé) : `http://192.168.1.23:8010/dashboard/`
+- Admin avancé : `http://192.168.1.23:8010/admin/`
 - Contrôle réseau local (boutons helper) : `/dashboard/network-control/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - Configuration réseau : `/dashboard/settings/`
-- Dashboard Module 2 : `http://192.168.1.23:8000/dashboard/module-2/`
-- Export CSV : `http://192.168.1.23:8000/dashboard/export/module-2.csv`
+- Dashboard Module 2 : `http://192.168.1.23:8010/dashboard/module-2/`
+- Export CSV : `http://192.168.1.23:8010/dashboard/export/module-2.csv`
 
 Le dashboard et l'admin demandent une connexion.
 
@@ -335,7 +340,7 @@ Consultez le guide complet : `docs/network/WINDOWS_WSL_LAN_TROUBLESHOOTING.md`.
 
 ## Test rapide avant la séance
 
-1. ouvrez `http://127.0.0.1:8000/` sur l'ordinateur — la page d'accueil avec le choix étudiant / formateur doit s'afficher ;
+1. ouvrez `http://127.0.0.1:8010/` sur l'ordinateur — la page d'accueil avec le choix étudiant / formateur doit s'afficher ;
 2. cliquez sur « Je suis étudiant » et vérifiez que les modules actifs s'affichent ;
 3. vérifiez que l'IP locale de l'ordinateur est correcte ;
 4. testez l'URL élève sur un téléphone connecté au même réseau ;
@@ -450,7 +455,7 @@ Les liens réseau du dashboard s'ouvrent dans un nouvel onglet (`target="_blank"
 
 ### Les élèves sont connectés mais rien ne charge
 
-- testez depuis l'ordinateur avec `http://127.0.0.1:8000/module-2/` ;
+- testez depuis l'ordinateur avec `http://127.0.0.1:8010/module-2/` ;
 - si cela marche seulement sur l'ordinateur, cherchez un blocage réseau ou pare-feu ;
 - vérifiez l'absence d'AP isolation.
 

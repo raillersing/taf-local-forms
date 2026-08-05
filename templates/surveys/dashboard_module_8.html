@@ -1,22 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Dashboard Module 8{% endblock %}
+{% block page_header %}{% endblock %}
 {% block hero_title %}Dashboard Module 8{% endblock %}
 {% block hero_text %}Synthese et production — Resultats et suivi.{% endblock %}
 {% block main_nav %}
     {% include "surveys/partials/nav_trainer.html" %}
 {% endblock %}
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid dashboard-module-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Module 8" %}
+    {% url 'surveys:dashboard_modules' as dashboard_modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Modules" crumb_2_url=dashboard_modules_url current_label="Module 8" %}
 
-    <nav class="sub-nav" aria-label="Sections">
-        <a href="#overview" class="sub-nav-link">Vue d'ensemble</a>
-        <a href="#submissions" class="sub-nav-link">Reponses</a>
-        <a href="#todo" class="sub-nav-link">Taches</a>
-    </nav>
+    {% include "surveys/partials/trainer_module_tabs.html" %}
 
-    <section id="overview" class="card">
+    <section id="overview" class="card dashboard-module-panel dashboard-module-summary">
         <h2>Vue d'ensemble</h2>
         <div class="stats-grid">
             <article class="stat-card">
@@ -34,7 +32,7 @@
         </div>
     </section>
 
-    <section class="card">
+    <section class="card dashboard-module-panel">
         <h2>Filtres</h2>
         <form method="get" class="filter-grid">
             <div class="field">
@@ -54,8 +52,13 @@
         </form>
     </section>
 
-    <section id="todo" class="card">
-        <h2>Suivi des taches</h2>
+    {% include "surveys/partials/module_question_insights.html" %}
+
+    <section id="todo" class="card dashboard-module-panel">
+        <div class="section-row">
+            <h2>Progression des activités</h2>
+            <a class="text-link" href="{% url 'surveys:export_module_8_csv' %}">Exporter le CSV</a>
+        </div>
         <div class="progress-list">
             {% for item in todo_completion %}
             <div class="progress-item">
@@ -63,13 +66,14 @@
                     <span>{{ item.label }}</span>
                     <strong>{{ item.rate }}%</strong>
                 </div>
+                <progress class="trainer-activity-progress" max="100" value="{{ item.rate|stringformat:'s' }}">{{ item.rate }}%</progress>
             </div>
             {% endfor %}
         </div>
     </section>
 
-    <section id="submissions" class="card">
-        <h2>Reponses</h2>
+    <section id="submissions" class="card dashboard-module-panel">
+        <h2>Liste des réponses</h2>
         <div class="table-wrap">
             <table>
                 <thead>
@@ -102,7 +106,7 @@
         </div>
     </section>
 
-    <section class="card">
+    <section class="card dashboard-module-panel">
         <a class="text-link" href="{% url 'surveys:export_module_8_csv' %}">Export CSV</a>
     </section>
 </main>

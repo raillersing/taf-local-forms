@@ -10,119 +10,84 @@
 </head>
 <body>
     <a href="#content" class="skip-link">Aller au contenu</a>
-    <div class="app-shell">
-    <header class="app-header" id="main-header">
-        <div class="taf-container shell-header-grid">
-            <div class="header-inner shell-header-panel">
-                <a href="{% url 'surveys:home' %}" class="brand">
+    {% with view_name=request.resolver_match.view_name|default:'' %}
+    <div class="app-shell p6-shell{% if 'dashboard_' in view_name %} trainer-app-shell{% endif %}">
+        <header class="app-header p6-header" id="main-header">
+            <div class="container header-inner shell-header-compact p6-header-inner">
+                <a href="{% url 'surveys:home' %}" class="brand p6-brand">
                     {% brand_logo_exists as logo_exists %}
                     {% if logo_exists %}
                     <img src="{% static 'brand/isoc_madagascar_logo.png' %}" alt="Internet Society Madagascar Chapter" class="brand-logo">
                     {% endif %}
-                    <div class="brand-text">
+                    <div class="brand-text p6-brand-text">
                         <span class="brand-title">TAfHSSiM</span>
-                        <span class="brand-subtitle">Application locale pour la classe</span>
+                        <span class="brand-subtitle">Accès local au numérique pour les lycéens de Madagascar</span>
                     </div>
                 </a>
 
-                {% with view_name=request.resolver_match.view_name|default:'' %}
-                <div class="shell-context-panel">
-                    <div class="shell-context-copy">
+                <div class="shell-header-meta p6-header-meta{% if view_name == 'surveys:home' %} p6-header-meta-home{% endif %}">
+                    <div class="shell-header-status p6-role-box">
                         {% if 'dashboard_' in view_name %}
-                        <p class="shell-context-kicker">Contexte formateur</p>
-                        <p class="shell-context-title">Cockpit protégé et outils de séance</p>
-                        <p class="shell-context-text">Projection, modules, supports et outils réseau restent séparés du parcours élève.</p>
-                        {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
-                        <p class="shell-context-kicker">Contexte étudiant</p>
-                        <p class="shell-context-title">Parcours simple pour téléphone</p>
-                        <p class="shell-context-text">Modules, supports et repères utiles seulement, sans lien technique.</p>
+                        <nav class="role-switcher" aria-label="Changer d’espace">
+                            <a class="role-switcher-option" href="{% url 'surveys:home' %}"><span>Élève</span><small>Parcours public</small></a>
+                            <span class="role-switcher-option is-current" aria-current="page"><span>Formateur</span><small>Cockpit terrain</small></span>
+                        </nav>
+                        <form class="shell-logout-form" method="post" action="{% url 'admin:logout' %}">
+                            {% csrf_token %}
+                            <button class="shell-role-action" type="submit">Sortir</button>
+                        </form>
                         {% else %}
-                        <p class="shell-context-kicker">Contexte public</p>
-                        <p class="shell-context-title">Choix de l’espace adapté</p>
-                        <p class="shell-context-text">Entrée claire vers l’espace étudiant ou le cockpit formateur.</p>
-                        {% endif %}
-                    </div>
-                    <div class="header-actions shell-role-badges">
-                        {% block header_role %}
-                        {% if 'dashboard_' in view_name %}
-                        <span class="taf-badge taf-badge-info">Formateur</span>
-                        <span class="taf-badge taf-badge-neutral">Protégé</span>
-                        {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
-                        <span class="taf-badge taf-badge-info">Étudiant</span>
-                        <span class="taf-badge taf-badge-neutral">Public</span>
+                        <span class="sr-only">Étudiant</span>
+                        {% if view_name == 'surveys:home' %}
+                        <nav class="role-switcher" aria-label="Changer d’espace">
+                            <span class="role-switcher-option is-current" aria-current="page"><span>Élève</span><small>Parcours public</small></span>
+                            <a class="role-switcher-option" href="{% url 'surveys:dashboard_home' %}"><span>Formateur</span><small>Cockpit sécurisé</small><span class="sr-only">Espace formateur</span></a>
+                        </nav>
                         {% else %}
-                        <span class="taf-badge taf-badge-info">Public</span>
+                        <span class="role-context-chip"><span>Élève</span><small>Parcours public</small></span>
                         {% endif %}
-                        {% endblock %}
+                        {% endif %}
                     </div>
                 </div>
-                {% endwith %}
             </div>
-        </div>
-    </header>
+        </header>
 
-    <div class="shell-nav-wrap">
         {% block main_nav %}
             {% include "surveys/partials/nav_public_landing.html" %}
         {% endblock %}
-    </div>
 
-    <div class="topbar" id="topbar">
-        <div class="taf-container topbar-shell">
-            <div class="topbar-inner">
-                <div class="topbar-breadcrumbs">
-                    {% block breadcrumbs %}
-                    {% include "surveys/partials/breadcrumbs.html" %}
-                    {% endblock %}
-                </div>
-                <div class="topbar-actions" id="topbar-actions">
-                    {% block topbar_actions %}{% endblock %}
-                </div>
+        <div class="container shell-main p6-main{% if 'dashboard_' in view_name %} trainer-shell-main{% endif %}">
+            {% if messages %}
+            <div class="messages-container shell-messages">
+                {% for message in messages %}
+                <div class="message-card message-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
             </div>
-        </div>
-    </div>
+            {% endif %}
 
-    <main id="content" class="taf-container page-content shell-main">
-        {% if messages %}
-        <div class="messages-container shell-messages">
-            {% for message in messages %}
-            <div class="message-card message-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        {% block page_header %}
-        <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero shell-hero-home{% else %}shell-page-header shell-page-header-compact{% endif %}">
-            <div class="{% if request.resolver_match.view_name == 'surveys:home' %}brand-copy{% endif %}">
-                {% if request.resolver_match.view_name == 'surveys:home' %}
-                <p class="eyebrow">TAfHSSiM</p>
-                {% endif %}
-                <h1 class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-home-title{% else %}shell-page-title{% endif %}">{% block hero_title %}TAfHSSiM{% endblock %}</h1>
-                <p class="{% if request.resolver_match.view_name == 'surveys:home' %}hero-text{% else %}text-secondary shell-page-intro{% endif %}">{% block hero_text %}{% endblock %}</p>
-                <div class="{% if request.resolver_match.view_name == 'surveys:home' %}shell-hero-actions{% else %}hero-actions-container shell-page-actions{% endif %}">
+            {% block page_header %}
+            <section class="page-intro p6-page-intro{% if view_name == 'surveys:home' %} page-intro-home{% endif %}">
+                <div class="page-intro-copy p6-page-intro-copy">
+                    {% if 'dashboard_' in view_name %}
+                    <span class="eyebrow">Cockpit formateur</span>
+                    {% elif view_name == 'surveys:student_modules' or 'module_' in view_name or 'support' in view_name %}
+                    <span class="eyebrow">Parcours étudiant</span>
+                    {% else %}
+                    <span class="eyebrow">Formation numérique locale</span>
+                    {% endif %}
+                    <h1 class="page-intro-title">{% block hero_title %}TAfHSSiM{% endblock %}</h1>
+                    <p class="page-intro-text">{% block hero_text %}{% endblock %}</p>
+                </div>
+                <div class="page-intro-actions p6-actions">
                     {% block hero_actions %}{% endblock %}
                 </div>
-            </div>
-            {% if request.resolver_match.view_name == 'surveys:home' %}
-            <aside class="shell-aside">
-                {% block hero_meta %}
-                <div class="shell-aside-card">
-                    <p class="shell-aside-title">Mode terrain</p>
-                    <ul class="shell-meta-list">
-                        <li>Navigation claire pour élèves et formateur</li>
-                        <li>Pages locales sans dépendance externe</li>
-                        <li>Données gardées sur le laptop du formateur</li>
-                    </ul>
-                </div>
-                {% endblock %}
-            </aside>
-            {% endif %}
-        </div>
-        {% endblock %}
+            </section>
+            {% endblock %}
 
-        {% block content %}{% endblock %}
-    </main>
+            {% block content %}{% endblock %}
+        </div>
     </div>
+    {% endwith %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

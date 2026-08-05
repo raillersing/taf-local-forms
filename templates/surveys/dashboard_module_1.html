@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Module 1{% endblock %}
+{% block page_header %}{% endblock %}
+{% block main_nav %}{% include "surveys/partials/nav_trainer.html" %}{% endblock %}
+{% block content %}
+<main id="content" class="content-grid dashboard-module-page">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% url 'surveys:dashboard_modules' as dashboard_modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Modules" crumb_2_url=dashboard_modules_url current_label="Module 1" %}
+    <nav class="trainer-module-nav" aria-label="Sections du module">
+        <a class="page-tab active" href="#overview">Vue d’ensemble</a>
+        <a class="page-tab" href="#submissions">Réponses</a>
+    </nav>
+<section id="overview" class="panel p6-card dashboard-module-summary" aria-labelledby="module1-dashboard-heading">
+    <div class="section-header">
+        <div><span class="section-kicker">Numérisation des feuilles</span><h1 id="module1-dashboard-heading">Module 1 — Première prise de contact</h1></div>
+        <a class="btn btn-primary" href="{% url 'surveys:export_module_1_csv' %}">Exporter le CSV</a>
+    </div>
+    <p class="text-secondary">{{ total_count }} réponse{{ total_count|pluralize }} enregistrée{{ total_count|pluralize }}. Les valeurs sont affichées avec les libellés du questionnaire papier.</p>
+</section>
+
+{% include "surveys/partials/module_question_insights.html" %}
+
+<section id="submissions" class="dashboard-module-submission-list" aria-label="Réponses enregistrées">
+{% for row in rows %}
+<details class="panel p6-card"{% if forloop.first %} open{% endif %}>
+    <summary><strong>{{ row.submission.paper_full_name }}</strong> — {{ row.submission.paper_class_level }} — {{ row.submission.session.session_code }}</summary>
+    <div class="table-responsive">
+        <table class="data-table">
+            <tbody>
+                <tr><th>Établissement</th><td>{{ row.submission.paper_school_name }}</td></tr>
+                <tr><th>Date de la feuille</th><td>{{ row.submission.paper_date|default:"" }}</td></tr>
+                {% for label, value in row.answers %}<tr><th>{{ label }}</th><td>{{ value|linebreaksbr }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>
+{% empty %}
+<section class="panel p6-card empty-state"><h2>Aucune réponse</h2><p>Les feuilles numérisées apparaîtront ici.</p></section>
+{% endfor %}
+</section>
+</main>
+{% endblock %}

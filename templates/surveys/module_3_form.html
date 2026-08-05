@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
 {% block title %}Module 3 - Recherche efficace{% endblock %}
-{% block hero_title %}Module 3 - Recherche efficace{% endblock %}
-{% block hero_text %}Apprends à chercher efficacement sur Internet avec de bons mots-clés.{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block main_nav %}
     {% include "surveys/partials/nav_student.html" %}
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid student-questionnaire-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
-    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Module 3 — Questionnaire" %}
+    {% url 'surveys:student_module_3_detail' as module_detail_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url crumb_3_label="Module 3" crumb_3_url=module_detail_url current_label="Questionnaire" %}
     {% if not accepting_responses %}
     <section class="card alert-warning" role="alert" aria-live="polite">
         <p class="alert-message">
@@ -21,12 +21,8 @@
     </section>
     {% endif %}
 
-    <section class="card intro-card" aria-labelledby="intro-heading">
-        <div id="intro-heading">
-            {% include "surveys/partials/student_form_guide.html" with module_heading="Module 3 — Recherche efficace" module_summary=module_3_summary %}
-        </div>
-        {% include "surveys/partials/module_3_pedagogy.html" %}
-    </section>
+    {% include "surveys/partials/student_questionnaire_header.html" with module_heading="Module 3 — Recherche efficace" module_summary=module_3_summary %}
+    {% include "surveys/partials/questionnaire_course_review.html" with module_number="3" %}
 
     <section class="card" aria-labelledby="objectifs-heading">
         <h2 id="objectifs-heading">Objectifs de la séance</h2>

@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
-from .models import Chapter, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission
+from .models import Chapter, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission
 
 
 LEARNING_RESOURCE_MAX_UPLOAD_SIZE = 20 * 1024 * 1024
@@ -19,6 +19,104 @@ LEARNING_RESOURCE_ALLOWED_EXTENSIONS = {
 }
 LEARNING_RESOURCE_VIDEO_EXTENSIONS = {".mp4"}
 LEARNING_RESOURCE_NON_VIDEO_EXTENSIONS = LEARNING_RESOURCE_ALLOWED_EXTENSIONS - LEARNING_RESOURCE_VIDEO_EXTENSIONS
+
+
+MODULE1_FIELD_DEFINITIONS = [
+    ("q1_age", "1. Quel est ton âge ?", "choice", [("moins_14", "Moins de 14 ans"), ("14_16", "14 à 16 ans"), ("17_19", "17 à 19 ans"), ("20_plus", "20 ans ou plus")]),
+    ("q2_gender", "2. Es-tu :", "choice", [("fille", "Fille"), ("garcon", "Garçon"), ("prefere_pas_repondre", "Je préfère ne pas répondre")]),
+    ("q3_location", "3. Où habites-tu principalement ?", "choice", [("pres_ecole", "Près de l'école"), ("loin_ecole", "Loin de l'école"), ("ville", "En ville"), ("peripherie", "En périphérie / quartier éloigné"), ("autre", "Autre")]),
+    ("q3_location_other", "Précision pour la question 3 — Autre", "text", None),
+    ("q4_device_use", "4. As-tu déjà utilisé un téléphone, une tablette ou un ordinateur ?", "choice", [("souvent", "Oui, souvent"), ("parfois", "Oui, parfois"), ("rarement", "Rarement"), ("jamais", "Jamais")]),
+    ("q5_home_devices", "5. À la maison, as-tu accès à un appareil numérique ?", "multiple", [("telephone_personnel", "Téléphone personnel"), ("telephone_familial", "Téléphone familial"), ("ordinateur", "Ordinateur"), ("tablette", "Tablette"), ("aucun", "Aucun appareil")]),
+    ("q6_device_owner", "6. Si tu utilises un appareil, à qui appartient-il ?", "choice", [("moi", "À moi"), ("parents", "À mes parents"), ("frere_soeur", "À mon frère / ma sœur"), ("ami", "À un ami"), ("autre", "À quelqu'un d'autre"), ("aucun", "Je n'utilise pas d'appareil")]),
+    ("q7_device_frequency", "7. À quelle fréquence utilises-tu un téléphone, une tablette ou un ordinateur ?", "choice", [("tous_jours", "Tous les jours"), ("quelques_fois_semaine", "Quelques fois par semaine"), ("quelques_fois_mois", "Quelques fois par mois"), ("presque_jamais", "Presque jamais"), ("jamais", "Jamais")]),
+    ("q8_keyboard", "8. Sais-tu utiliser un clavier pour écrire un texte ?", "choice", [("facilement", "Oui, facilement"), ("lentement", "Oui, mais lentement"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q9_mouse", "9. Sais-tu utiliser une souris ou un pavé tactile d'ordinateur ?", "choice", [("facilement", "Oui, facilement"), ("un_peu", "Un peu"), ("non", "Non"), ("jamais_essaye", "Je n'ai jamais essayé")]),
+    ("q10_internet_use", "10. As-tu déjà utilisé Internet ?", "choice", [("souvent", "Oui, souvent"), ("parfois", "Oui, parfois"), ("rarement", "Rarement"), ("jamais", "Jamais")]),
+    ("q11_internet_location", "11. Où utilises-tu Internet le plus souvent ?", "choice", [("maison", "À la maison"), ("ecole", "À l'école"), ("cybercafe", "Dans un cybercafé"), ("ami_famille", "Chez un ami / famille"), ("telephone_proche", "Avec le téléphone d'un proche"), ("jamais", "Je n'utilise pas Internet")]),
+    ("q12_internet_problems", "12. Quel est ton principal problème pour utiliser Internet ? Plusieurs réponses possibles.", "multiple", [("pas_appareil", "Je n'ai pas d'appareil"), ("coute_cher", "Internet coûte cher"), ("connexion_lente", "La connexion est lente"), ("pas_electricite", "Il n'y a pas souvent d'électricité"), ("difficile", "Je ne sais pas bien utiliser Internet"), ("parents", "Mes parents ne me laissent pas utiliser Internet"), ("aucun", "Je n'ai pas de problème particulier"), ("autre", "Autre")]),
+    ("q12_internet_problems_other", "Précision pour la question 12 — Autre", "text", None),
+    ("q13_internet_uses", "13. Pour toi, Internet sert surtout à quoi ? Plusieurs réponses possibles.", "multiple", [("reseaux_sociaux", "Réseaux sociaux"), ("videos", "Regarder des vidéos"), ("jouer", "Jouer"), ("recherches_ecole", "Faire des recherches pour l'école"), ("messages", "Envoyer des messages"), ("apprendre", "Apprendre de nouvelles choses"), ("opportunites", "Chercher des opportunités / formations"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q14_power_device", "14. Sais-tu allumer et éteindre correctement un ordinateur ou une tablette ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q15_wifi", "15. Sais-tu te connecter à un réseau Wi-Fi ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q16_open_app", "16. Sais-tu ouvrir une application ou un logiciel ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q17_write_text", "17. Sais-tu écrire un petit texte sur un téléphone, une tablette ou un ordinateur ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q18_save_file", "18. Sais-tu enregistrer un fichier ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q19_find_file", "19. Sais-tu retrouver un fichier déjà enregistré ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q20_photo_scan", "20. Sais-tu prendre une photo ou scanner un document avec un téléphone ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q21_email", "21. As-tu une adresse email personnelle ?", "choice", [("oui", "Oui"), ("non", "Non"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q22_create_email", "22. Sais-tu créer une adresse email ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q23_send_email", "23. Sais-tu envoyer un email ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q24_attach_email", "24. Sais-tu joindre un fichier ou une photo dans un email ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q25_apps", "25. As-tu déjà utilisé ces applications ? Coche ce que tu connais ou utilises.", "multiple", [("gmail", "Gmail"), ("google", "Google"), ("youtube", "YouTube"), ("facebook", "Facebook"), ("whatsapp", "WhatsApp"), ("messenger", "Messenger"), ("google_docs", "Google Docs"), ("google_drive", "Google Drive"), ("zoom_meet", "Zoom / Google Meet"), ("aucune", "Aucune")]),
+    ("q26_search_method", "26. Quand tu cherches une information pour l'école, que fais-tu le plus souvent ?", "choice", [("professeur", "Je demande à un professeur"), ("ami", "Je demande à un ami"), ("google", "Je cherche sur Google"), ("facebook", "Je regarde sur Facebook"), ("youtube", "Je regarde une vidéo YouTube"), ("ne_sais_pas", "Je ne sais pas comment chercher")]),
+    ("q27_google_search", "27. Sais-tu faire une recherche sur Google ?", "choice", [("facilement", "Oui, facilement"), ("difficulte", "Oui, mais avec difficulté"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q28_verify_information", "28. Quand tu trouves une information sur Internet, vérifies-tu si elle est vraie ?", "choice", [("souvent", "Oui, souvent"), ("parfois", "Parfois"), ("rarement", "Rarement"), ("jamais", "Jamais"), ("ne_sais_pas", "Je ne sais pas comment vérifier")]),
+    ("q29_internet_truth", "29. Pour toi, toutes les informations sur Internet sont vraies.", "choice", [("vrai", "Vrai"), ("faux", "Faux"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q30_search_explanation", "30. Si tu ne comprends pas un mot ou une leçon, sais-tu chercher une explication sur Internet ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q31_secure_password", "31. Sais-tu ce qu'est un mot de passe sécurisé ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q32_share_password", "32. Est-ce une bonne idée de donner son mot de passe à un ami ?", "choice", [("oui", "Oui"), ("non", "Non"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q33_suspect_message", "33. As-tu déjà vu ou reçu un message suspect sur Internet ?", "choice", [("oui", "Oui"), ("non", "Non"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q34_online_harassment_actions", "34. Si quelqu'un t'insulte ou te menace en ligne, que dois-tu faire ? Plusieurs réponses possibles.", "multiple", [("insultes", "Répondre avec des insultes"), ("preuve", "Garder une preuve"), ("adulte", "En parler à un adulte ou responsable"), ("bloquer", "Bloquer la personne"), ("rien", "Ne rien faire"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q35_protect_personal_information", "35. Sais-tu protéger tes informations personnelles sur Internet ?", "choice", [("oui", "Oui"), ("un_peu", "Un peu"), ("non", "Non")]),
+    ("q36_learn_lesson", "36. As-tu déjà utilisé Internet pour apprendre une leçon ?", "choice", [("souvent", "Oui, souvent"), ("parfois", "Oui, parfois"), ("rarement", "Rarement"), ("jamais", "Jamais")]),
+    ("q37_educational_video", "37. As-tu déjà regardé une vidéo éducative ?", "choice", [("oui", "Oui"), ("non", "Non"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q38_pdf", "38. As-tu déjà utilisé un document PDF pour apprendre ?", "choice", [("oui", "Oui"), ("non", "Non"), ("ne_sais_pas", "Je ne sais pas ce qu'est un PDF")]),
+    ("q39_dictionary_translation", "39. As-tu déjà utilisé un dictionnaire ou une traduction en ligne ?", "choice", [("oui", "Oui"), ("non", "Non"), ("ne_sais_pas", "Je ne sais pas")]),
+    ("q40_subjects", "40. Dans quelles matières aimerais-tu utiliser Internet pour progresser ? Plusieurs réponses possibles.", "multiple", [("francais", "Français"), ("mathematiques", "Mathématiques"), ("sciences_physiques", "Sciences physiques"), ("sciences_naturelles", "Sciences naturelles"), ("anglais", "Anglais"), ("histoire_geographie", "Histoire-Géographie"), ("informatique", "Informatique"), ("autre", "Autre")]),
+    ("q40_subject_other", "Précision pour la question 40 — Autre", "text", None),
+    ("q41_motivations", "41. Pourquoi veux-tu participer à ce projet ?", "multiple", [("apprendre_internet", "Apprendre à utiliser Internet"), ("reussir_ecole", "Mieux réussir à l'école"), ("appareil", "Utiliser un ordinateur ou une tablette"), ("avenir", "Préparer mon avenir"), ("metiers_numerique", "Découvrir les métiers du numérique"), ("parents_professeurs", "Parents / professeurs m'ont conseillé"), ("autre", "Autre")]),
+    ("q41_motivation_other", "Précision pour la question 41 — Autre", "text", None),
+    ("q42_first_learning", "42. Qu'aimerais-tu apprendre en premier ? Choisis 3 réponses maximum.", "multiple", [("ordinateur_tablette", "Utiliser un ordinateur ou une tablette"), ("internet", "Utiliser Internet"), ("email", "Créer et utiliser une adresse email"), ("recherches", "Faire des recherches pour l'école"), ("docs_word", "Utiliser Google Docs ou Word"), ("presentation", "Faire une présentation"), ("securite", "Être en sécurité sur Internet"), ("metiers", "Découvrir les métiers du numérique"), ("creer", "Créer quelque chose avec la technologie")]),
+    ("q43_training_commitment", "43. Es-tu prêt(e) à suivre les formations sérieusement ?", "choice", [("oui", "Oui"), ("non", "Non"), ("ne_sais_pas", "Je ne sais pas encore")]),
+    ("q44_regular_attendance", "44. Peux-tu être présent(e) régulièrement pendant les activités ?", "choice", [("oui", "Oui"), ("non", "Non"), ("depend_horaire", "Cela dépend de l'horaire")]),
+    ("q45_preferred_schedule", "45. Quel horaire serait le plus facile pour toi ?", "multiple", [("matin", "Matin"), ("apres_midi", "Après-midi"), ("mercredi", "Mercredi"), ("samedi", "Samedi"), ("vacances", "Pendant les vacances"), ("autre", "Autre")]),
+    ("q45_schedule_other", "Précision pour la question 45 — Autre", "text", None),
+    ("q46_digital_level", "46. Note ton niveau actuel en numérique (1 à 5).", "choice", [(str(i), str(i)) for i in range(1, 6)]),
+    ("q47_search_level", "47. Note ton niveau en recherche sur Internet (1 à 5).", "choice", [(str(i), str(i)) for i in range(1, 6)]),
+    ("q48_device_confidence", "48. Note ta confiance à utiliser un ordinateur ou une tablette (1 à 5).", "choice", [(str(i), str(i)) for i in range(1, 6)]),
+    ("q49_greatest_difficulty", "49. Quelle est la plus grande difficulté que tu rencontres avec Internet ou les appareils numériques ?", "textarea", None),
+    ("q50_after_training", "50. Qu'est-ce que tu aimerais être capable de faire après cette formation ?", "textarea", None),
+    ("q51_question_or_concern", "51. As-tu une question ou une inquiétude concernant le projet ?", "textarea", None),
+]
+
+
+class Module1SubmissionForm(forms.Form):
+    school_id_number = forms.CharField(
+        label="Numéro technique à l'école",
+        min_length=2,
+        max_length=2,
+        help_text="Identifiant de suivi fourni par le formateur (exemple : 01).",
+        error_messages={"required": "Entre le numéro fourni par le formateur."},
+    )
+    paper_full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
+    paper_class_level = forms.CharField(label="Classe / Niveau", max_length=100)
+    paper_school_name = forms.CharField(label="Établissement", max_length=255)
+    paper_date = forms.DateField(label="Date", required=False, widget=forms.DateInput(attrs={"type": "date"}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, label, kind, choices in MODULE1_FIELD_DEFINITIONS:
+            if kind == "choice":
+                self.fields[name] = forms.ChoiceField(label=label, choices=choices, required=False, widget=forms.RadioSelect)
+            elif kind == "multiple":
+                self.fields[name] = forms.MultipleChoiceField(label=label, choices=choices, required=False, widget=forms.CheckboxSelectMultiple)
+            elif kind == "textarea":
+                self.fields[name] = forms.CharField(label=label, required=False, widget=forms.Textarea(attrs={"rows": 4}))
+            else:
+                self.fields[name] = forms.CharField(label=label, max_length=255, required=False)
+
+    def clean_school_id_number(self):
+        value = self.cleaned_data["school_id_number"].strip()
+        if not value.isdigit() or len(value) != 2:
+            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
+        return value
+
+    def clean_q42_first_learning(self):
+        value = self.cleaned_data.get("q42_first_learning", [])
+        if len(value) > 3:
+            raise forms.ValidationError("Choisis 3 réponses maximum.")
+        return value
 
 
 class Module2SubmissionForm(forms.Form):

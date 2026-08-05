@@ -1,18 +1,18 @@
-<nav class="nav-bar shell-primary-nav" id="public-nav" aria-label="Navigation publique">
-    <div class="taf-container shell-nav-inner">
-        <div class="shell-nav-group">
-            <span class="shell-nav-label">Entrées</span>
-            <ul class="nav-list">
-                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
-                    <a href="{% url 'surveys:home' %}">Accueil</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{% url 'surveys:student_modules' %}">Entrer côté étudiant</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{% url 'surveys:dashboard_home' %}">Cockpit formateur</a>
-                </li>
-            </ul>
-        </div>
+<nav class="nav-bar shell-primary-nav p6-nav" id="public-nav" aria-label="Navigation publique">
+    <div class="container shell-nav-inner shell-nav-inner-light p6-nav-inner">
+        <ul class="nav-list">
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:home' %}active{% endif %}">
+                <a href="{% url 'surveys:home' %}">Accueil</a>
+            </li>
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:student_modules' or request.resolver_match and 'module' in request.resolver_match.view_name %}active{% endif %}">
+                <a href="{% url 'surveys:student_modules' %}">Modules</a>
+            </li>
+            <li class="nav-item {% if request.resolver_match and 'support' in request.resolver_match.view_name %}active{% endif %}">
+                <a href="{% url 'surveys:support_list' %}">Supports</a>
+            </li>
+            <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:project' %}active{% endif %}">
+                <a href="{% url 'surveys:project' %}">Le projet</a>
+            </li>
+        </ul>
     </div>
 </nav>

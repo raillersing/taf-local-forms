@@ -1,0 +1,20 @@
+<nav class="prototype-page-tabs" aria-label="Étapes de la page">
+    {% if list_url %}
+        <a class="page-tab{% if active_tab == 'list' %} active{% endif %}" href="{{ list_url }}">{{ list_label|default:"Liste" }}</a>
+    {% endif %}
+    {% if questionnaire_url %}
+        <a class="page-tab{% if active_tab == 'questionnaire' %} active{% endif %}" href="{{ questionnaire_url }}">Questionnaire</a>
+    {% elif questionnaire_label %}
+        <span class="page-tab page-tab-muted" aria-disabled="true">{{ questionnaire_label }}</span>
+    {% endif %}
+    {% if confirmation_url %}
+        <a class="page-tab{% if active_tab == 'confirmation' %} active{% endif %}" href="{{ confirmation_url }}">Confirmation</a>
+    {% elif confirmation_label %}
+        <span class="page-tab page-tab-muted" aria-disabled="true">{{ confirmation_label }}</span>
+    {% endif %}
+    {% if duplicate_url %}
+        <a class="page-tab{% if active_tab == 'duplicate' %} active{% endif %}" href="{{ duplicate_url }}">Doublon</a>
+    {% elif duplicate_label %}
+        <span class="page-tab page-tab-muted" aria-disabled="true">{{ duplicate_label }}</span>
+    {% endif %}
+</nav>

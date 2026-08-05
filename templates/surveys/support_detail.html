@@ -9,54 +9,61 @@
 {% endblock %}
 
 {% block content %}
-<main id="content" class="content-grid">
+<main id="content" class="content-grid support-detail-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:support_list' as support_list_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Supports" crumb_2_url=support_list_url current_label=resource.title %}
-
-    <section class="card resource-detail-panel">
-        <div class="section-row">
-            <h2>{{ resource.title }}</h2>
-            <div class="badge-group">
+    <section class="split support-detail-split student-resource-layout">
+        <article class="panel p6-card resource-detail-panel">
+            <div class="tag-list">
                 <span class="badge badge-info">{% if resource.is_video %}Vidéo{% else %}{{ resource.get_resource_type_display }}{% endif %}</span>
                 {% if resource.module_number %}
-                <span class="badge badge-muted">Module {{ resource.module_number }}</span>
+                <span class="badge badge-neutral">Module {{ resource.module_number }}</span>
                 {% endif %}
                 {% if resource.subject %}
-                <span class="badge badge-muted">{{ resource.subject.name }}</span>
+                <span class="badge badge-neutral">{{ resource.subject.name }}</span>
                 {% endif %}
             </div>
-        </div>
+            <h2>{{ resource.title }}</h2>
 
-        {% if resource.description %}
-        <p>{{ resource.description }}</p>
-        {% else %}
-        <p class="muted">Aucune description supplémentaire n'a été fournie pour ce support.</p>
-        {% endif %}
+            {% if resource.description %}
+            <p class="text-secondary">{{ resource.description }}</p>
+            {% else %}
+            <p class="text-secondary">Aucune description supplémentaire n'a été fournie pour ce support.</p>
+            {% endif %}
 
-        <dl class="resource-meta resource-meta-detail">
-            {% if resource.source %}
-            <div><dt>Source</dt><dd>{{ resource.source }}</dd></div>
-            {% endif %}
-            {% if resource.license_label %}
-            <div><dt>Licence</dt><dd>{{ resource.license_label }}</dd></div>
-            {% endif %}
-            {% if resource.subject %}
-            <div><dt>Matière</dt><dd>{{ resource.subject.name }}</dd></div>
-            {% endif %}
-            {% if resource.chapter %}
-            <div><dt>Chapitre</dt><dd>{{ resource.chapter.title }}</dd></div>
-            {% endif %}
-            <div><dt>Publié</dt><dd>{{ resource.updated_at|date:"d/m/Y" }}</dd></div>
-        </dl>
+            <div class="grid cols-2 resource-detail-metadata">
+                {% if resource.source %}
+                <div class="card"><div class="card-body"><div class="kpi-label">Source</div><strong>{{ resource.source }}</strong></div></div>
+                {% endif %}
+                {% if resource.license_label %}
+                <div class="card"><div class="card-body"><div class="kpi-label">Licence</div><strong>{{ resource.license_label }}</strong></div></div>
+                {% endif %}
+                {% if resource.subject %}
+                <div class="card"><div class="card-body"><div class="kpi-label">Matière</div><strong>{{ resource.subject.name }}</strong></div></div>
+                {% endif %}
+                {% if resource.chapter %}
+                <div class="card"><div class="card-body"><div class="kpi-label">Chapitre</div><strong>{{ resource.chapter.title }}</strong></div></div>
+                {% endif %}
+            </div>
 
-        <div class="module-card-actions">
-            {% if resource.is_video %}
-            <a class="taf-button taf-button-secondary" href="{% url 'surveys:support_watch' resource.slug %}">Regarder la vidéo</a>
-            {% endif %}
-            <a class="taf-button taf-button-primary" href="{% url 'surveys:support_download' resource.slug %}">Télécharger le support</a>
-            <a class="text-link" href="{% url 'surveys:support_list' %}">&larr; Retour aux supports</a>
-        </div>
+            <div class="hero-actions">
+                {% if resource.is_video %}
+                <a class="btn btn-secondary" href="{% url 'surveys:support_watch' resource.slug %}">Regarder la vidéo</a>
+                {% endif %}
+                <a class="btn btn-primary" href="{% url 'surveys:support_download' resource.slug %}">Télécharger le support</a>
+                <a class="text-link" href="{% url 'surveys:support_list' %}">&larr; Retour aux supports</a>
+            </div>
+        </article>
+
+        <aside class="card p6-card resource-detail-aside">
+            <div class="card-header"><div class="card-title">Repères</div></div>
+            <div class="card-body">
+                <div class="step"><strong>Publié</strong><span class="text-secondary">{{ resource.updated_at|date:"d/m/Y" }}</span></div>
+                <div class="step"><strong>Accès</strong><span class="text-secondary">{% if resource.is_video %}Lecture locale et téléchargement{% else %}Téléchargement local{% endif %}</span></div>
+                <div class="step"><strong>Usage</strong><span class="text-secondary">Support visible côté élèves seulement s’il est publié.</span></div>
+            </div>
+        </aside>
     </section>
 </main>
 {% endblock %}

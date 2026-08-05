@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Modules formateur — Cockpit{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid dashboard-modules-page">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Modules" %}
+    <section class="trainer-modules-hero" aria-labelledby="trainer-modules-heading">
+        <div class="trainer-modules-index" aria-hidden="true">08</div>
+        <div class="trainer-modules-intro">
+            <span class="trainer-command-kicker">Modules de formation</span>
+            <h1 id="trainer-modules-heading">Huit parcours.<br><span>Une seule vue terrain.</span></h1>
+            <p>Ouvrez les réponses, entrez dans un dashboard et vérifiez la participation sans perdre le fil de la séance.</p>
+        </div>
+        <div class="trainer-modules-open">
+            <strong>{{ modules_open }}</strong>
+            <span>module{{ modules_open|pluralize }} ouvert{{ modules_open|pluralize }}</span>
+        </div>
+    </section>
+    {% include "surveys/partials/dashboard_modules_content.html" %}
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var poll = function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '{% url "surveys:dashboard_presence_json" %}');
+        xhr.onload = function() {
+            if (xhr.status !== 200) return;
+            try {
+                var data = JSON.parse(xhr.responseText);
+                ['1','2','3','4','5','6','7','8'].forEach(function(number) {
+                    var target = document.getElementById('presence-module-' + number);
+                    if (target) target.textContent = 'Module ' + number + ' : ' + (data.by_module['MODULE_' + number] || 0);
+                });
+                var total = document.getElementById('presence-total');
+                if (total) total.textContent = 'Total : ' + data.total;
+            } catch (error) {}
+        };
+        xhr.send();
+    };
+    poll();
+    setInterval(poll, 15000);
+})();
+</script>
+{% endblock %}

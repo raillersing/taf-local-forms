@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 
-from .models import Chapter, FormPresence, LearningResource, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
+from .models import Chapter, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 admin.site.site_header = getattr(settings, "ADMIN_SITE_HEADER", "TAf Local Forms")
 admin.site.site_title = getattr(settings, "ADMIN_SITE_TITLE", "TAf Admin")
@@ -42,6 +42,15 @@ class SubmissionAdmin(admin.ModelAdmin):
     search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
+
+
+@admin.register(Module1Submission)
+class Module1SubmissionAdmin(admin.ModelAdmin):
+    list_display = ("school_id_number_snapshot", "paper_full_name", "paper_class_level", "paper_school_name", "session", "created_at")
+    list_filter = ("session", "paper_class_level", "paper_school_name", "created_at")
+    search_fields = ("school_id_number_snapshot", "paper_full_name", "paper_school_name")
+    autocomplete_fields = ("student", "session")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(Module3Submission)
