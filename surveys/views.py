@@ -13,6 +13,7 @@ from django.db import IntegrityError, connection
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -187,6 +188,7 @@ def _mark_presence_submitted(request, module_code, session):
         ).update(status=FormPresence.STATUS_SUBMITTED)
 
 
+@never_cache
 def home(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/home.html", _build_home_context(request))
 
@@ -319,6 +321,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     }
 
 
+@never_cache
 def student_modules(request: HttpRequest) -> HttpResponse:
     from django.urls import reverse
     URL_MAP = {
@@ -346,6 +349,7 @@ def student_modules(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/student_modules.html", {"module_data": module_data})
 
 
+@never_cache
 def student_module_detail(request: HttpRequest, module_code: str) -> HttpResponse:
     mod = get_object_or_404(TrainingModule, code=module_code)
     active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
@@ -376,6 +380,7 @@ def project(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/project.html", {})
 
 
+@never_cache
 def school_subjects(request: HttpRequest) -> HttpResponse:
     subjects = Subject.objects.filter(is_active=True).order_by("sort_order", "name")
     return render(request, "surveys/school_subjects.html", {"subjects": subjects})
@@ -482,6 +487,7 @@ def module_1_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_1_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_module_1(request: HttpRequest) -> HttpResponse:
     submissions = Module1Submission.objects.select_related("student", "session").filter(session__module__code="MODULE_1").order_by("-created_at")
@@ -524,6 +530,7 @@ def export_module_1_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
+@never_cache
 def support_list(request: HttpRequest) -> HttpResponse:
     resources = _published_resources_queryset().order_by(
         "module_number",
@@ -560,11 +567,13 @@ def support_list(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 def support_detail(request: HttpRequest, slug: str) -> HttpResponse:
     resource = get_object_or_404(_published_resources_queryset(), slug=slug)
     return render(request, "surveys/support_detail.html", {"resource": resource})
 
 
+@never_cache
 def support_watch(request: HttpRequest, slug: str) -> HttpResponse:
     resource = get_object_or_404(_published_resources_queryset(), slug=slug)
     if not resource.is_video or not resource.file:
@@ -680,16 +689,19 @@ def module_2_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_2_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_home(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_home.html", _build_cockpit_context(request))
 
 
+@never_cache
 @login_required
 def dashboard_modules(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_modules.html", _build_cockpit_context(request))
 
 
+@never_cache
 @staff_member_required
 def dashboard_advanced(request: HttpRequest) -> HttpResponse:
     return render(
@@ -701,16 +713,19 @@ def dashboard_advanced(request: HttpRequest) -> HttpResponse:
     )
 
 
+@never_cache
 @login_required
 def dashboard_projection(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_projection.html", _build_cockpit_context(request))
 
 
+@never_cache
 @login_required
 def dashboard_exports(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_exports.html", _build_cockpit_context(request))
 
 
+@never_cache
 @login_required
 def dashboard_supports(request: HttpRequest) -> HttpResponse:
     resources = LearningResource.objects.select_related("subject", "chapter").order_by("-updated_at", "title")
@@ -722,6 +737,7 @@ def dashboard_supports(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_supports.html", context)
 
 
+@never_cache
 @login_required
 def dashboard_support_upload(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
@@ -863,6 +879,7 @@ def module_5_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_5_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_module_5(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1095,6 +1112,7 @@ def module_6_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_6_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_module_6(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1230,6 +1248,7 @@ def export_module_6_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
+@never_cache
 @login_required
 def dashboard_module_2(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1459,6 +1478,7 @@ def module_3_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_3_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_module_3(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1704,6 +1724,7 @@ def module_4_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_4_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_module_4(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -1954,6 +1975,7 @@ def module_7_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_7_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_module_7(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -2188,6 +2210,7 @@ def module_8_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_8_success.html", {"submission": submission})
 
 
+@never_cache
 @login_required
 def dashboard_module_8(request: HttpRequest) -> HttpResponse:
     submissions = (
@@ -2366,6 +2389,7 @@ def presence_heartbeat(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True})
 
 
+@never_cache
 @login_required
 def dashboard_backup(request: HttpRequest) -> HttpResponse:
     from django.conf import settings
@@ -2391,6 +2415,7 @@ def dashboard_backup(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_backup.html", context)
 
 
+@never_cache
 @login_required
 def dashboard_presence_json(request: HttpRequest) -> JsonResponse:
     cutoff = timezone.now() - timedelta(seconds=60)
@@ -2409,8 +2434,8 @@ def dashboard_presence_json(request: HttpRequest) -> JsonResponse:
     })
 
 
+@never_cache
 @staff_member_required
-@login_required
 def dashboard_settings(request: HttpRequest) -> HttpResponse:
     from .network import get_network_access_context
     from .settings_config import apply_setting, get_filtered_settings
