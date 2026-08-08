@@ -6080,7 +6080,30 @@ class ModuleEditRequestWorkflowTests(TestCase):
         response = self.client.get(token_url)
         self.assertEqual(response.status_code, 410)
         self.assertContains(response, "Lien de modification expiré", status_code=410)
-
+ 
         edit_req.refresh_from_db()
         self.assertEqual(edit_req.status, EditRequest.STATUS_EXPIRED)
         self.assertIsNone(edit_req.one_time_token)
+
+    def test_duplicate_detection_bypasses_form_validation(self):
+        # Setup student with an existing submission for Module 2
+        mod = TrainingModule.objects.get(code="MODULE_2")
+        session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        student = Student.objects.create(full_name="DuplicateTestStudent", class_level="seconde")
+        Submission.objects.create(session=session, student=student, computed_score=10)
+
+        # Clear session to ensure we are acting as a different/new student
+        self.client.session.flush()
+
+        # Submit ONLY name and class level, leaving all other required fields empty
+        form_url = reverse("surveys:module_2")
+        response = self.client.post(form_url, data={
+            "full_name": "DuplicateTestStudent",
+            "class_level": "seconde",
+        })
+
+        # The view should return 200 OK containing the duplicate warning and the request edit button,
+        # bypassing the form validation check for other fields.
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Une réponse existe déjà pour ce nom pendant cette séance.")
+        self.assertContains(response, "Demander une modification au formateur")

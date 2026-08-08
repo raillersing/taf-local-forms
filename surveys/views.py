@@ -472,12 +472,13 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
                 "module": session.module, "module_1_summary": MODULE_1_SUMMARY,
                 "accepting_responses": False,
             }, status=403)
-        form = Module1SubmissionForm(request.POST)
-        if form.is_valid():
-            paper_full_name = form.cleaned_data["paper_full_name"]
 
-            # Check duplicate
-            has_duplicate = False
+        paper_full_name = request.POST.get("paper_full_name", "").strip()
+        paper_class_level = request.POST.get("paper_class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if paper_full_name:
             if Module1Submission.objects.filter(session=session, paper_full_name=paper_full_name).exists():
                 sub_id_in_session = request.session.get("last_module1_submission_id")
                 is_this_submission = False
@@ -491,33 +492,41 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
                 if not is_this_submission:
                     has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 1})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="paper_full_name" value="{paper_full_name}">
-                        <input type="hidden" name="paper_class_level" value="{form.cleaned_data['paper_class_level']}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                preview_data = dict(form.cleaned_data)
-                if preview_data.get("paper_date"):
-                    preview_data["paper_date"] = preview_data["paper_date"].isoformat()
-                request.session["module_1_preview_data"] = preview_data
-                return redirect("surveys:module_1_preview")
+        if has_duplicate:
+            form = Module1SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 1})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="paper_full_name" value="{paper_full_name}">
+                    <input type="hidden" name="paper_class_level" value="{paper_class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(request, "surveys/module_1_form.html", {
+                "form": form, "sections": _module1_form_sections(form), "session": session,
+                "module": session.module, "module_1_summary": MODULE_1_SUMMARY,
+                "accepting_responses": True,
+            })
+
+        form = Module1SubmissionForm(request.POST)
+        if form.is_valid():
+            preview_data = dict(form.cleaned_data)
+            if preview_data.get("paper_date"):
+                preview_data["paper_date"] = preview_data["paper_date"].isoformat()
+            request.session["module_1_preview_data"] = preview_data
+            return redirect("surveys:module_1_preview")
     else:
         preview_data = request.session.get("module_1_preview_data")
         sub_id_in_session = request.session.get("last_module1_submission_id")
@@ -814,13 +823,13 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
                 },
                 status=403,
             )
-        form = Module2SubmissionForm(request.POST)
-        if form.is_valid():
-            full_name = form.cleaned_data["full_name"]
-            class_level = form.cleaned_data["class_level"]
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
 
-            has_duplicate = False
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
             if student:
                 ex_sub = Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -828,30 +837,44 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
                     if sub_id_in_session != ex_sub.pk:
                         has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 2})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="full_name" value="{full_name}">
-                        <input type="hidden" name="class_level" value="{class_level}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                request.session["module_2_preview_data"] = form.cleaned_data
-                return redirect("surveys:module_2_preview")
+        if has_duplicate:
+            form = Module2SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 2})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="full_name" value="{full_name}">
+                    <input type="hidden" name="class_level" value="{class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_2_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_2_summary": MODULE_2_SUMMARY,
+                    "accepting_responses": True,
+                },
+            )
+
+        form = Module2SubmissionForm(request.POST)
+        if form.is_valid():
+            request.session["module_2_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_2_preview")
     else:
         preview_data = request.session.get("module_2_preview_data")
         sub_id_in_session = request.session.get("last_submission_id")
@@ -1121,13 +1144,13 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
                 },
                 status=403,
             )
-        form = Module5SubmissionForm(request.POST)
-        if form.is_valid():
-            full_name = form.cleaned_data["full_name"]
-            class_level = form.cleaned_data["class_level"]
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
 
-            has_duplicate = False
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
             if student:
                 ex_sub = Module5Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -1135,30 +1158,44 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
                     if sub_id_in_session != ex_sub.pk:
                         has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 5})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="full_name" value="{full_name}">
-                        <input type="hidden" name="class_level" value="{class_level}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                request.session["module_5_preview_data"] = form.cleaned_data
-                return redirect("surveys:module_5_preview")
+        if has_duplicate:
+            form = Module5SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 5})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="full_name" value="{full_name}">
+                    <input type="hidden" name="class_level" value="{class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_5_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_5_summary": MODULE_5_SUMMARY,
+                    "accepting_responses": True,
+                },
+            )
+
+        form = Module5SubmissionForm(request.POST)
+        if form.is_valid():
+            request.session["module_5_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_5_preview")
     else:
         preview_data = request.session.get("module_5_preview_data")
         sub_id_in_session = request.session.get("last_module5_submission_id")
@@ -1472,13 +1509,13 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
                 },
                 status=403,
             )
-        form = Module6SubmissionForm(request.POST)
-        if form.is_valid():
-            full_name = form.cleaned_data["full_name"]
-            class_level = form.cleaned_data["class_level"]
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
 
-            has_duplicate = False
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
             if student:
                 ex_sub = Module6Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -1486,30 +1523,44 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
                     if sub_id_in_session != ex_sub.pk:
                         has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 6})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="full_name" value="{full_name}">
-                        <input type="hidden" name="class_level" value="{class_level}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                request.session["module_6_preview_data"] = form.cleaned_data
-                return redirect("surveys:module_6_preview")
+        if has_duplicate:
+            form = Module6SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 6})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="full_name" value="{full_name}">
+                    <input type="hidden" name="class_level" value="{class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_6_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_6_summary": MODULE_6_SUMMARY,
+                    "accepting_responses": True,
+                },
+            )
+
+        form = Module6SubmissionForm(request.POST)
+        if form.is_valid():
+            request.session["module_6_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_6_preview")
     else:
         preview_data = request.session.get("module_6_preview_data")
         sub_id_in_session = request.session.get("last_module6_submission_id")
@@ -1955,13 +2006,13 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
                 },
                 status=403,
             )
-        form = Module3SubmissionForm(request.POST)
-        if form.is_valid():
-            full_name = form.cleaned_data["full_name"]
-            class_level = form.cleaned_data["class_level"]
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
 
-            has_duplicate = False
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
             if student:
                 ex_sub = Module3Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -1969,30 +2020,44 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
                     if sub_id_in_session != ex_sub.pk:
                         has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 3})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="full_name" value="{full_name}">
-                        <input type="hidden" name="class_level" value="{class_level}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                request.session["module_3_preview_data"] = form.cleaned_data
-                return redirect("surveys:module_3_preview")
+        if has_duplicate:
+            form = Module3SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 3})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="full_name" value="{full_name}">
+                    <input type="hidden" name="class_level" value="{class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_3_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_3_summary": MODULE_3_SUMMARY,
+                    "accepting_responses": True,
+                },
+            )
+
+        form = Module3SubmissionForm(request.POST)
+        if form.is_valid():
+            request.session["module_3_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_3_preview")
     else:
         preview_data = request.session.get("module_3_preview_data")
         sub_id_in_session = request.session.get("last_module3_submission_id")
@@ -2319,13 +2384,13 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
                 },
                 status=403,
             )
-        form = Module4SubmissionForm(request.POST)
-        if form.is_valid():
-            full_name = form.cleaned_data["full_name"]
-            class_level = form.cleaned_data["class_level"]
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
 
-            has_duplicate = False
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
             if student:
                 ex_sub = Module4Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -2333,30 +2398,44 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
                     if sub_id_in_session != ex_sub.pk:
                         has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 4})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="full_name" value="{full_name}">
-                        <input type="hidden" name="class_level" value="{class_level}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                request.session["module_4_preview_data"] = form.cleaned_data
-                return redirect("surveys:module_4_preview")
+        if has_duplicate:
+            form = Module4SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 4})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="full_name" value="{full_name}">
+                    <input type="hidden" name="class_level" value="{class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_4_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_4_summary": MODULE_4_SUMMARY,
+                    "accepting_responses": True,
+                },
+            )
+
+        form = Module4SubmissionForm(request.POST)
+        if form.is_valid():
+            request.session["module_4_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_4_preview")
     else:
         preview_data = request.session.get("module_4_preview_data")
         sub_id_in_session = request.session.get("last_module4_submission_id")
@@ -2688,13 +2767,13 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
                 },
                 status=403,
             )
-        form = Module7SubmissionForm(request.POST)
-        if form.is_valid():
-            full_name = form.cleaned_data["full_name"]
-            class_level = form.cleaned_data["class_level"]
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
 
-            has_duplicate = False
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
             if student:
                 ex_sub = Module7Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -2702,30 +2781,44 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
                     if sub_id_in_session != ex_sub.pk:
                         has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 7})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="full_name" value="{full_name}">
-                        <input type="hidden" name="class_level" value="{class_level}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                request.session["module_7_preview_data"] = form.cleaned_data
-                return redirect("surveys:module_7_preview")
+        if has_duplicate:
+            form = Module7SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 7})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="full_name" value="{full_name}">
+                    <input type="hidden" name="class_level" value="{class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_7_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_7_summary": MODULE_7_SUMMARY,
+                    "accepting_responses": True,
+                },
+            )
+
+        form = Module7SubmissionForm(request.POST)
+        if form.is_valid():
+            request.session["module_7_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_7_preview")
     else:
         preview_data = request.session.get("module_7_preview_data")
         sub_id_in_session = request.session.get("last_module7_submission_id")
@@ -3041,13 +3134,13 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
                 },
                 status=403,
             )
-        form = Module8SubmissionForm(request.POST)
-        if form.is_valid():
-            full_name = form.cleaned_data["full_name"]
-            class_level = form.cleaned_data["class_level"]
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
 
-            has_duplicate = False
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
             if student:
                 ex_sub = Module8Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -3055,30 +3148,44 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
                     if sub_id_in_session != ex_sub.pk:
                         has_duplicate = True
 
-            if has_duplicate:
-                from django.utils.safestring import mark_safe
-                from django.urls import reverse
-                from django.middleware.csrf import get_token
-                request_url = reverse("surveys:request_edit", kwargs={"module_number": 8})
-                csrf_token = get_token(request)
-                btn_html = f'''
-                <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
-                    <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
-                    <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                    <form method="post" action="{request_url}">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                        <input type="hidden" name="full_name" value="{full_name}">
-                        <input type="hidden" name="class_level" value="{class_level}">
-                        <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                            Demander une modification au formateur
-                        </button>
-                    </form>
-                </div>
-                '''
-                form.add_error(None, mark_safe(btn_html))
-            else:
-                request.session["module_8_preview_data"] = form.cleaned_data
-                return redirect("surveys:module_8_preview")
+        if has_duplicate:
+            form = Module8SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            from django.middleware.csrf import get_token
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 8})
+            csrf_token = get_token(request)
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <form method="post" action="{request_url}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <input type="hidden" name="full_name" value="{full_name}">
+                    <input type="hidden" name="class_level" value="{class_level}">
+                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                        Demander une modification au formateur
+                    </button>
+                </form>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_8_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_8_summary": MODULE_8_SUMMARY,
+                    "accepting_responses": True,
+                },
+            )
+
+        form = Module8SubmissionForm(request.POST)
+        if form.is_valid():
+            request.session["module_8_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_8_preview")
     else:
         preview_data = request.session.get("module_8_preview_data")
         sub_id_in_session = request.session.get("last_module8_submission_id")
