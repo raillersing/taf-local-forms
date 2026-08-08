@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import MODULE1_FIELD_DEFINITIONS, Module1SubmissionForm
-from .models import Chapter, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
+from .models import Chapter, EditRequest, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 
 from django.test import Client
@@ -1740,6 +1740,8 @@ class ClosedSubmissionTests(TestCase):
             "feedback_confidence": "oui",
         }
         self.client.post(reverse("surveys:module_2"), data)
+        # Clear session to simulate another session/device
+        self.client.session.flush()
         # Second submit should fail
         response = self.client.post(reverse("surveys:module_2"), data)
         self.assertContains(response, "existe déjà")
@@ -5861,6 +5863,224 @@ class ModulePreviewWorkflowTests(TestCase):
 
         self.assertIn(f"/module-2/success/{submission.pk}/", response.url)
 
+        # Clear session to simulate a new device/student
+        self.client.session.flush()
         response = self.client.get(form_url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'value="Eleve Test Preview"')
+
+
+class ModuleEditRequestWorkflowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command("seed_all_modules")
+        cls.trainer = get_user_model().objects.create_user(
+            username="trainer-edit-test",
+            password="secure-password-edit",
+            is_staff=True,
+        )
+
+    def test_complete_edit_request_workflow(self):
+        # 1. First, create a valid submission for Rasoanaivo in Module 2
+        form_url = reverse("surveys:module_2")
+        preview_url = reverse("surveys:module_2_preview")
+
+        payload = {
+            "full_name": "Rasoanaivo",
+            "class_level": "seconde",
+            "group_name": "Salle A",
+            "auto_eval_internet_explained": "un_peu",
+            "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui",
+            "todo_opened_browser": "on",
+            "todo_typed_simple_search": "on",
+            "todo_used_keywords": "on",
+            "todo_opened_result": "on",
+            "todo_compared_results": "on",
+            "todo_found_school_info": "on",
+            "todo_noted_learning": "on",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4_selected": [
+                Submission.QUIZ_Q4_OPTION_EXPLANATION,
+                Submission.QUIZ_Q4_OPTION_VIDEO,
+                Submission.QUIZ_Q4_OPTION_DOCUMENT,
+                Submission.QUIZ_Q4_OPTION_WORD,
+            ],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "cours equation seconde exemple",
+            "practical_site_text": "www.exemple.mg",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "Initial feedback",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+
+        # Submit to preview, then confirm to save
+        original_post(self.client, form_url, data=payload)
+        original_post(self.client, preview_url)
+
+        self.assertEqual(Submission.objects.filter(student__full_name="Rasoanaivo").count(), 1)
+        submission = Submission.objects.get(student__full_name="Rasoanaivo")
+        self.assertEqual(submission.feedback_understood_today, "Initial feedback")
+
+        # Clear session to simulate a different device/session
+        self.client.session.flush()
+
+        # 2. Try to submit again with same student name.
+        response = original_post(self.client, form_url, data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demander une modification au formateur")
+
+        # 3. Submit the edit request (simulate student clicking the button)
+        req_url = reverse("surveys:request_edit", kwargs={"module_number": 2})
+        response = self.client.post(req_url, {"full_name": "Rasoanaivo", "class_level": "seconde"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demande envoyée !")
+
+        # Check EditRequest model
+        self.assertEqual(EditRequest.objects.filter(student__full_name="Rasoanaivo", status="pending").count(), 1)
+        edit_req = EditRequest.objects.get(student__full_name="Rasoanaivo", status="pending")
+
+        # 4. Trainer logs in and views dashboard
+        self.client.login(username="trainer-edit-test", password="secure-password-edit")
+        dashboard_url = reverse("surveys:dashboard_edit_requests")
+        response = self.client.get(dashboard_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rasoanaivo")
+        self.assertContains(response, '<span class="badge" style="background-color: #ef4444; color: white; padding: 0.1rem 0.4rem; border-radius: 9999px; font-size: 0.75rem; margin-left: 0.25rem;">1</span>')
+
+        # Check that warning banner is displayed on Cockpit Home page
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demandes de modification en attente")
+        self.assertContains(response, "Il y a 1 demande de modification d'élève en attente d'approbation.")
+
+        # Check that warning banner is displayed on Cockpit Modules page
+        response = self.client.get(reverse("surveys:dashboard_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demandes de modification en attente")
+        self.assertContains(response, "Il y a 1 demande de modification d'élève en attente d'approbation.")
+
+        # 5. Trainer approves the request
+        approve_url = reverse("surveys:approve_edit_request", kwargs={"pk": edit_req.pk})
+        response = self.client.post(approve_url)
+        self.assertEqual(response.status_code, 302)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, "approved")
+        self.assertIsNotNone(edit_req.one_time_token)
+
+        # Logout trainer
+        self.client.logout()
+
+        # 6. Student opens the token link
+        token_url = reverse("surveys:activate_edit_request", kwargs={"module_number": 2, "token": edit_req.one_time_token})
+        response = self.client.get(token_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/module-2/", response.url)
+
+        self.assertEqual(self.client.session.get("last_submission_id"), submission.pk)
+        self.assertEqual(self.client.session.get("active_edit_request_id"), edit_req.pk)
+
+        # 7. Student loads form: it should be pre-filled with existing data and show edit banner
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mode modification actif")
+        self.assertContains(response, "Initial feedback")
+
+        # 8. Student submits modifications
+        payload["feedback_understood_today"] = "Modified feedback"
+        response = original_post(self.client, form_url, data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/module-2/preview/", response.url)
+
+        # Confirm modifications
+        response = original_post(self.client, preview_url)
+        self.assertEqual(response.status_code, 302)
+
+        # Verify database submission has been updated
+        submission.refresh_from_db()
+        self.assertEqual(submission.feedback_understood_today, "Modified feedback")
+        self.assertEqual(Submission.objects.filter(student__full_name="Rasoanaivo").count(), 1)
+
+        # Verify EditRequest status is now completed
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, "completed")
+        self.assertIsNone(edit_req.one_time_token)
+
+        # Bypassing or reopening the token link now returns 404
+        response = self.client.get(token_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_request_revocation_and_expiration(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.contrib.auth import get_user_model
+
+        # Setup trainer & student
+        trainer = get_user_model().objects.create_user(username="trainer-exp-test", password="secure-password-edit", is_staff=True)
+        mod = TrainingModule.objects.get(code="MODULE_2")
+        session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        student = Student.objects.create(full_name="Rindra", class_level="seconde")
+        submission = Submission.objects.create(session=session, student=student, computed_score=10)
+
+        # Create EditRequest
+        edit_req = EditRequest.objects.create(
+            student=student,
+            session=session,
+            module_code="MODULE_2",
+            status=EditRequest.STATUS_PENDING
+        )
+
+        self.client.login(username="trainer-exp-test", password="secure-password-edit")
+
+        # 1. Test Approval sets expires_at (now + 15 min)
+        approve_url = reverse("surveys:approve_edit_request", kwargs={"pk": edit_req.pk})
+        response = self.client.post(approve_url)
+        self.assertEqual(response.status_code, 302)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_APPROVED)
+        self.assertIsNotNone(edit_req.expires_at)
+        self.assertIsNotNone(edit_req.one_time_token)
+
+        # 2. Test Revocation
+        revoke_url = reverse("surveys:revoke_edit_request", kwargs={"pk": edit_req.pk})
+        response = self.client.post(revoke_url)
+        self.assertEqual(response.status_code, 302)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_CANCELLED)
+        self.assertIsNone(edit_req.one_time_token)
+
+        # Reset to approved but expired
+        edit_req.status = EditRequest.STATUS_APPROVED
+        edit_req.one_time_token = "expired-token-xyz"
+        edit_req.expires_at = timezone.now() - timedelta(minutes=5)
+        edit_req.save()
+
+        # 3. Test Auto-Prune (loading trainer dashboard auto-expires the request)
+        response = self.client.get(reverse("surveys:dashboard_edit_requests"))
+        self.assertEqual(response.status_code, 200)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_EXPIRED)
+        self.assertIsNone(edit_req.one_time_token)
+
+        # Reset to approved but expired to test direct activation URL expiration
+        edit_req.status = EditRequest.STATUS_APPROVED
+        edit_req.one_time_token = "expired-activation-token"
+        edit_req.expires_at = timezone.now() - timedelta(minutes=1)
+        edit_req.save()
+
+        # 4. Test Activation URL returns 410 Gone when token is expired
+        token_url = reverse("surveys:activate_edit_request", kwargs={"module_number": 2, "token": "expired-activation-token"})
+        response = self.client.get(token_url)
+        self.assertEqual(response.status_code, 410)
+        self.assertContains(response, "Lien de modification expiré", status_code=410)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_EXPIRED)
+        self.assertIsNone(edit_req.one_time_token)

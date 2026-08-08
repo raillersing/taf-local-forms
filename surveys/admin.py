@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 
-from .models import Chapter, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
+from .models import Chapter, EditRequest, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 admin.site.site_header = getattr(settings, "ADMIN_SITE_HEADER", "TAf Local Forms")
 admin.site.site_title = getattr(settings, "ADMIN_SITE_TITLE", "TAf Admin")
@@ -164,3 +164,12 @@ class LearningResourceAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     readonly_fields = ("created_at", "updated_at")
     autocomplete_fields = ("subject", "chapter")
+
+
+@admin.register(EditRequest)
+class EditRequestAdmin(admin.ModelAdmin):
+    list_display = ("student", "session", "module_code", "status", "requested_at", "one_time_token")
+    list_filter = ("status", "module_code", "session", "requested_at")
+    search_fields = ("student__full_name", "one_time_token")
+    autocomplete_fields = ("student", "session")
+    readonly_fields = ("requested_at",)

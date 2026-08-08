@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import views
 from .views import (
     dashboard_backup,
     dashboard_exports,
@@ -142,4 +143,13 @@ urlpatterns = [
     path("dashboard/presence.json", dashboard_presence_json, name="dashboard_presence_json"),
     path("dashboard/modules/<str:module_code>/toggle-responses/", toggle_module_responses, name="toggle_module_responses"),
     path("presence/heartbeat/", presence_heartbeat, name="presence_heartbeat"),
+
+    # Student Edit Request Workflow
+    path("module-<int:module_number>/request-edit/", views.request_edit, name="request_edit"),
+    path("module-<int:module_number>/edit/<str:token>/", views.activate_edit_request, name="activate_edit_request"),
+
+    path("dashboard/edit-requests/", views.dashboard_edit_requests, name="dashboard_edit_requests"),
+    path("dashboard/edit-requests/<int:pk>/approve/", views.approve_edit_request, name="approve_edit_request"),
+    path("dashboard/edit-requests/<int:pk>/reject/", views.reject_edit_request, name="reject_edit_request"),
+    path("dashboard/edit-requests/<int:pk>/revoke/", views.revoke_edit_request, name="revoke_edit_request"),
 ]

@@ -1,33 +1,63 @@
 #!/bin/bash
-# TAf Local Forms — base de donnees backup
-# Usage: scripts/dev/taf-db-backup [output_dir]
-# Utilisation: sauvegarde la base active (SQLite ou PostgreSQL) dans un fichier date.
-# Ne supprime jamais les donnees source.
+# TAf Local Forms - sauvegarde Compose non destructive.
+# Usage: scripts/dev/taf-db-backup [repertoire_de_sortie]
 
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
-OUTPUT_DIR="${1:-./data/backups}"
-mkdir -p "$OUTPUT_DIR"
+BACKUP_ROOT="${1:-./backups}"
+TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+RUN_DIR="$BACKUP_ROOT/taf_local_forms_$TIMESTAMP"
 
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Detecter le type de base
-if [ -n "${DB_HOST:-}" ]; then
-    echo "[backup] PostgreSQL detecte via DB_HOST=$DB_HOST"
-    DB_NAME="${DB_NAME:-taf_local_forms}"
-    DB_USER="${DB_USER:-taf}"
-    PGPASSWORD="${DB_PASSWORD:-}" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -F c -f "$OUTPUT_DIR/taf_pg_$TIMESTAMP.dump"
-    echo "[backup] PostgreSQL backup -> $OUTPUT_DIR/taf_pg_$TIMESTAMP.dump"
-elif [ -f "${DATABASE_PATH:-./data/db.sqlite3}" ]; then
-    DB_PATH="${DATABASE_PATH:-./data/db.sqlite3}"
-    echo "[backup] SQLite detectee: $DB_PATH"
-    cp "$DB_PATH" "$OUTPUT_DIR/taf_sqlite_$TIMESTAMP.db"
-    echo "[backup] SQLite backup -> $OUTPUT_DIR/taf_sqlite_$TIMESTAMP.db"
-else
-    echo "[backup] Aucune base detectee. Rien a sauvegarder."
-    exit 0
+if [ -e "$RUN_DIR" ]; then
+    echo "[backup] Le dossier existe deja : $RUN_DIR" >&2
+    exit 1
 fi
 
-echo "[backup] Termine."
+mkdir -p "$RUN_DIR"
+
+if docker compose ps -q db | grep -q .; then
+    echo "[backup] PostgreSQL Docker detecte."
+    docker compose exec -T db sh -lc \
+        'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -F c' \
+        > "$RUN_DIR/database.postgres.dump"
+
+    echo "[backup] Archivage des medias Docker."
+    docker compose exec -T web tar -C /app/media -czf - . > "$RUN_DIR/media.tar.gz"
+    database_engine="postgresql-compose"
+elif [ -f "${DATABASE_PATH:-./data/db.sqlite3}" ]; then
+    database_path="${DATABASE_PATH:-./data/db.sqlite3}"
+    echo "[backup] SQLite detectee : $database_path"
+    cp "$database_path" "$RUN_DIR/database.sqlite3"
+    if [ -d "./media" ]; then
+        tar -C ./media -czf "$RUN_DIR/media.tar.gz" .
+    else
+        tar -czf "$RUN_DIR/media.tar.gz" --files-from /dev/null
+    fi
+    database_engine="sqlite"
+else
+    rmdir "$RUN_DIR"
+    echo "[backup] Aucune base accessible. Verifiez docker compose ps ou DATABASE_PATH." >&2
+    exit 1
+fi
+
+commit="unknown"
+if git rev-parse --short HEAD >/dev/null 2>&1; then
+    commit="$(git rev-parse --short HEAD)"
+fi
+
+cat > "$RUN_DIR/MANIFEST.txt" <<EOF
+application=TAf Local Forms
+created_at_utc=$TIMESTAMP
+database_engine=$database_engine
+git_commit=$commit
+EOF
+
+(
+    cd "$RUN_DIR"
+    sha256sum database.* media.tar.gz MANIFEST.txt > SHA256SUMS
+)
+
+echo "[backup] Sauvegarde terminee : $RUN_DIR"
+echo "[backup] Verifiez SHA256SUMS et conservez ce dossier hors du laptop avant toute mise a jour."

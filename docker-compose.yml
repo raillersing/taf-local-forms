@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-taf_local_forms}"
       POSTGRES_USER: "${POSTGRES_USER:-taf}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-taf-dev-only}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env before starting Docker}"
     volumes:
       - taf_local_forms_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -20,7 +20,8 @@ services:
       - "${TAF_HOST_PORT:-8010}:8000"
     environment:
       DEBUG: "${DEBUG:-false}"
-      SECRET_KEY: "${SECRET_KEY:-change-me-for-docker-local-use}"
+      SECRET_KEY: "${SECRET_KEY:?Set SECRET_KEY in .env before starting Docker}"
+      TAF_REQUIRE_SECURE_SETTINGS: "true"
       ALLOWED_HOSTS: "${ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}"
       CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS:-http://localhost:8010,http://127.0.0.1:8010}"
       DATABASE_URL: "${DATABASE_URL:-}"
@@ -29,7 +30,7 @@ services:
       DB_PORT: "${DB_PORT:-5432}"
       DB_NAME: "${POSTGRES_DB:-taf_local_forms}"
       DB_USER: "${POSTGRES_USER:-taf}"
-      DB_PASSWORD: "${POSTGRES_PASSWORD:-taf-dev-only}"
+      DB_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env before starting Docker}"
       TIME_ZONE: "${TIME_ZONE:-Indian/Antananarivo}"
       WEB_CONCURRENCY: "${WEB_CONCURRENCY:-2}"
       WEB_THREADS: "${WEB_THREADS:-4}"

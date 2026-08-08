@@ -1,3 +1,4 @@
+{% load survey_tags %}
 <nav class="nav-bar shell-primary-nav trainer-command-rail p6-nav" id="instructor-nav" aria-label="Navigation formateur">
     <div class="container shell-nav-inner shell-nav-inner-trainer p6-nav-inner">
         <header class="trainer-rail-identity">
@@ -17,6 +18,14 @@
                 </li>
                 <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_projection' %}active{% endif %}">
                     <a href="{% url 'surveys:dashboard_projection' %}"><span aria-hidden="true">03</span><b>Projection</b><small>Accès collectif</small></a>
+                </li>
+                <li class="nav-item {% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_edit_requests' %}active{% endif %}">
+                    {% pending_edit_requests_count as pending_count %}
+                    <a href="{% url 'surveys:dashboard_edit_requests' %}">
+                        <span aria-hidden="true">04</span>
+                        <b>Modifications{% if pending_count > 0 %}<span class="badge" style="background-color: #ef4444; color: white; padding: 0.1rem 0.4rem; border-radius: 9999px; font-size: 0.75rem; margin-left: 0.25rem;">{{ pending_count }}</span>{% endif %}</b>
+                        <small>Demandes des élèves</small>
+                    </a>
                 </li>
             </ul>
         </section>

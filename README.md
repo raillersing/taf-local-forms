@@ -20,6 +20,7 @@ Chaque module propose un bouton **« Voir le module »** qui mène vers une page
 
 Pages détail étudiant par module :
 
+- **Module 1** : Première prise de contact  (`/modules/module-1/`)
 - **Module 2** : Comprendre Internet  (`/modules/module-2/`)
 - **Module 3** : Recherche efficace  (`/modules/module-3/`)
 - **Module 4** : Sources fiables  (`/modules/module-4/`)
@@ -32,6 +33,7 @@ Chaque page détail affiche un **bloc pédagogique** structuré qui contient le 
 
 Les questionnaires sont accessibles directement :
 
+- **Module 1** : `/module-1/`
 - **Module 2** : `/module-2/`
 - **Module 3** : `/module-3/`
 - **Module 4** : `/module-4/`
@@ -68,7 +70,7 @@ L'interface a été entièrement refondue pour unifier l'expérience étudiant e
 2. Configurez le fichier `.env`.
 3. Lancez l'application.
 4. Créez le compte admin.
-5. Chargez les données Module 2 à 8.
+5. Chargez les données Module 1 à 8.
 6. Donnez l'adresse aux élèves.
 
 Guides pour la séance :
@@ -90,18 +92,15 @@ Guides pour la séance :
 
 ```env
 DEBUG=false
-SECRET_KEY=change-me-for-real-use
+SECRET_KEY=<GENEREZ_UN_SECRET_UNIQUE>
+POSTGRES_PASSWORD=<CHOISISSEZ_UN_MOT_DE_PASSE_UNIQUE>
 ALLOWED_HOSTS=localhost,127.0.0.1,[::1],<LAPTOP_LAN_IP>
 CSRF_TRUSTED_ORIGINS=http://localhost:8010,http://127.0.0.1:8010,http://<LAPTOP_LAN_IP>:8010,http://<LAPTOP_LAN_IP>:8011
-DATABASE_PATH=/app/data/db.sqlite3
 TIME_ZONE=Indian/Antananarivo
 
-# PostgreSQL (optionnel, activé automatiquement si DB_HOST est défini)
-DB_HOST=db
-DB_NAME=taf_local_forms
-DB_USER=taf_user
-DB_PASSWORD=taf_pass
-DB_PORT=5432
+# PostgreSQL Docker
+POSTGRES_DB=taf_local_forms
+POSTGRES_USER=taf
 ```
 
 Exemple :
@@ -113,7 +112,8 @@ CSRF_TRUSTED_ORIGINS=http://localhost:8010,http://127.0.0.1:8010,http://192.168.
 
 Important :
 
-- remplacez `SECRET_KEY=change-me-for-real-use` par une valeur propre à votre ordinateur avant une vraie séance ;
+- générez un secret avec `python3 -c "import secrets; print(secrets.token_urlsafe(64))"` ;
+- renseignez aussi `POSTGRES_PASSWORD` ; Docker refuse désormais de démarrer avec des valeurs absentes ou de démonstration ;
 - gardez `DEBUG=false` pour l'usage terrain.
 
 ## Lancer avec Docker
@@ -148,7 +148,13 @@ Créer le superuser :
 docker compose exec web python manage.py createsuperuser
 ```
 
-Charger les données Module 2 :
+Charger les données Module 1 :
+
+```powershell
+docker compose exec web python manage.py seed_module1
+```
+
+Charger les autres modules :
 
 ```powershell
 docker compose exec web python manage.py seed_module2
@@ -175,7 +181,9 @@ Rappel : ne donnez pas `localhost`.
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - Configuration réseau : `/dashboard/settings/`
 - Dashboard Module 2 : `http://192.168.1.23:8010/dashboard/module-2/`
+- Dashboard Module 1 : `http://192.168.1.23:8010/dashboard/module-1/`
 - Export CSV : `http://192.168.1.23:8010/dashboard/export/module-2.csv`
+- Export CSV Module 1 : `http://192.168.1.23:8010/dashboard/export/module-1.csv`
 
 Le dashboard et l'admin demandent une connexion.
 
@@ -269,8 +277,13 @@ Deux bases possibles selon la configuration :
 bash scripts/dev/taf-db-backup
 ```
 
-Ce script détecte automatiquement la base active (PostgreSQL ou SQLite) et
-crée une sauvegarde horodatée dans `/tmp/taf-backups/`.
+Ce script détecte PostgreSQL via Docker Compose, archive aussi les médias et
+crée un dossier horodaté dans `backups/` avec un manifeste et des sommes SHA-256.
+Ne commitez jamais ce dossier.
+
+La restauration est destructive et doit être répétée d'abord sur une machine
+vierge : arrêtez le web, vérifiez l'archive, puis utilisez
+`bash scripts/dev/taf-db-restore <dossier_backup> --confirm-restore`.
 
 ### Sauvegarde manuelle
 
@@ -395,6 +408,7 @@ Utile pour valider les performances avant une séance avec de nombreux élèves.
 
 - Page d'accueil (choix étudiant / formateur) : `/`
 - Espace modules étudiant (liste des modules) : `/modules/`
+- Formulaire Module 1 — première prise de contact : `/module-1/`
 - Formulaire Module 2 : `/module-2/`
 - Formulaire Module 3 : `/module-3/`
 - Formulaire Module 4 : `/module-4/`
@@ -402,9 +416,11 @@ Utile pour valider les performances avant une séance avec de nombreux élèves.
 - Formulaire Module 6 : `/module-6/`
 - Formulaire Module 7 : `/module-7/`
 - Page de confirmation : `/module-2/success/<id>/`
+- Page de confirmation Module 1 : `/module-1/success/<id>/`
 - Page de confirmation Module 3 : `/module-3/success/<id>/`
 - Page de confirmation Module 4 : `/module-4/success/<id>/`
 - Cockpit formateur (centralisé) : `/dashboard/`
+- Dashboard Module 1 : `/dashboard/module-1/`
 - Dashboard Module 2 : `/dashboard/module-2/`
 - Dashboard Module 3 : `/dashboard/module-3/`
 - Dashboard Module 4 : `/dashboard/module-4/`
@@ -414,6 +430,7 @@ Utile pour valider les performances avant une séance avec de nombreux élèves.
 - Contrôle réseau local (boutons helper) : `/dashboard/network-control/`
 - Accès réseau (diagnostic) : `/dashboard/network/`
 - CSV Module 2 : `/dashboard/export/module-2.csv`
+- CSV Module 1 : `/dashboard/export/module-1.csv`
 - CSV Module 3 : `/dashboard/export/module-3.csv`
 - CSV Module 4 : `/dashboard/export/module-4.csv`
 - CSV Module 5 : `/dashboard/export/module-5.csv`

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 
@@ -29,8 +30,22 @@ def env_list(name: str, default: list[str]) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "change-me-for-local-use")
+_INSECURE_SECRET_KEYS = {
+    "",
+    "django-insecure-local-development-key-not-for-deployment",
+    "change-me-for-local-use",
+    "change-me-for-docker-local-use",
+    "change-me-for-real-use",
+}
+
+SECRET_KEY = os.getenv(
+    "SECRET_KEY", "django-insecure-local-development-key-not-for-deployment"
+)
 DEBUG = env_bool("DEBUG", default=False)
+if env_bool("TAF_REQUIRE_SECURE_SETTINGS") and SECRET_KEY in _INSECURE_SECRET_KEYS:
+    raise ImproperlyConfigured(
+        "SECRET_KEY must be set to a unique value before starting the classroom deployment."
+    )
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["localhost", "127.0.0.1", "[::1]"])
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS",

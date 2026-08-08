@@ -1249,3 +1249,37 @@ class LearningResource(models.Model):
             from django.core.exceptions import ValidationError
 
             raise ValidationError({"chapter": "Choisis un chapitre de la meme matiere."})
+
+
+class EditRequest(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
+    STATUS_COMPLETED = "completed"
+    STATUS_REJECTED = "rejected"
+    STATUS_EXPIRED = "expired"
+    STATUS_CANCELLED = "cancelled"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "En attente"),
+        (STATUS_APPROVED, "Approuvée"),
+        (STATUS_COMPLETED, "Modifiée"),
+        (STATUS_REJECTED, "Rejetée"),
+        (STATUS_EXPIRED, "Expirée"),
+        (STATUS_CANCELLED, "Annulée"),
+    ]
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="edit_requests")
+    session = models.ForeignKey(TrainingSession, on_delete=models.CASCADE, related_name="edit_requests")
+    module_code = models.CharField(max_length=20)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    one_time_token = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Date d'expiration")
+
+    class Meta:
+        ordering = ["-requested_at"]
+        verbose_name = "Demande de modification"
+        verbose_name_plural = "Demandes de modification"
+
+    def __str__(self) -> str:
+        return f"{self.student} - {self.module_code} ({self.status})"
