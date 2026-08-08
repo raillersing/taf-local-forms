@@ -496,21 +496,14 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
             form = Module1SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 1})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="paper_full_name" value="{paper_full_name}">
-                    <input type="hidden" name="paper_class_level" value="{paper_class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
@@ -841,21 +834,14 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
             form = Module2SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 2})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="full_name" value="{full_name}">
-                    <input type="hidden" name="class_level" value="{class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
@@ -1162,21 +1148,14 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
             form = Module5SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 5})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="full_name" value="{full_name}">
-                    <input type="hidden" name="class_level" value="{class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
@@ -1527,21 +1506,14 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
             form = Module6SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 6})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="full_name" value="{full_name}">
-                    <input type="hidden" name="class_level" value="{class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
@@ -2024,21 +1996,14 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
             form = Module3SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 3})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="full_name" value="{full_name}">
-                    <input type="hidden" name="class_level" value="{class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
@@ -2402,21 +2367,14 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
             form = Module4SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 4})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="full_name" value="{full_name}">
-                    <input type="hidden" name="class_level" value="{class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
@@ -2785,21 +2743,14 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
             form = Module7SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 7})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="full_name" value="{full_name}">
-                    <input type="hidden" name="class_level" value="{class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
@@ -3152,21 +3103,14 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
             form = Module8SubmissionForm(request.POST)
             from django.utils.safestring import mark_safe
             from django.urls import reverse
-            from django.middleware.csrf import get_token
             request_url = reverse("surveys:request_edit", kwargs={"module_number": 8})
-            csrf_token = get_token(request)
             btn_html = f'''
             <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
                 <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
                 <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
-                <form method="post" action="{request_url}">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
-                    <input type="hidden" name="full_name" value="{full_name}">
-                    <input type="hidden" name="class_level" value="{class_level}">
-                    <button type="submit" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
-                        Demander une modification au formateur
-                    </button>
-                </form>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
             </div>
             '''
             form.add_error(None, mark_safe(btn_html))
