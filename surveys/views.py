@@ -70,7 +70,7 @@ def sanitize_csv_cell(value):
 
 
 QUESTION_INSIGHT_EXCLUDED_FIELDS = {
-    "school_id_number", "full_name", "class_level", "group_name",
+    "full_name", "class_level", "group_name",
     "paper_full_name", "paper_class_level", "paper_school_name", "paper_date",
 }
 
@@ -434,9 +434,9 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
             }, status=403)
         form = Module1SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            if Module1Submission.objects.filter(session=session, school_id_number_snapshot=school_id_number).exists():
-                form.add_error("school_id_number", "Une réponse existe déjà pour ce numéro pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            paper_full_name = form.cleaned_data["paper_full_name"]
+            if Module1Submission.objects.filter(session=session, paper_full_name=paper_full_name).exists():
+                form.add_error("paper_full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
                 paper_class = form.cleaned_data["paper_class_level"].strip().casefold()
                 if "seconde" in paper_class:
@@ -445,16 +445,18 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
                     student_class_level = Student.CLASS_LEVEL_PREMIERE
                 else:
                     student_class_level = Student.CLASS_LEVEL_AUTRE
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["paper_full_name"],
+                student = Student.objects.filter(
+                    full_name=paper_full_name,
                     class_level=student_class_level,
-                    group_name="",
-                )
-                submission_data = {
-                    key: value for key, value in form.cleaned_data.items()
-                    if key != "school_id_number"
-                }
+                ).first()
+                if not student:
+                    student = Student.objects.create(
+                        full_name=paper_full_name,
+                        class_level=student_class_level,
+                        group_name="",
+                    )
+
+                submission_data = dict(form.cleaned_data)
                 for field_name in ("q46_digital_level", "q47_search_level", "q48_device_confidence"):
                     if submission_data[field_name] == "":
                         submission_data[field_name] = None
@@ -463,12 +465,10 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
                 try:
                     submission = Module1Submission.objects.create(
                         student=student, session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error("school_id_number", "Une réponse existe déjà pour ce numéro pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+                    form.add_error("paper_full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_module1_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_1", session)
@@ -527,9 +527,9 @@ def export_module_1_csv(request: HttpRequest) -> HttpResponse:
     response["Content-Disposition"] = 'attachment; filename="module-1-prise-contact.csv"'
     response.write("\ufeff")
     writer = csv.writer(response)
-    writer.writerow(["Date d'enregistrement", "Session", "Numéro technique", "Nom et prénom(s)", "Classe / Niveau", "Établissement", "Date du questionnaire"] + [label for _name, label, _kind, _choices in MODULE1_FIELD_DEFINITIONS])
+    writer.writerow(["Date d'enregistrement", "Session", "Nom et prénom(s)", "Classe / Niveau", "Établissement", "Date du questionnaire"] + [label for _name, label, _kind, _choices in MODULE1_FIELD_DEFINITIONS])
     for submission in submissions:
-        row = [submission.created_at, submission.session.session_code, submission.school_id_number_snapshot, submission.paper_full_name, submission.paper_class_level, submission.paper_school_name, submission.paper_date]
+        row = [submission.created_at, submission.session.session_code, submission.paper_full_name, submission.paper_class_level, submission.paper_school_name, submission.paper_date]
         row.extend(_module1_export_value(name, getattr(submission, name)) for name, _label, _kind, _choices in MODULE1_FIELD_DEFINITIONS)
         writer.writerow([sanitize_csv_cell(value) for value in row])
     return response
@@ -633,41 +633,35 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
             )
         form = Module2SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro. Demande au formateur si tu dois modifier ta réponse.",
-                )
+            full_name = form.cleaned_data["full_name"]
+            class_level = form.cleaned_data["class_level"]
+            group_name = form.cleaned_data["group_name"]
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student and Submission.objects.filter(session=session, student=student).exists():
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
+                if not student:
+                    student = Student.objects.create(
+                        full_name=full_name,
+                        class_level=class_level,
+                        group_name=group_name,
+                    )
+                elif student.group_name != group_name:
+                    student.group_name = group_name
+                    student.save(update_fields=["group_name"])
                 submission_data = {
                     key: value
                     for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                    if key not in {"full_name", "class_level", "group_name"}
                 }
                 try:
                     submission = Submission.objects.create(
                         student=student,
                         session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro. Demande au formateur si tu dois modifier ta réponse.",
-                    )
+                    form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_2", session)
@@ -821,43 +815,35 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
             )
         form = Module5SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module5Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
+            full_name = form.cleaned_data["full_name"]
+            class_level = form.cleaned_data["class_level"]
+            group_name = form.cleaned_data["group_name"]
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student and Module5Submission.objects.filter(session=session, student=student).exists():
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
+                if not student:
+                    student = Student.objects.create(
+                        full_name=full_name,
+                        class_level=class_level,
+                        group_name=group_name,
+                    )
+                elif student.group_name != group_name:
+                    student.group_name = group_name
+                    student.save(update_fields=["group_name"])
                 submission_data = {
                     key: value
                     for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                    if key not in {"full_name", "class_level", "group_name"}
                 }
                 try:
                     submission = Module5Submission.objects.create(
                         student=student,
                         session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
+                    form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_module5_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_5", session)
@@ -949,7 +935,6 @@ def export_module_5_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -988,7 +973,6 @@ def export_module_5_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1057,43 +1041,35 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
             )
         form = Module6SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module6Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
+            full_name = form.cleaned_data["full_name"]
+            class_level = form.cleaned_data["class_level"]
+            group_name = form.cleaned_data["group_name"]
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student and Module6Submission.objects.filter(session=session, student=student).exists():
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
+                if not student:
+                    student = Student.objects.create(
+                        full_name=full_name,
+                        class_level=class_level,
+                        group_name=group_name,
+                    )
+                elif student.group_name != group_name:
+                    student.group_name = group_name
+                    student.save(update_fields=["group_name"])
                 submission_data = {
                     key: value
                     for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                    if key not in {"full_name", "class_level", "group_name"}
                 }
                 try:
                     submission = Module6Submission.objects.create(
                         student=student,
                         session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
+                    form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_module6_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_6", session)
@@ -1185,7 +1161,6 @@ def export_module_6_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1224,7 +1199,6 @@ def export_module_6_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1322,7 +1296,6 @@ def export_module_2_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1356,7 +1329,6 @@ def export_module_2_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1427,43 +1399,35 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
             )
         form = Module3SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module3Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
+            full_name = form.cleaned_data["full_name"]
+            class_level = form.cleaned_data["class_level"]
+            group_name = form.cleaned_data["group_name"]
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student and Module3Submission.objects.filter(session=session, student=student).exists():
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
+                if not student:
+                    student = Student.objects.create(
+                        full_name=full_name,
+                        class_level=class_level,
+                        group_name=group_name,
+                    )
+                elif student.group_name != group_name:
+                    student.group_name = group_name
+                    student.save(update_fields=["group_name"])
                 submission_data = {
                     key: value
                     for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                    if key not in {"full_name", "class_level", "group_name"}
                 }
                 try:
                     submission = Module3Submission.objects.create(
                         student=student,
                         session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
+                    form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_module3_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_3", session)
@@ -1557,7 +1521,6 @@ def export_module_3_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1597,7 +1560,6 @@ def export_module_3_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1676,43 +1638,35 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
             )
         form = Module4SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module4Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
+            full_name = form.cleaned_data["full_name"]
+            class_level = form.cleaned_data["class_level"]
+            group_name = form.cleaned_data["group_name"]
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student and Module4Submission.objects.filter(session=session, student=student).exists():
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
+                if not student:
+                    student = Student.objects.create(
+                        full_name=full_name,
+                        class_level=class_level,
+                        group_name=group_name,
+                    )
+                elif student.group_name != group_name:
+                    student.group_name = group_name
+                    student.save(update_fields=["group_name"])
                 submission_data = {
                     key: value
                     for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                    if key not in {"full_name", "class_level", "group_name"}
                 }
                 try:
                     submission = Module4Submission.objects.create(
                         student=student,
                         session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
+                    form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_module4_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_4", session)
@@ -1812,7 +1766,6 @@ def export_module_4_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1856,7 +1809,6 @@ def export_module_4_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1930,43 +1882,35 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
             )
         form = Module7SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module7Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
+            full_name = form.cleaned_data["full_name"]
+            class_level = form.cleaned_data["class_level"]
+            group_name = form.cleaned_data["group_name"]
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student and Module7Submission.objects.filter(session=session, student=student).exists():
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
+                if not student:
+                    student = Student.objects.create(
+                        full_name=full_name,
+                        class_level=class_level,
+                        group_name=group_name,
+                    )
+                elif student.group_name != group_name:
+                    student.group_name = group_name
+                    student.save(update_fields=["group_name"])
                 submission_data = {
                     key: value
                     for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                    if key not in {"full_name", "class_level", "group_name"}
                 }
                 try:
                     submission = Module7Submission.objects.create(
                         student=student,
                         session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
+                    form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_module7_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_7", session)
@@ -2058,7 +2002,6 @@ def export_module_7_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -2097,7 +2040,6 @@ def export_module_7_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -2168,43 +2110,35 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
             )
         form = Module8SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module8Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
+            full_name = form.cleaned_data["full_name"]
+            class_level = form.cleaned_data["class_level"]
+            group_name = form.cleaned_data["group_name"]
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student and Module8Submission.objects.filter(session=session, student=student).exists():
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
             else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
+                if not student:
+                    student = Student.objects.create(
+                        full_name=full_name,
+                        class_level=class_level,
+                        group_name=group_name,
+                    )
+                elif student.group_name != group_name:
+                    student.group_name = group_name
+                    student.save(update_fields=["group_name"])
                 submission_data = {
                     key: value
                     for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
+                    if key not in {"full_name", "class_level", "group_name"}
                 }
                 try:
                     submission = Module8Submission.objects.create(
                         student=student,
                         session=session,
-                        school_id_number_snapshot=school_id_number,
                         **submission_data,
                     )
                 except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
+                    form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
                 else:
                     request.session["last_module8_submission_id"] = submission.pk
                     _mark_presence_submitted(request, "MODULE_8", session)
@@ -2319,7 +2253,6 @@ def export_module_8_csv(request: HttpRequest) -> HttpResponse:
         writer.writerow([
             submission.created_at.strftime("%Y-%m-%d %H:%M"),
             submission.session.session_code,
-            submission.school_id_number_snapshot,
             sanitize_csv_cell(submission.student.full_name),
             submission.student.class_level,
             submission.student.group_name,
@@ -2390,7 +2323,6 @@ def presence_heartbeat(request: HttpRequest) -> JsonResponse:
     )
     if not session:
         return JsonResponse({"error": "no active session"}, status=404)
-    school_id_number = data.get("school_id_number", "").strip() or None
     class_level = data.get("class_level", "").strip() or None
     current_path = data.get("current_path", "").strip() or ""
     cutoff = timezone.now() - timedelta(seconds=60)
@@ -2409,7 +2341,6 @@ def presence_heartbeat(request: HttpRequest) -> JsonResponse:
         defaults={
             "status": FormPresence.STATUS_ACTIVE,
             "current_path": current_path,
-            "school_id_number": school_id_number,
             "class_level": class_level,
             "last_seen_at": now,
         },

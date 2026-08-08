@@ -82,13 +82,6 @@ MODULE1_FIELD_DEFINITIONS = [
 
 
 class Module1SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro technique à l'école",
-        min_length=2,
-        max_length=2,
-        help_text="Identifiant de suivi fourni par le formateur (exemple : 01).",
-        error_messages={"required": "Entre le numéro fourni par le formateur."},
-    )
     paper_full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     paper_class_level = forms.CharField(label="Classe / Niveau", max_length=100)
     paper_school_name = forms.CharField(label="Établissement", max_length=255)
@@ -106,11 +99,6 @@ class Module1SubmissionForm(forms.Form):
             else:
                 self.fields[name] = forms.CharField(label=label, max_length=255, required=False)
 
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value
 
     def clean_q42_first_learning(self):
         value = self.cleaned_data.get("q42_first_learning", [])
@@ -120,17 +108,6 @@ class Module1SubmissionForm(forms.Form):
 
 
 class Module2SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro à l’école",
-        min_length=2,
-        max_length=2,
-        help_text="Exemple : 01, 09, 39",
-        error_messages={
-            "required": "Entre ton numéro.",
-            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
-            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
-        },
-    )
     full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
@@ -233,12 +210,6 @@ class Module2SubmissionForm(forms.Form):
         choices=Submission.CONFIDENCE_CHOICES,
         widget=forms.RadioSelect,
     )
-
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value
 
 
 class LearningResourceForm(forms.ModelForm):
@@ -403,17 +374,6 @@ class LearningResourceForm(forms.ModelForm):
 
 
 class Module4SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro à l'école",
-        min_length=2,
-        max_length=2,
-        help_text="Exemple : 01, 09, 39",
-        error_messages={
-            "required": "Entre ton numéro.",
-            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
-            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
-        },
-    )
     full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
@@ -561,25 +521,8 @@ class Module4SubmissionForm(forms.Form):
         widget=forms.RadioSelect,
     )
 
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value
-
 
 class Module3SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro à l'école",
-        min_length=2,
-        max_length=2,
-        help_text="Exemple : 01, 09, 39",
-        error_messages={
-            "required": "Entre ton numéro.",
-            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
-            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
-        },
-    )
     full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
@@ -696,25 +639,8 @@ class Module3SubmissionForm(forms.Form):
         widget=forms.RadioSelect,
     )
 
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value
-
 
 class Module5SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro à l'école",
-        min_length=2,
-        max_length=2,
-        help_text="Exemple : 01, 09, 39",
-        error_messages={
-            "required": "Entre ton numéro.",
-            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
-            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
-        },
-    )
     full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
@@ -851,25 +777,9 @@ class Module5SubmissionForm(forms.Form):
         widget=forms.RadioSelect,
     )
 
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value
 
 
 class Module6SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro à l'école",
-        min_length=2,
-        max_length=2,
-        help_text="Exemple : 01, 09, 39",
-        error_messages={
-            "required": "Entre ton numéro.",
-            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
-            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
-        },
-    )
     full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
@@ -1009,25 +919,9 @@ class Module6SubmissionForm(forms.Form):
         widget=forms.RadioSelect,
     )
 
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value
 
 
 class Module7SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro à l'école",
-        min_length=2,
-        max_length=2,
-        help_text="Exemple : 01, 09, 39",
-        error_messages={
-            "required": "Entre ton numéro.",
-            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
-            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
-        },
-    )
     full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
@@ -1174,24 +1068,9 @@ class Module7SubmissionForm(forms.Form):
         widget=forms.RadioSelect,
     )
 
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value
 
 
 class Module8SubmissionForm(forms.Form):
-    school_id_number = forms.CharField(
-        label="Numéro à l'école",
-        min_length=2, max_length=2,
-        help_text="Exemple : 01, 09, 39",
-        error_messages={
-            "required": "Entre ton numéro.",
-            "min_length": "Entre exactement 2 chiffres, par exemple 01.",
-            "max_length": "Entre exactement 2 chiffres, par exemple 01.",
-        },
-    )
     full_name = forms.CharField(label="Nom et prénom(s)", max_length=255)
     class_level = forms.ChoiceField(label="Classe / niveau", choices=Student.CLASS_LEVEL_CHOICES)
     group_name = forms.CharField(label="Groupe ou salle", max_length=100, required=False)
@@ -1358,9 +1237,3 @@ class Module8SubmissionForm(forms.Form):
         required=False,
         help_text="Écris une habitude ou compétence à renforcer.",
     )
-
-    def clean_school_id_number(self):
-        value = self.cleaned_data["school_id_number"].strip()
-        if not value.isdigit() or len(value) != 2:
-            raise forms.ValidationError("Entre exactement 2 chiffres, par exemple 01.")
-        return value

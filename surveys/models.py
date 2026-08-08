@@ -1,13 +1,7 @@
-from django.core.validators import MaxLengthValidator, MaxValueValidator, MinLengthValidator, MinValueValidator, RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-
-
-school_id_validator = RegexValidator(
-    regex=r"^\d{2}$",
-    message="Le numero d'identification doit contenir exactement 2 chiffres.",
-)
 
 
 class Student(models.Model):
@@ -20,20 +14,15 @@ class Student(models.Model):
         (CLASS_LEVEL_AUTRE, "Autre"),
     ]
 
-    school_id_number = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-        verbose_name="Numero d'identification a l'ecole",
-    )
     full_name = models.CharField(max_length=255, verbose_name="Nom et prenom")
     class_level = models.CharField(max_length=20, choices=CLASS_LEVEL_CHOICES, verbose_name="Classe / niveau")
     group_name = models.CharField(max_length=100, blank=True, verbose_name="Groupe ou salle")
 
     class Meta:
-        ordering = ["school_id_number", "full_name"]
+        ordering = ["full_name"]
 
     def __str__(self) -> str:
-        return f"{self.school_id_number} - {self.full_name}"
+        return self.full_name
 
 
 class TrainingModule(models.Model):
@@ -124,10 +113,6 @@ class Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -164,13 +149,13 @@ class Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_submission_per_session_student",
             )
         ]
 
     def __str__(self) -> str:
-        return f"{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"{self.student} - {self.session.session_code}"
 
     def calculate_score(self) -> int:
         score = 0
@@ -187,7 +172,6 @@ class Submission(models.Model):
         return score
 
     def save(self, *args, **kwargs):
-        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
 
@@ -242,10 +226,6 @@ class Module3Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module3_submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module3_submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -288,15 +268,15 @@ class Module3Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_module3_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_module3_submission_per_session_student",
             )
         ]
         verbose_name = "Module 3 submission"
         verbose_name_plural = "Module 3 submissions"
 
     def __str__(self) -> str:
-        return f"M3-{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"M3-{self.student} - {self.session.session_code}"
 
     def calculate_score(self) -> int:
         score = 0
@@ -317,7 +297,6 @@ class Module3Submission(models.Model):
         return score
 
     def save(self, *args, **kwargs):
-        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
 
@@ -391,10 +370,6 @@ class Module4Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module4_submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module4_submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -441,15 +416,15 @@ class Module4Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_module4_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_module4_submission_per_session_student",
             )
         ]
         verbose_name = "Module 4 submission"
         verbose_name_plural = "Module 4 submissions"
 
     def __str__(self) -> str:
-        return f"M4-{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"M4-{self.student} - {self.session.session_code}"
 
     def calculate_score(self) -> int:
         score = 0
@@ -470,7 +445,6 @@ class Module4Submission(models.Model):
         return score
 
     def save(self, *args, **kwargs):
-        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
 
@@ -530,10 +504,6 @@ class Module5Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module5_submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module5_submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -575,15 +545,15 @@ class Module5Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_module5_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_module5_submission_per_session_student",
             )
         ]
         verbose_name = "Module 5 submission"
         verbose_name_plural = "Module 5 submissions"
 
     def __str__(self) -> str:
-        return f"M5-{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"M5-{self.student} - {self.session.session_code}"
 
     def calculate_score(self) -> int:
         score = 0
@@ -604,7 +574,6 @@ class Module5Submission(models.Model):
         return score
 
     def save(self, *args, **kwargs):
-        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
 
@@ -690,10 +659,6 @@ class Module6Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module6_submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module6_submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -735,15 +700,15 @@ class Module6Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_module6_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_module6_submission_per_session_student",
             )
         ]
         verbose_name = "Module 6 submission"
         verbose_name_plural = "Module 6 submissions"
 
     def __str__(self) -> str:
-        return f"M6-{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"M6-{self.student} - {self.session.session_code}"
 
     def calculate_score(self) -> int:
         score = 0
@@ -764,7 +729,6 @@ class Module6Submission(models.Model):
         return score
 
     def save(self, *args, **kwargs):
-        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
 
@@ -853,10 +817,6 @@ class Module7Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module7_submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module7_submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -898,15 +858,15 @@ class Module7Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_module7_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_module7_submission_per_session_student",
             )
         ]
         verbose_name = "Module 7 submission"
         verbose_name_plural = "Module 7 submissions"
 
     def __str__(self) -> str:
-        return f"M7-{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"M7-{self.student} - {self.session.session_code}"
 
     def calculate_score(self) -> int:
         score = 0
@@ -927,7 +887,6 @@ class Module7Submission(models.Model):
         return score
 
     def save(self, *args, **kwargs):
-        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
 
@@ -984,10 +943,6 @@ class Module8Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module8_submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module8_submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1036,15 +991,15 @@ class Module8Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_module8_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_module8_submission_per_session_student",
             )
         ]
         verbose_name = "Module 8 submission"
         verbose_name_plural = "Module 8 submissions"
 
     def __str__(self) -> str:
-        return f"M8-{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"M8-{self.student} - {self.session.session_code}"
 
     def calculate_score(self) -> int:
         score = 0
@@ -1065,7 +1020,6 @@ class Module8Submission(models.Model):
         return score
 
     def save(self, *args, **kwargs):
-        self.school_id_number_snapshot = self.school_id_number_snapshot or self.student.school_id_number
         self.computed_score = self.calculate_score()
         super().save(*args, **kwargs)
 
@@ -1079,10 +1033,6 @@ class Module1Submission(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="module1_submissions")
     session = models.ForeignKey(TrainingSession, on_delete=models.PROTECT, related_name="module1_submissions")
-    school_id_number_snapshot = models.CharField(
-        max_length=2,
-        validators=[MinLengthValidator(2), MaxLengthValidator(2), school_id_validator],
-    )
     paper_full_name = models.CharField(max_length=255)
     paper_class_level = models.CharField(max_length=100)
     paper_school_name = models.CharField(max_length=255)
@@ -1151,15 +1101,15 @@ class Module1Submission(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "school_id_number_snapshot"],
-                name="unique_module1_submission_per_session_school_id",
+                fields=["session", "student"],
+                name="unique_module1_submission_per_session_student",
             )
         ]
         verbose_name = "Module 1 submission"
         verbose_name_plural = "Module 1 submissions"
 
     def __str__(self) -> str:
-        return f"M1-{self.school_id_number_snapshot} - {self.session.session_code}"
+        return f"M1-{self.student} - {self.session.session_code}"
 
 
 class FormPresence(models.Model):
@@ -1174,7 +1124,6 @@ class FormPresence(models.Model):
     last_seen_at = models.DateTimeField(default=timezone.now, db_index=True)
     status = models.CharField(max_length=20, default=STATUS_ACTIVE)
     current_path = models.CharField(max_length=255, blank=True)
-    school_id_number = models.CharField(max_length=2, blank=True, null=True)
     class_level = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:

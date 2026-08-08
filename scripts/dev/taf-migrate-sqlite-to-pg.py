@@ -127,18 +127,18 @@ sq_students = sq_cursor.fetchall()
 student_id_map = {}
 for sq_s in sq_students:
     existing = Student.objects.filter(
-        school_id_number=sq_s["school_id_number"],
         full_name=sq_s["full_name"],
+        class_level=sq_s["class_level"],
+        group_name=sq_s["group_name"],
     ).first()
     if existing:
         student_id_map[sq_s["id"]] = existing.id
         print(f"  SKIP student id={sq_s['id']}: already exists as PG id={existing.id} ({sq_s['full_name']})")
     else:
         created = Student.objects.create(
-            school_id_number=sq_s["school_id_number"],
             full_name=sq_s["full_name"],
             class_level=sq_s["class_level"],
-            group_name=sq_s["group_name"] or "",
+            group_name=sq_s["group_name"],
         )
         student_id_map[sq_s["id"]] = created.id
         print(f"  MIGRATED student id={sq_s['id']} -> PG id={created.id} ({sq_s['full_name']})")
@@ -160,26 +160,25 @@ sub_id_map = {}
 for sq_row in sq_rows:
     row = dict(zip(columns, sq_row))
     old_id = row["id"]
-    # Already exists? Check by session + school_id_number
+    # Already exists? Check by session + student
     session_pg_id = pg_session_by_code.get(sq_sessions[row["session_id"]]["session_code"])
     if not session_pg_id:
         print(f"  SKIP M2 submission id={old_id}: session not found in PG")
-        continue
-    existing = Submission.objects.filter(
-        session_id=session_pg_id,
-        school_id_number_snapshot=row["school_id_number_snapshot"],
-    ).first()
-    if existing:
-        sub_id_map[old_id] = existing.id
-        print(f"  SKIP M2 submission id={old_id}: already exists as PG id={existing.id}")
         continue
     # Remap student FK
     new_student_id = student_id_map.get(row["student_id"])
     if not new_student_id:
         print(f"  SKIP M2 submission id={old_id}: student_id={row['student_id']} not found in PG")
         continue
+    existing = Submission.objects.filter(
+        session_id=session_pg_id,
+        student_id=new_student_id,
+    ).first()
+    if existing:
+        sub_id_map[old_id] = existing.id
+        print(f"  SKIP M2 submission id={old_id}: already exists as PG id={existing.id}")
+        continue
     obj = Submission(
-        school_id_number_snapshot=row["school_id_number_snapshot"],
         student_id=new_student_id,
         session_id=session_pg_id,
     )
@@ -223,24 +222,23 @@ for mod_class, mod_table, mod_label in [
         if not session_pg_id:
             print(f"  SKIP {mod_label} submission id={old_id}: session not found in PG")
             continue
-        existing = mod_class.objects.filter(
-            session_id=session_pg_id,
-            school_id_number_snapshot=row["school_id_number_snapshot"],
-        ).first()
-        if existing:
-            print(f"  SKIP {mod_label} submission id={old_id}: already exists as PG id={existing.id}")
-            continue
         new_student_id = student_id_map.get(row["student_id"])
         if not new_student_id:
             print(f"  SKIP {mod_label} submission id={old_id}: student_id={row['student_id']} not found in PG")
             continue
+        existing = mod_class.objects.filter(
+            session_id=session_pg_id,
+            student_id=new_student_id,
+        ).first()
+        if existing:
+            print(f"  SKIP {mod_label} submission id={old_id}: already exists as PG id={existing.id}")
+            continue
         obj = mod_class(
-            school_id_number_snapshot=row["school_id_number_snapshot"],
             student_id=new_student_id,
             session_id=session_pg_id,
         )
         for field in columns:
-            if field in ("id", "school_id_number_snapshot", "student_id", "session_id"):
+            if field in ("id", "student_id", "session_id"):
                 continue
             if field in row and row[field] is not None:
                 setattr(obj, field, row[field])
@@ -282,7 +280,6 @@ for sq_row in sq_rows:
         client_id=row["client_id"],
         status=row["status"],
         current_path=row["current_path"] or "",
-        school_id_number=row["school_id_number"],
         class_level=row["class_level"],
     )
     for field in ["started_at", "last_seen_at"]:
