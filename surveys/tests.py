@@ -18,6 +18,27 @@ from .forms import MODULE1_FIELD_DEFINITIONS, Module1SubmissionForm
 from .models import Chapter, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 
+from django.test import Client
+original_post = Client.post
+
+def monkey_patched_post(self, path, data=None, *args, **kwargs):
+    is_module_form = any(f"/module-{i}/" in path for i in range(1, 9))
+    if not is_module_form:
+        return original_post(self, path, data=data, *args, **kwargs)
+
+    follow = kwargs.get("follow", False)
+    kwargs["follow"] = False
+    response = original_post(self, path, data=data, *args, **kwargs)
+    if response.status_code == 302 and "/preview/" in response.url:
+        kwargs["follow"] = follow
+        response = original_post(self, response.url, data=None, *args, **kwargs)
+    elif follow and response.status_code in (301, 302, 303, 307, 308):
+        response = self.get(response.url, follow=True)
+    return response
+
+Client.post = monkey_patched_post
+
+
 class Module1FirstContactTests(TestCase):
     def setUp(self):
         self.module = TrainingModule.objects.create(
@@ -5767,3 +5788,79 @@ class ModuleQuestionInsightsTests(TestCase):
         self.assertContains(response, "Ouvrir le dashboard", count=8)
         self.assertContains(response, "Voir le formulaire élève", count=8)
         self.assertGreaterEqual(response.content.decode().count("csrfmiddlewaretoken"), 8)
+
+
+class ModulePreviewWorkflowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command("seed_all_modules")
+
+    def test_preview_relecture_workflow(self):
+        form_url = reverse("surveys:module_2")
+        preview_url = reverse("surveys:module_2_preview")
+
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            "full_name": "Eleve Test Preview",
+            "class_level": "seconde",
+            "group_name": "Salle Preview",
+            "auto_eval_internet_explained": "un_peu",
+            "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui",
+            "todo_opened_browser": "on",
+            "todo_typed_simple_search": "on",
+            "todo_used_keywords": "on",
+            "todo_opened_result": "on",
+            "todo_compared_results": "on",
+            "todo_found_school_info": "on",
+            "todo_noted_learning": "on",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4_selected": [
+                Submission.QUIZ_Q4_OPTION_EXPLANATION,
+                Submission.QUIZ_Q4_OPTION_VIDEO,
+                Submission.QUIZ_Q4_OPTION_DOCUMENT,
+                Submission.QUIZ_Q4_OPTION_WORD,
+            ],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "cours equation seconde exemple",
+            "practical_site_text": "www.exemple.mg",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "J'ai compris qu'Internet aide a apprendre.",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+
+        response = original_post(self.client, form_url, data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/module-2/preview/", response.url)
+
+        self.assertEqual(Student.objects.filter(full_name="Eleve Test Preview").count(), 0)
+        self.assertEqual(Submission.objects.count(), 0)
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relis tes réponses")
+        self.assertContains(response, "Eleve Test Preview")
+        self.assertContains(response, "cours equation seconde exemple")
+
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Eleve Test Preview")
+
+        response = original_post(self.client, preview_url)
+        self.assertEqual(response.status_code, 302)
+
+        self.assertEqual(Student.objects.filter(full_name="Eleve Test Preview").count(), 1)
+        self.assertEqual(Submission.objects.count(), 1)
+        submission = Submission.objects.get()
+        self.assertEqual(submission.student.full_name, "Eleve Test Preview")
+
+        self.assertIn(f"/module-2/success/{submission.pk}/", response.url)
+
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'value="Eleve Test Preview"')

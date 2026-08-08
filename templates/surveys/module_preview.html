@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Relire mes réponses — {{ module.title }}{% endblock %}
+{% block page_header %}{% endblock %}
+{% block main_nav %}
+    {% include "surveys/partials/nav_student.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid student-preview-page">
+    {% url 'surveys:home' as home_url %}
+    {% url 'surveys:student_modules' as modules_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label="Relecture" %}
+
+    <div class="card header-card" style="margin-bottom: 2rem;">
+        <h1 style="color: var(--navy-800, #0f2d59); margin-bottom: 0.5rem;">Relis tes réponses</h1>
+        <p style="color: var(--slate-600, #4b5563); font-size: 1.1rem; line-height: 1.5;">
+            Prends le temps de bien relire tes réponses ci-dessous avant de les enregistrer. 
+            Si tu veux corriger quelque chose, clique sur <strong>"Modifier mes réponses"</strong>.
+        </p>
+    </div>
+
+    <form method="post" class="card form-card" style="padding: 2rem;">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 6px; background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="preview-questions-list" style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2.5rem;">
+            {% for item in preview_items %}
+                <div class="preview-question-item" style="padding-bottom: 1.25rem; border-bottom: 1px solid #e5e7eb;">
+                    <div class="question-label" style="font-weight: 600; color: var(--navy-900, #0b2240); font-size: 1.05rem; margin-bottom: 0.5rem;">
+                        {{ item.label }}
+                    </div>
+                    <div class="student-answer" style="color: #1e3a8a; font-size: 1.1rem; padding-left: 0.5rem; border-left: 3px solid var(--accent-light, #3b82f6); line-height: 1.5; white-space: pre-line;">
+                        {{ item.value }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="preview-actions" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url edit_url_name %}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 48px; flex: 1; min-width: 200px; text-decoration: none; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 8px; font-weight: 600; font-size: 1.05rem; transition: background-color 0.2s;">
+                Modifier mes réponses
+            </a>
+            <button type="submit" class="primary-button" style="flex: 2; min-width: 250px; min-height: 48px; font-weight: 600; font-size: 1.05rem;">
+                Confirmer et envoyer
+            </button>
+        </div>
+    </form>
+</main>
+{% endblock %}
