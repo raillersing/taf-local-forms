@@ -521,6 +521,9 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_1_preview_data")
         sub_id_in_session = request.session.get("last_module1_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module1_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -663,7 +666,8 @@ def module_1_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_1_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module1_submission_id") != submission_id:
+    sess_key = "last_module1_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_1")
     submission = get_object_or_404(Module1Submission.objects.select_related("session", "student"), pk=submission_id)
     return render(request, "surveys/module_1_success.html", {"submission": submission})
@@ -851,6 +855,9 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_2_preview_data")
         sub_id_in_session = request.session.get("last_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -983,7 +990,8 @@ def module_2_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_2_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_submission_id") != submission_id:
+    sess_key = "last_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_2")
     submission = get_object_or_404(Submission.objects.select_related("session", "student"), pk=submission_id)
     return render(request, "surveys/module_2_success.html", {"submission": submission})
@@ -1154,6 +1162,9 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_5_preview_data")
         sub_id_in_session = request.session.get("last_module5_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module5_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -1286,7 +1297,8 @@ def module_5_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_5_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module5_submission_id") != submission_id:
+    sess_key = "last_module5_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_5")
     submission = get_object_or_404(
         Module5Submission.objects.select_related("session", "student"), pk=submission_id
@@ -1501,6 +1513,9 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_6_preview_data")
         sub_id_in_session = request.session.get("last_module6_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module6_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -1633,7 +1648,8 @@ def module_6_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_6_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module6_submission_id") != submission_id:
+    sess_key = "last_module6_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_6")
     submission = get_object_or_404(
         Module6Submission.objects.select_related("session", "student"), pk=submission_id
@@ -1980,6 +1996,9 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_3_preview_data")
         sub_id_in_session = request.session.get("last_module3_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module3_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -2112,7 +2131,8 @@ def module_3_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_3_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module3_submission_id") != submission_id:
+    sess_key = "last_module3_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_3")
     submission = get_object_or_404(
         Module3Submission.objects.select_related("session", "student"), pk=submission_id
@@ -2340,6 +2360,9 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_4_preview_data")
         sub_id_in_session = request.session.get("last_module4_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module4_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -2472,7 +2495,8 @@ def module_4_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_4_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module4_submission_id") != submission_id:
+    sess_key = "last_module4_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_4")
     submission = get_object_or_404(
         Module4Submission.objects.select_related("session", "student"), pk=submission_id
@@ -2705,6 +2729,9 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_7_preview_data")
         sub_id_in_session = request.session.get("last_module7_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module7_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -2837,7 +2864,8 @@ def module_7_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_7_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module7_submission_id") != submission_id:
+    sess_key = "last_module7_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_7")
     submission = get_object_or_404(
         Module7Submission.objects.select_related("session", "student"), pk=submission_id
@@ -3054,6 +3082,9 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
     else:
         preview_data = request.session.get("module_8_preview_data")
         sub_id_in_session = request.session.get("last_module8_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module8_submission_id", None)
+            sub_id_in_session = None
 
         initial_data = {}
         if sub_id_in_session:
@@ -3186,7 +3217,8 @@ def module_8_preview(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 def module_8_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module8_submission_id") != submission_id:
+    sess_key = "last_module8_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_8")
     submission = get_object_or_404(
         Module8Submission.objects.select_related("session", "student"), pk=submission_id
