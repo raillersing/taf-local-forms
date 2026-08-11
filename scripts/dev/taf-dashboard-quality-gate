@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Read-only validation gate for dashboard/data-reliability slices.
+
+set -euo pipefail
+
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$PROJECT_DIR"
+
+PYTHON_BIN=".venv-wsl/bin/python"
+if [[ ! -x "$PYTHON_BIN" ]]; then
+    PYTHON_BIN="python3"
+fi
+
+echo "[gate] diff check"
+git diff --check
+
+echo "[gate] Django system check"
+"$PYTHON_BIN" manage.py check
+
+echo "[gate] migration dry-run"
+"$PYTHON_BIN" manage.py makemigrations --check --dry-run
+
+echo "[gate] dashboard/data tests"
+"$PYTHON_BIN" manage.py test \
+    surveys.tests.ReliableDashboardMetricsTests \
+    surveys.tests.DashboardAccessTests \
+    surveys.tests.RedesignUITests \
+    --noinput
+
+echo "[gate] compose config (output suppressed)"
+docker compose config >/dev/null
+
+if [[ "${1:-}" == "--full" ]]; then
+    echo "[gate] full surveys suite"
+    "$PYTHON_BIN" manage.py test surveys.tests --noinput
+fi
+
+echo "[gate] PASS"

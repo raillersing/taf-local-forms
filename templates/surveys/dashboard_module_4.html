@@ -34,6 +34,7 @@
     <section class="card dashboard-module-panel">
         <h2>Filtres</h2>
         <form method="get" class="filter-grid">
+            {% include "surveys/partials/dashboard_session_filter.html" %}
             <div class="field">
                 <label for="class_level">Classe / niveau</label>
                 <select name="class_level" id="class_level">
@@ -56,7 +57,7 @@
     <section id="todo" class="card dashboard-module-panel">
         <div class="section-row">
             <h2>Progression des activités</h2>
-            <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}">Exporter le CSV</a>
+            <a class="text-link" href="{% url 'surveys:export_module_4_csv' %}?session_id={{ selected_session_id }}">Exporter la séance</a>
         </div>
         <div class="progress-list">
             {% for item in todo_completion %}

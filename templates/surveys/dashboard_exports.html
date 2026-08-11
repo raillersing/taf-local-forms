@@ -31,8 +31,8 @@
                 <thead>
                     <tr>
                         <th>Fichier</th>
-                        <th>Lignes</th>
-                        <th>Session</th>
+                        <th>Réponses historiques</th>
+                        <th>Session active</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -40,7 +40,7 @@
                     {% for item in module_list %}
                     <tr>
                         <td><strong>module-{{ item.module_number }}.csv</strong><br><span class="muted">{{ item.display_title }}</span></td>
-                        <td>{{ item.submission_count }}</td>
+                        <td>{{ item.historical_submission_count }}</td>
                         <td>
                             {% if item.has_active_session %}
                                 {% if item.accepting_responses %}

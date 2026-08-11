@@ -1,0 +1,12 @@
+<div class="field">
+    <label for="session_id">Séance</label>
+    <select name="session_id" id="session_id">
+        {% for session in available_sessions %}
+            <option value="{{ session.pk }}"{% if selected_session_id == session.pk %} selected{% endif %}>
+                {{ session.session_code }} — {{ session.date|date:"d/m/Y" }}{% if session.is_active %} · active{% endif %}
+            </option>
+        {% empty %}
+            <option value="">Aucune séance</option>
+        {% endfor %}
+    </select>
+</div>

@@ -15,6 +15,14 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import MODULE1_FIELD_DEFINITIONS, Module1SubmissionForm
+from .dashboard_metrics import (
+    dashboard_totals,
+    find_student_by_identity,
+    module_score_metrics,
+    normalize_student_identity,
+    sessions_with_responses_count,
+    submission_queryset,
+)
 from .models import Chapter, EditRequest, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 
@@ -37,6 +45,148 @@ def monkey_patched_post(self, path, data=None, *args, **kwargs):
     return response
 
 Client.post = monkey_patched_post
+
+
+class ReliableDashboardMetricsTests(TestCase):
+    def setUp(self):
+        self.module_1 = TrainingModule.objects.create(code="MODULE_1", title="Module 1")
+        self.module_2 = TrainingModule.objects.create(code="MODULE_2", title="Module 2")
+        self.session_1 = TrainingSession.objects.create(
+            module=self.module_1,
+            date=date(2026, 8, 11),
+            location="Lycée test",
+            trainer_name="Formatrice",
+            session_code="M1-METRICS-ACTIVE",
+            is_active=True,
+        )
+        self.session_2 = TrainingSession.objects.create(
+            module=self.module_2,
+            date=date(2026, 8, 11),
+            location="Lycée test",
+            trainer_name="Formatrice",
+            session_code="M2-METRICS-ACTIVE",
+            is_active=True,
+        )
+        self.old_session_2 = TrainingSession.objects.create(
+            module=self.module_2,
+            date=date(2026, 8, 10),
+            location="Lycée test",
+            trainer_name="Formatrice",
+            session_code="M2-METRICS-HISTORY",
+            is_active=False,
+        )
+
+    def create_module_2_submission(self, student, session):
+        return Submission.objects.create(
+            student=student,
+            session=session,
+            auto_eval_internet_explained="un_peu",
+            auto_eval_learning_usage="parfois",
+            auto_eval_open_browser="oui",
+            quiz_q1="faux",
+            quiz_q2="vrai",
+            quiz_q3="vrai",
+            quiz_q4_selected=list(Submission.QUIZ_Q4_CORRECT_OPTIONS),
+            quiz_q5="cours_equation_seconde_exemple",
+            practical_search_text="cours test",
+            practical_subject="mathematiques",
+            feedback_understood_today="Compris",
+            feedback_confidence="oui",
+        )
+
+    def test_identity_uses_normalized_name_and_class(self):
+        student = Student.objects.create(full_name="  Rakoto   Aina ", class_level="seconde")
+        other_class = Student.objects.create(full_name="Rakoto Aina", class_level="premiere")
+
+        self.assertEqual(
+            normalize_student_identity("rakoto aina", "seconde"),
+            normalize_student_identity(student.full_name, student.class_level),
+        )
+        self.assertEqual(find_student_by_identity("RAKOTO  AINA", "seconde"), student)
+        self.assertEqual(find_student_by_identity("Rakoto Aina", "premiere"), other_class)
+
+    def test_active_and_historical_totals_count_unique_people(self):
+        student_module_2 = Student.objects.create(full_name="Rakoto Aina", class_level="seconde")
+        duplicate_identity = Student.objects.create(full_name=" rakoto   aina ", class_level="seconde")
+        same_name_other_class = Student.objects.create(full_name="RAKOTO AINA", class_level="premiere")
+        old_duplicate = Student.objects.create(full_name="Rakoto Aina", class_level="seconde")
+
+        self.create_module_2_submission(student_module_2, self.session_2)
+        Module1Submission.objects.create(
+            student=duplicate_identity,
+            session=self.session_1,
+            paper_full_name="rakoto aina",
+            paper_class_level="Seconde",
+            paper_school_name="Lycée test",
+        )
+        Module1Submission.objects.create(
+            student=same_name_other_class,
+            session=self.session_1,
+            paper_full_name="Rakoto Aina",
+            paper_class_level="Première",
+            paper_school_name="Lycée test",
+        )
+        self.create_module_2_submission(old_duplicate, self.old_session_2)
+
+        active = dashboard_totals(active_only=True)
+        historical = dashboard_totals(active_only=False)
+
+        self.assertEqual(active.submissions, 3)
+        self.assertEqual(active.unique_students, 2)
+        self.assertEqual(historical.submissions, 4)
+        self.assertEqual(historical.unique_students, 2)
+        self.assertEqual(sessions_with_responses_count(), 3)
+
+    def test_module_1_is_excluded_from_score_metrics(self):
+        student = Student.objects.create(full_name="Élève Test", class_level="seconde")
+        Module1Submission.objects.create(
+            student=student,
+            session=self.session_1,
+            paper_full_name="Élève Test",
+            paper_class_level="Seconde",
+            paper_school_name="Lycée test",
+        )
+
+        score_sum, possible, percentage = module_score_metrics(
+            "MODULE_1", submission_queryset("MODULE_1", self.session_1)
+        )
+
+        self.assertEqual(score_sum, 0)
+        self.assertEqual(possible, 0)
+        self.assertIsNone(percentage)
+
+    def test_module_dashboard_defaults_to_active_session_and_can_switch_history(self):
+        trainer = get_user_model().objects.create_user(
+            username="metrics-trainer",
+            password="metrics-password",
+        )
+        active_student = Student.objects.create(full_name="Active Student", class_level="seconde")
+        history_student = Student.objects.create(full_name="History Student", class_level="seconde")
+        self.create_module_2_submission(active_student, self.session_2)
+        self.create_module_2_submission(history_student, self.old_session_2)
+        self.client.login(username="metrics-trainer", password="metrics-password")
+
+        response = self.client.get(reverse("surveys:dashboard_module_2"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["total_submissions"], 1)
+        self.assertEqual(response.context["selected_session"], self.session_2)
+
+        response = self.client.get(
+            reverse("surveys:dashboard_module_2"),
+            {"session_id": self.old_session_2.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["total_submissions"], 1)
+        self.assertEqual(response.context["selected_session"], self.old_session_2)
+
+        export = self.client.get(
+            reverse("surveys:export_module_2_csv"),
+            {"session_id": self.old_session_2.pk},
+        )
+        export_body = export.content.decode("utf-8")
+        self.assertEqual(export.status_code, 200)
+        self.assertIn("History Student", export_body)
+        self.assertNotIn("Active Student", export_body)
 
 
 class Module1FirstContactTests(TestCase):
@@ -4992,9 +5142,18 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "toutes les 10 secondes")
         self.assertContains(response, "setInterval")
 
-    def test_legacy_settings_url_redirects_to_network(self):
+    def test_settings_page_remains_available_for_trainer(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_settings"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Configuration")
+
+    def test_settings_can_redirect_to_network_after_saving(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.post(
+            reverse("surveys:dashboard_settings"),
+            {"next": "network"},
+        )
         self.assertRedirects(response, reverse("surveys:dashboard_network"))
 
     def test_dashboard_home_restores_cockpit_and_preserved_tools(self):

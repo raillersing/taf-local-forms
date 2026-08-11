@@ -24,6 +24,14 @@ from .constants import (
     get_module_form_url,
     get_module_metadata,
 )
+from .dashboard_metrics import (
+    active_session_for_module,
+    dashboard_totals,
+    find_student_by_identity,
+    module_score_metrics,
+    sessions_with_responses_count,
+    submission_queryset,
+)
 from .forms import (
     LearningResourceForm,
     MODULE1_FIELD_DEFINITIONS,
@@ -264,44 +272,9 @@ def _prototype_module_title(module: TrainingModule) -> str:
     return module.title
 
 
-def _submission_count_for_module(module_code: str) -> int:
-    counters = {
-        "MODULE_2": Submission.objects.count,
-        "MODULE_1": Module1Submission.objects.count,
-        "MODULE_3": Module3Submission.objects.count,
-        "MODULE_4": Module4Submission.objects.count,
-        "MODULE_5": Module5Submission.objects.count,
-        "MODULE_6": Module6Submission.objects.count,
-        "MODULE_7": Module7Submission.objects.count,
-        "MODULE_8": Module8Submission.objects.count,
-    }
-    counter = counters.get(module_code)
-    return counter() if counter else 0
-
-
 def _max_score_for_module(module_code: str) -> int:
     meta = MODULE_METADATA.get(module_code, {})
     return meta.get("max_score", 0)
-
-
-def _score_totals_for_module(module_code: str, max_score: int) -> tuple[int, int]:
-    if module_code == "MODULE_1":
-        count = Module1Submission.objects.count()
-        return 0, count * max_score
-    model = {
-        "MODULE_2": Submission,
-        "MODULE_3": Module3Submission,
-        "MODULE_4": Module4Submission,
-        "MODULE_5": Module5Submission,
-        "MODULE_6": Module6Submission,
-        "MODULE_7": Module7Submission,
-        "MODULE_8": Module8Submission,
-    }.get(module_code)
-    if model is None:
-        return 0, 0
-    total = model.objects.aggregate(total=Sum("computed_score"))["total"] or 0
-    count = model.objects.count()
-    return total, count * max_score
 
 
 def _published_resources_queryset():
@@ -314,17 +287,8 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     net_ctx = get_network_access_context(request)
     published_resources_count = _published_resources_queryset().count()
     total_resources_count = LearningResource.objects.count()
-    total_submissions = (
-        Submission.objects.count()
-        + Module1Submission.objects.count()
-        + Module3Submission.objects.count()
-        + Module4Submission.objects.count()
-        + Module5Submission.objects.count()
-        + Module6Submission.objects.count()
-        + Module7Submission.objects.count()
-        + Module8Submission.objects.count()
-    )
-    total_students = Student.objects.count()
+    active_totals = dashboard_totals(active_only=True)
+    historical_totals = dashboard_totals(active_only=False)
 
     modules = TrainingModule.objects.all().order_by("code")
     module_list = []
@@ -334,14 +298,16 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     global_score_max = 0
     for mod in modules:
         module_number = mod.code.removeprefix("MODULE_")
-        active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        active_session = active_session_for_module(mod.code)
         accepting = active_session.accepting_responses if active_session else False
         if accepting:
             modules_open += 1
-        submission_count = _submission_count_for_module(mod.code)
+        active_queryset = submission_queryset(mod.code, active_session) if active_session else submission_queryset(mod.code).none()
+        historical_queryset = submission_queryset(mod.code)
+        submission_count = active_queryset.count()
+        historical_submission_count = historical_queryset.count()
         max_score = _max_score_for_module(mod.code)
-        module_score_sum, module_score_max = _score_totals_for_module(mod.code, max_score)
-        avg_score = round((module_score_sum / module_score_max) * 100, 1) if module_score_max else 0
+        module_score_sum, module_score_max, avg_score = module_score_metrics(mod.code, active_queryset)
         global_score_sum += module_score_sum
         global_score_max += module_score_max
         module_item = {
@@ -353,8 +319,10 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
             "accepting_responses": accepting,
             "active_session_id": active_session.pk if active_session else None,
             "submission_count": submission_count,
+            "historical_submission_count": historical_submission_count,
             "max_score": max_score,
             "average_score": avg_score,
+            "score_available": avg_score is not None,
             "score_sum": module_score_sum,
             "score_max": module_score_max,
         }
@@ -369,8 +337,11 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         student_access_url = net_ctx.get("student_form_url", "")
 
     return {
-        "total_submissions": total_submissions,
-        "total_students": total_students,
+        "total_submissions": active_totals.submissions,
+        "total_students": active_totals.unique_students,
+        "historical_submissions": historical_totals.submissions,
+        "historical_students": historical_totals.unique_students,
+        "historical_sessions": sessions_with_responses_count(),
         "average_score": average_score,
         "module_list": module_list,
         "modules_open": modules_open,
@@ -382,6 +353,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         "has_lan_host": bool(net_ctx.get("configured_host")),
         "published_resources_count": published_resources_count,
         "total_resources_count": total_resources_count,
+        "metrics_updated_at": timezone.now(),
     }
 
 
@@ -597,28 +569,25 @@ def module_1_preview(request: HttpRequest) -> HttpResponse:
             except Module1Submission.DoesNotExist:
                 pass
 
-        if Module1Submission.objects.filter(session=session, paper_full_name=paper_full_name).exists():
-            if not submission or submission.paper_full_name != paper_full_name:
+        paper_class = form.cleaned_data["paper_class_level"].strip().casefold()
+        if "seconde" in paper_class:
+            student_class_level = Student.CLASS_LEVEL_SECONDE
+        elif "première" in paper_class or "premiere" in paper_class:
+            student_class_level = Student.CLASS_LEVEL_PREMIERE
+        else:
+            student_class_level = Student.CLASS_LEVEL_AUTRE
+
+        student = find_student_by_identity(paper_full_name, student_class_level)
+        if student and Module1Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
                 has_duplicate = True
 
         if has_duplicate:
-            form.add_error("paper_full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            form.add_error("paper_full_name", "Une réponse existe déjà pour ce nom et cette classe pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
         else:
-            paper_class = form.cleaned_data["paper_class_level"].strip().casefold()
-            if "seconde" in paper_class:
-                student_class_level = Student.CLASS_LEVEL_SECONDE
-            elif "première" in paper_class or "premiere" in paper_class:
-                student_class_level = Student.CLASS_LEVEL_PREMIERE
-            else:
-                student_class_level = Student.CLASS_LEVEL_AUTRE
-
-            student = Student.objects.filter(
-                full_name=paper_full_name,
-                class_level=student_class_level,
-            ).first()
             if not student:
                 student = Student.objects.create(
-                    full_name=paper_full_name,
+                    full_name=" ".join(paper_full_name.split()),
                     class_level=student_class_level,
                     group_name="",
                 )
@@ -686,7 +655,13 @@ def module_1_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 @never_cache
 @login_required
 def dashboard_module_1(request: HttpRequest) -> HttpResponse:
-    submissions = Module1Submission.objects.select_related("student", "session").filter(session__module__code="MODULE_1").order_by("-created_at")
+    session_context = _dashboard_session_context(request, "MODULE_1")
+    selected_session = session_context["selected_session"]
+    submissions = (
+        Module1Submission.objects.select_related("student", "session")
+        .filter(session=selected_session).order_by("-created_at") if selected_session else
+        Module1Submission.objects.none()
+    )
     rows = []
     for submission in submissions:
         rows.append({
@@ -699,6 +674,7 @@ def dashboard_module_1(request: HttpRequest) -> HttpResponse:
         "total_count": submissions.count(),
         "question_insights": _build_question_insights(submissions, Module1SubmissionForm, MODULE1_FIELD_DEFINITIONS),
         "breadcrumbs": [("Modules", "surveys:dashboard_modules"), "Module 1"],
+        **session_context,
     })
 
 
@@ -711,10 +687,18 @@ def _module1_export_value(field_name, value):
     return choice_map.get(field_name, {}).get(value, value or "")
 
 
+def _filter_export_session(request: HttpRequest, module_code: str, submissions):
+    session_id = request.GET.get("session_id", "").strip()
+    if session_id.isdigit():
+        return submissions.filter(session_id=int(session_id), session__module__code=module_code)
+    return submissions
+
+
 @never_cache
 @login_required
 def export_module_1_csv(request: HttpRequest) -> HttpResponse:
     submissions = Module1Submission.objects.select_related("student", "session").filter(session__module__code="MODULE_1").order_by("-created_at")
+    submissions = _filter_export_session(request, "MODULE_1", submissions)
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="module-1-prise-contact.csv"'
     response.write("\ufeff")
@@ -830,7 +814,7 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
         # Check duplicate before full form validation
         has_duplicate = False
         if full_name:
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            student = find_student_by_identity(full_name, class_level)
             if student:
                 ex_sub = Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -938,7 +922,7 @@ def module_2_preview(request: HttpRequest) -> HttpResponse:
             except Submission.DoesNotExist:
                 pass
 
-        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        student = find_student_by_identity(full_name, class_level)
         if student and Submission.objects.filter(session=session, student=student).exists():
             if not submission or submission.student != student:
                 has_duplicate = True
@@ -948,7 +932,7 @@ def module_2_preview(request: HttpRequest) -> HttpResponse:
         else:
             if not student:
                 student = Student.objects.create(
-                    full_name=full_name,
+                    full_name=" ".join(full_name.split()),
                     class_level=class_level,
                     group_name=group_name,
                 )
@@ -1125,7 +1109,7 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
         # Check duplicate before full form validation
         has_duplicate = False
         if full_name:
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            student = find_student_by_identity(full_name, class_level)
             if student:
                 ex_sub = Module5Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -1233,7 +1217,7 @@ def module_5_preview(request: HttpRequest) -> HttpResponse:
             except Module5Submission.DoesNotExist:
                 pass
 
-        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        student = find_student_by_identity(full_name, class_level)
         if student and Module5Submission.objects.filter(session=session, student=student).exists():
             if not submission or submission.student != student:
                 has_duplicate = True
@@ -1243,7 +1227,7 @@ def module_5_preview(request: HttpRequest) -> HttpResponse:
         else:
             if not student:
                 student = Student.objects.create(
-                    full_name=full_name,
+                    full_name=" ".join(full_name.split()),
                     class_level=class_level,
                     group_name=group_name,
                 )
@@ -1312,14 +1296,46 @@ def module_5_success(request: HttpRequest, submission_id: int) -> HttpResponse:
     return render(request, "surveys/module_5_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60], "max_score": meta.get("max_score", 7)})
 
 
+def _select_dashboard_session(request: HttpRequest, module_code: str):
+    sessions = list(
+        TrainingSession.objects.filter(module__code=module_code)
+        .select_related("module")
+        .order_by("-is_active", "-date", "session_code")
+    )
+    selected_session = None
+    requested_id = request.GET.get("session_id", "").strip()
+    if requested_id.isdigit():
+        selected_session = next(
+            (session for session in sessions if session.pk == int(requested_id)),
+            None,
+        )
+    if selected_session is None:
+        selected_session = next((session for session in sessions if session.is_active), None)
+    if selected_session is None and sessions:
+        selected_session = sessions[0]
+    return selected_session, sessions
+
+
+def _dashboard_session_context(request: HttpRequest, module_code: str) -> dict:
+    selected_session, sessions = _select_dashboard_session(request, module_code)
+    return {
+        "selected_session": selected_session,
+        "available_sessions": sessions,
+        "selected_session_id": selected_session.pk if selected_session else "",
+    }
+
+
 @never_cache
 @login_required
 def dashboard_module_5(request: HttpRequest) -> HttpResponse:
+    session_context = _dashboard_session_context(request, "MODULE_5")
+    selected_session = session_context["selected_session"]
     submissions = (
         Module5Submission.objects.select_related("student", "session", "session__module")
-        .filter(session__module__code="MODULE_5")
-        .order_by("-created_at")
+        .filter(session=selected_session) if selected_session else
+        Module5Submission.objects.none()
     )
+    submissions = submissions.order_by("-created_at")
     class_level = request.GET.get("class_level", "").strip()
     group_name = request.GET.get("group_name", "").strip()
     if class_level:
@@ -1353,6 +1369,7 @@ def dashboard_module_5(request: HttpRequest) -> HttpResponse:
         "class_level_choices": Student.CLASS_LEVEL_CHOICES,
         "selected_class_level": class_level,
         "selected_group_name": group_name,
+        **session_context,
     }
     context["question_insights"] = _build_question_insights(submissions, Module5SubmissionForm)
     return render(request, "surveys/dashboard_module_5.html", context)
@@ -1366,6 +1383,7 @@ def export_module_5_csv(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_5")
         .order_by("created_at")
     )
+    submissions = _filter_export_session(request, "MODULE_5", submissions)
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="module-5.csv"'
     writer = csv.writer(response)
@@ -1484,7 +1502,7 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
         # Check duplicate before full form validation
         has_duplicate = False
         if full_name:
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            student = find_student_by_identity(full_name, class_level)
             if student:
                 ex_sub = Module6Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -1592,7 +1610,7 @@ def module_6_preview(request: HttpRequest) -> HttpResponse:
             except Module6Submission.DoesNotExist:
                 pass
 
-        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        student = find_student_by_identity(full_name, class_level)
         if student and Module6Submission.objects.filter(session=session, student=student).exists():
             if not submission or submission.student != student:
                 has_duplicate = True
@@ -1602,7 +1620,7 @@ def module_6_preview(request: HttpRequest) -> HttpResponse:
         else:
             if not student:
                 student = Student.objects.create(
-                    full_name=full_name,
+                    full_name=" ".join(full_name.split()),
                     class_level=class_level,
                     group_name=group_name,
                 )
@@ -1674,10 +1692,12 @@ def module_6_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 @never_cache
 @login_required
 def dashboard_module_6(request: HttpRequest) -> HttpResponse:
+    session_context = _dashboard_session_context(request, "MODULE_6")
+    selected_session = session_context["selected_session"]
     submissions = (
         Module6Submission.objects.select_related("student", "session", "session__module")
-        .filter(session__module__code="MODULE_6")
-        .order_by("-created_at")
+        .filter(session=selected_session).order_by("-created_at") if selected_session else
+        Module6Submission.objects.none()
     )
     class_level = request.GET.get("class_level", "").strip()
     group_name = request.GET.get("group_name", "").strip()
@@ -1714,6 +1734,7 @@ def dashboard_module_6(request: HttpRequest) -> HttpResponse:
         "selected_group_name": group_name,
     }
     context["question_insights"] = _build_question_insights(submissions, Module6SubmissionForm)
+    context.update(session_context)
     return render(request, "surveys/dashboard_module_6.html", context)
 
 
@@ -1725,6 +1746,7 @@ def export_module_6_csv(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_6")
         .order_by("created_at")
     )
+    submissions = _filter_export_session(request, "MODULE_6", submissions)
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="module-6.csv"'
     writer = csv.writer(response)
@@ -1809,10 +1831,12 @@ def export_module_6_csv(request: HttpRequest) -> HttpResponse:
 @never_cache
 @login_required
 def dashboard_module_2(request: HttpRequest) -> HttpResponse:
+    session_context = _dashboard_session_context(request, "MODULE_2")
+    selected_session = session_context["selected_session"]
     submissions = (
         Submission.objects.select_related("student", "session", "session__module")
-        .filter(session__module__code="MODULE_2")
-        .order_by("-created_at")
+        .filter(session=selected_session).order_by("-created_at") if selected_session else
+        Submission.objects.none()
     )
     class_level = request.GET.get("class_level", "").strip()
     group_name = request.GET.get("group_name", "").strip()
@@ -1849,6 +1873,7 @@ def dashboard_module_2(request: HttpRequest) -> HttpResponse:
         "selected_group_name": group_name,
     }
     context["question_insights"] = _build_question_insights(submissions, Module2SubmissionForm)
+    context.update(session_context)
     return render(request, "surveys/dashboard_module_2.html", context)
 
 
@@ -1860,6 +1885,7 @@ def export_module_2_csv(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_2")
         .order_by("created_at")
     )
+    submissions = _filter_export_session(request, "MODULE_2", submissions)
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="module-2.csv"'
     writer = csv.writer(response)
@@ -1970,7 +1996,7 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
         # Check duplicate before full form validation
         has_duplicate = False
         if full_name:
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            student = find_student_by_identity(full_name, class_level)
             if student:
                 ex_sub = Module3Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -2078,7 +2104,7 @@ def module_3_preview(request: HttpRequest) -> HttpResponse:
             except Module3Submission.DoesNotExist:
                 pass
 
-        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        student = find_student_by_identity(full_name, class_level)
         if student and Module3Submission.objects.filter(session=session, student=student).exists():
             if not submission or submission.student != student:
                 has_duplicate = True
@@ -2088,7 +2114,7 @@ def module_3_preview(request: HttpRequest) -> HttpResponse:
         else:
             if not student:
                 student = Student.objects.create(
-                    full_name=full_name,
+                    full_name=" ".join(full_name.split()),
                     class_level=class_level,
                     group_name=group_name,
                 )
@@ -2160,10 +2186,12 @@ def module_3_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 @never_cache
 @login_required
 def dashboard_module_3(request: HttpRequest) -> HttpResponse:
+    session_context = _dashboard_session_context(request, "MODULE_3")
+    selected_session = session_context["selected_session"]
     submissions = (
         Module3Submission.objects.select_related("student", "session", "session__module")
-        .filter(session__module__code="MODULE_3")
-        .order_by("-created_at")
+        .filter(session=selected_session).order_by("-created_at") if selected_session else
+        Module3Submission.objects.none()
     )
     class_level = request.GET.get("class_level", "").strip()
     group_name = request.GET.get("group_name", "").strip()
@@ -2202,6 +2230,7 @@ def dashboard_module_3(request: HttpRequest) -> HttpResponse:
         "selected_group_name": group_name,
     }
     context["question_insights"] = _build_question_insights(submissions, Module3SubmissionForm)
+    context.update(session_context)
     return render(request, "surveys/dashboard_module_3.html", context)
 
 
@@ -2213,6 +2242,7 @@ def export_module_3_csv(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_3")
         .order_by("created_at")
     )
+    submissions = _filter_export_session(request, "MODULE_3", submissions)
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="module-3.csv"'
     writer = csv.writer(response)
@@ -2335,7 +2365,7 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
         # Check duplicate before full form validation
         has_duplicate = False
         if full_name:
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            student = find_student_by_identity(full_name, class_level)
             if student:
                 ex_sub = Module4Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -2443,7 +2473,7 @@ def module_4_preview(request: HttpRequest) -> HttpResponse:
             except Module4Submission.DoesNotExist:
                 pass
 
-        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        student = find_student_by_identity(full_name, class_level)
         if student and Module4Submission.objects.filter(session=session, student=student).exists():
             if not submission or submission.student != student:
                 has_duplicate = True
@@ -2453,7 +2483,7 @@ def module_4_preview(request: HttpRequest) -> HttpResponse:
         else:
             if not student:
                 student = Student.objects.create(
-                    full_name=full_name,
+                    full_name=" ".join(full_name.split()),
                     class_level=class_level,
                     group_name=group_name,
                 )
@@ -2525,10 +2555,12 @@ def module_4_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 @never_cache
 @login_required
 def dashboard_module_4(request: HttpRequest) -> HttpResponse:
+    session_context = _dashboard_session_context(request, "MODULE_4")
+    selected_session = session_context["selected_session"]
     submissions = (
         Module4Submission.objects.select_related("student", "session", "session__module")
-        .filter(session__module__code="MODULE_4")
-        .order_by("-created_at")
+        .filter(session=selected_session).order_by("-created_at") if selected_session else
+        Module4Submission.objects.none()
     )
     class_level = request.GET.get("class_level", "").strip()
     group_name = request.GET.get("group_name", "").strip()
@@ -2573,6 +2605,7 @@ def dashboard_module_4(request: HttpRequest) -> HttpResponse:
         "selected_group_name": group_name,
     }
     context["question_insights"] = _build_question_insights(submissions, Module4SubmissionForm)
+    context.update(session_context)
     return render(request, "surveys/dashboard_module_4.html", context)
 
 
@@ -2584,6 +2617,7 @@ def export_module_4_csv(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_4")
         .order_by("created_at")
     )
+    submissions = _filter_export_session(request, "MODULE_4", submissions)
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="module-4.csv"'
     writer = csv.writer(response)
@@ -2712,7 +2746,7 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
         # Check duplicate before full form validation
         has_duplicate = False
         if full_name:
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            student = find_student_by_identity(full_name, class_level)
             if student:
                 ex_sub = Module7Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -2820,7 +2854,7 @@ def module_7_preview(request: HttpRequest) -> HttpResponse:
             except Module7Submission.DoesNotExist:
                 pass
 
-        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        student = find_student_by_identity(full_name, class_level)
         if student and Module7Submission.objects.filter(session=session, student=student).exists():
             if not submission or submission.student != student:
                 has_duplicate = True
@@ -2830,7 +2864,7 @@ def module_7_preview(request: HttpRequest) -> HttpResponse:
         else:
             if not student:
                 student = Student.objects.create(
-                    full_name=full_name,
+                    full_name=" ".join(full_name.split()),
                     class_level=class_level,
                     group_name=group_name,
                 )
@@ -2902,10 +2936,12 @@ def module_7_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 @never_cache
 @login_required
 def dashboard_module_7(request: HttpRequest) -> HttpResponse:
+    session_context = _dashboard_session_context(request, "MODULE_7")
+    selected_session = session_context["selected_session"]
     submissions = (
         Module7Submission.objects.select_related("student", "session", "session__module")
-        .filter(session__module__code="MODULE_7")
-        .order_by("-created_at")
+        .filter(session=selected_session).order_by("-created_at") if selected_session else
+        Module7Submission.objects.none()
     )
     class_level = request.GET.get("class_level", "").strip()
     group_name = request.GET.get("group_name", "").strip()
@@ -2942,6 +2978,7 @@ def dashboard_module_7(request: HttpRequest) -> HttpResponse:
         "selected_group_name": group_name,
     }
     context["question_insights"] = _build_question_insights(submissions, Module7SubmissionForm)
+    context.update(session_context)
     return render(request, "surveys/dashboard_module_7.html", context)
 
 
@@ -2953,6 +2990,7 @@ def export_module_7_csv(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_7")
         .order_by("created_at")
     )
+    submissions = _filter_export_session(request, "MODULE_7", submissions)
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="module-7.csv"'
     writer = csv.writer(response)
@@ -3073,7 +3111,7 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
         # Check duplicate before full form validation
         has_duplicate = False
         if full_name:
-            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            student = find_student_by_identity(full_name, class_level)
             if student:
                 ex_sub = Module8Submission.objects.filter(session=session, student=student).first()
                 if ex_sub:
@@ -3181,7 +3219,7 @@ def module_8_preview(request: HttpRequest) -> HttpResponse:
             except Module8Submission.DoesNotExist:
                 pass
 
-        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        student = find_student_by_identity(full_name, class_level)
         if student and Module8Submission.objects.filter(session=session, student=student).exists():
             if not submission or submission.student != student:
                 has_duplicate = True
@@ -3191,7 +3229,7 @@ def module_8_preview(request: HttpRequest) -> HttpResponse:
         else:
             if not student:
                 student = Student.objects.create(
-                    full_name=full_name,
+                    full_name=" ".join(full_name.split()),
                     class_level=class_level,
                     group_name=group_name,
                 )
@@ -3263,10 +3301,12 @@ def module_8_success(request: HttpRequest, submission_id: int) -> HttpResponse:
 @never_cache
 @login_required
 def dashboard_module_8(request: HttpRequest) -> HttpResponse:
+    session_context = _dashboard_session_context(request, "MODULE_8")
+    selected_session = session_context["selected_session"]
     submissions = (
         Module8Submission.objects.select_related("student", "session")
-        .filter(session__module__code="MODULE_8")
-        .order_by("-created_at")
+        .filter(session=selected_session).order_by("-created_at") if selected_session else
+        Module8Submission.objects.none()
     )
     class_level = request.GET.get("class_level", "").strip()
     group_name = request.GET.get("group_name", "").strip()
@@ -3307,6 +3347,7 @@ def dashboard_module_8(request: HttpRequest) -> HttpResponse:
             "selected_class_level": class_level,
             "selected_group_name": group_name,
             "question_insights": _build_question_insights(submissions, Module8SubmissionForm),
+            **session_context,
             "breadcrumbs": [("Modules", "surveys:dashboard_modules"), "Module 8"],
         },
     )
@@ -3320,6 +3361,7 @@ def export_module_8_csv(request: HttpRequest) -> HttpResponse:
         .filter(session__module__code="MODULE_8")
         .order_by("-created_at")
     )
+    submissions = _filter_export_session(request, "MODULE_8", submissions)
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="module-8-synthese.csv"'
     response.write("\ufeff")
@@ -3447,6 +3489,7 @@ def dashboard_backup(request: HttpRequest) -> HttpResponse:
     from django.conf import settings
 
     db_engine = "postgresql" if settings.DB_HOST else "sqlite"
+    historical_totals = dashboard_totals(active_only=False)
     context = {
         "db_engine": db_engine,
         "db_host": getattr(settings, "DB_HOST", ""),
@@ -3454,15 +3497,8 @@ def dashboard_backup(request: HttpRequest) -> HttpResponse:
         "db_name": getattr(settings, "DATABASES", {}).get("default", {}).get("NAME", "taf_local_forms"),
         "db_path": getattr(settings, "DATABASE_PATH", ""),
         "backup_command": "bash scripts/dev/taf-db-backup",
-        "total_submissions": (
-            Submission.objects.count()
-            + Module3Submission.objects.count()
-            + Module4Submission.objects.count()
-            + Module5Submission.objects.count()
-            + Module6Submission.objects.count()
-            + Module7Submission.objects.count()
-            + Module8Submission.objects.count()
-        ),
+        "total_submissions": historical_totals.submissions,
+        "total_students": historical_totals.unique_students,
     }
     return render(request, "surveys/dashboard_backup.html", context)
 
@@ -3643,10 +3679,7 @@ def request_edit(request: HttpRequest, module_number: int) -> HttpResponse:
     else:
         student_class_level = Student.CLASS_LEVEL_AUTRE
 
-    student = Student.objects.filter(
-        full_name=full_name,
-        class_level=student_class_level,
-    ).first()
+    student = find_student_by_identity(full_name, student_class_level)
 
     if not student:
         return HttpResponse("Élève non trouvé", status=400)

@@ -35,6 +35,7 @@
     <section class="card dashboard-module-panel">
         <h2>Filtres</h2>
         <form method="get" class="filter-grid">
+            {% include "surveys/partials/dashboard_session_filter.html" %}
             <div class="field">
                 <label class="muted">Classe</label>
                 <select name="class_level" onchange="this.form.submit()">
@@ -57,7 +58,7 @@
     <section id="todo" class="card dashboard-module-panel">
         <div class="section-row">
             <h2>Progression des activités</h2>
-            <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}">Exporter le CSV</a>
+            <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}?session_id={{ selected_session_id }}">Exporter la séance</a>
         </div>
         <div class="progress-list">
             {% for item in todo_completion %}
@@ -108,7 +109,7 @@
     </section>
 
     <section class="card dashboard-module-panel">
-        <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}">Export CSV</a>
+        <a class="text-link" href="{% url 'surveys:export_module_7_csv' %}?session_id={{ selected_session_id }}">Exporter la séance</a>
     </section>
 </main>
 {% endblock %}

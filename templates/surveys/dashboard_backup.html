@@ -21,7 +21,7 @@
             <h1 id="backup-heading-main">Sauvegarde & restauration</h1>
             <p>Protégez les réponses et les supports avant une mise à jour ou une séance importante.</p>
         </div>
-        <div class="trainer-operation-signal"><strong>{{ total_submissions }}</strong><span>réponse{{ total_submissions|pluralize }} à protéger</span><small>Volumes conservés · Contrôle manuel</small></div>
+        <div class="trainer-operation-signal"><strong>{{ total_submissions }}</strong><span>réponse{{ total_submissions|pluralize }} à protéger</span><small>{{ total_students }} élève{{ total_students|pluralize }} unique{{ total_students|pluralize }} · Volumes conservés</small></div>
     </section>
 
     <section class="alert alert-success" aria-labelledby="backup-safe-heading">
@@ -34,7 +34,7 @@
             <div class="card-body">
                 <h2>Réponses</h2>
                 <p class="text-secondary">Sauvegarder les données</p>
-                <p class="dashboard-kpi-note">{{ total_submissions }} réponse{{ total_submissions|pluralize }} enregistrée{{ total_submissions|pluralize }}</p>
+                <p class="dashboard-kpi-note">{{ total_submissions }} réponse{{ total_submissions|pluralize }} · {{ total_students }} élève{{ total_students|pluralize }} unique{{ total_students|pluralize }}</p>
                 <a class="btn btn-primary p6-button" href="#backup-command">Afficher la commande sûre</a>
             </div>
         </article>

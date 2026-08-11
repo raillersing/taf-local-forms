@@ -58,16 +58,17 @@
     </section>
 
     <section class="trainer-metrics" aria-label="Indicateurs de la séance">
-        <article><span>Réponses reçues</span><strong>{{ total_submissions }}</strong><small>{{ total_students }} élève{{ total_students|pluralize }} enregistré{{ total_students|pluralize }}</small></article>
+        <article><span>Élèves uniques</span><strong>{{ total_students }}</strong><small>Ayant répondu pendant la séance active</small></article>
+        <article><span>Réponses reçues</span><strong>{{ total_submissions }}</strong><small>Sur les sessions actives</small></article>
         <article><span>Présences live</span><strong id="home-presence-total">—</strong><small>Élèves connectés maintenant</small></article>
-        <article><span>Participation</span><strong>{{ average_score|floatformat:0 }}%</strong><small>Moyenne globale pondérée des réponses</small></article>
+        <article><span>Historique</span><strong>{{ historical_students }}</strong><small>Élèves uniques · {{ historical_submissions }} réponses</small></article>
         <article><span>LAN</span><strong class="trainer-metric-network">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong><small>Port élèves {% if network.recommended_lan_port %}{{ network.recommended_lan_port }}{% else %}8011{% endif %}</small></article>
     </section>
 
     <section class="trainer-module-cards" aria-labelledby="module-cards-heading">
         <header>
             <span class="section-kicker">Vue par module</span>
-            <h2 id="module-cards-heading">Réponses et scores en temps réel</h2>
+            <h2 id="module-cards-heading">Réponses de la séance active</h2>
         </header>
         <div class="trainer-module-cards-grid">
             {% for item in module_list %}
@@ -76,7 +77,7 @@
                 <h3>{{ item.display_title }}</h3>
                 <div class="trainer-mini-stats">
                     <span><strong>{{ item.submission_count }}</strong> réponse{{ item.submission_count|pluralize }}</span>
-                    <span><strong>{{ item.average_score|floatformat:0 }}%</strong> de {{ item.max_score }}</span>
+                    {% if item.score_available %}<span><strong>{{ item.average_score|floatformat:0 }}%</strong> score moyen</span>{% else %}<span>Questionnaire non noté</span>{% endif %}
                 </div>
             </article>
             {% endfor %}

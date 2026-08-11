@@ -14,9 +14,17 @@
 <section id="overview" class="panel p6-card dashboard-module-summary" aria-labelledby="module1-dashboard-heading">
     <div class="section-header">
         <div><span class="section-kicker">Numérisation des feuilles</span><h1 id="module1-dashboard-heading">Module 1 — Première prise de contact</h1></div>
-        <a class="btn btn-primary" href="{% url 'surveys:export_module_1_csv' %}">Exporter le CSV</a>
+        <a class="btn btn-primary" href="{% url 'surveys:export_module_1_csv' %}?session_id={{ selected_session_id }}">Exporter la séance</a>
     </div>
     <p class="text-secondary">{{ total_count }} réponse{{ total_count|pluralize }} enregistrée{{ total_count|pluralize }}. Les valeurs sont affichées avec les libellés du questionnaire papier.</p>
+</section>
+
+<section class="card dashboard-module-panel">
+    <h2>Filtrer par séance</h2>
+    <form method="get" class="filter-grid">
+        {% include "surveys/partials/dashboard_session_filter.html" %}
+        <button type="submit" class="primary-button">Afficher</button>
+    </form>
 </section>
 
 {% include "surveys/partials/module_question_insights.html" %}

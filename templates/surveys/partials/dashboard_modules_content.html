@@ -34,7 +34,8 @@
             </div>
             <div class="trainer-module-card-copy">
                 <h3>{{ item.display_title }}</h3>
-                <p><strong>{{ item.submission_count }}</strong> réponse{{ item.submission_count|pluralize }} enregistrée{{ item.submission_count|pluralize }}</p>
+                <p><strong>{{ item.submission_count }}</strong> réponse{{ item.submission_count|pluralize }} de la séance active</p>
+                {% if item.historical_submission_count != item.submission_count %}<p class="muted">Historique : {{ item.historical_submission_count }} réponse{{ item.historical_submission_count|pluralize }}</p>{% endif %}
             </div>
             <div class="trainer-module-card-links">
                 <a href="{% url module_url %}" target="_blank" rel="noopener noreferrer">Voir le formulaire élève</a>
