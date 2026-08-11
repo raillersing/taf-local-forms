@@ -74,6 +74,35 @@ check_status() {
   fi
 }
 
+check_optional_status() {
+  local label="$1"
+  local url="$2"
+  local expected="$3"
+  local code
+  code="$(status_only "$url" || true)"
+  if [[ "$code" == "000" ]]; then
+    skip "$label -> service LAN non configuré ($code)"
+  elif [[ " $expected " == *" $code "* ]]; then
+    pass "$label -> $code"
+  else
+    fail "$label -> attendu [$expected], obtenu [$code]"
+  fi
+}
+
+wait_for_application() {
+  local url="$1"
+  local attempts=30
+  local code
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    code="$(status_only "$url" || true)"
+    if [[ "$code" =~ ^[23] ]]; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 check_body_contains() {
   local label="$1"
   local url="$2"
@@ -155,6 +184,12 @@ else
   fi
 fi
 
+if wait_for_application "$BASE_URL/"; then
+  pass "Serveur web prêt"
+else
+  fail "Serveur web prêt après 30 secondes"
+fi
+
 check_status "Page d'accueil publique" "$BASE_URL/" "200"
 check_status "Catalogue modules" "$BASE_URL/modules/" "200"
 check_status "Catalogue supports public" "$BASE_URL/supports/" "200"
@@ -167,8 +202,8 @@ check_status "Projection protégée sans login" "$BASE_URL/dashboard/projection/
 check_status "Supports dashboard protégés sans login" "$BASE_URL/dashboard/supports/" "302"
 check_status "Upload dashboard protégé sans login" "$BASE_URL/dashboard/supports/upload/" "302"
 
-check_status "LAN home" "$LAN_URL/" "000 200 302 403 404 502"
-check_status "LAN module 2" "$LAN_URL/module-2/" "000 200 302 403 404 503 502"
+check_optional_status "LAN home" "$LAN_URL/" "200 302 403 404 502"
+check_optional_status "LAN module 2" "$LAN_URL/module-2/" "200 302 403 404 503 502"
 
 if login_if_configured; then
   check_status "Dashboard formateur connecté" "$BASE_URL/dashboard/" "200"

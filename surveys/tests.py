@@ -2589,6 +2589,20 @@ class F023NetworkIPDetectionTests(TestCase):
         self.assertEqual(ctx["recommended_student_base_url"], "http://192.168.0.101:8011")
 
     @override_settings(ALLOWED_HOSTS=["*"])
+    @patch.dict(os.environ, {"TAF_HOST_PORT": "8010", "TAF_LAN_HOST": "192.168.0.102"})
+    def test_configured_application_port_does_not_leak_into_student_urls(self):
+        from surveys.network import get_network_access_context
+        from django.test import RequestFactory
+
+        ctx = get_network_access_context(RequestFactory().get("/", HTTP_HOST="localhost:8010"))
+
+        self.assertEqual(ctx["port"], "8010")
+        self.assertEqual(ctx["student_port"], "8011")
+        self.assertEqual(ctx["recommended_student_base_url"], "http://192.168.0.102:8011")
+        self.assertEqual(ctx["student_form_url"], "http://192.168.0.102:8011/")
+        self.assertTrue(all(item["url"].endswith(":8011/module-%s/" % item["number"]) for item in ctx["module_url_list"]))
+
+    @override_settings(ALLOWED_HOSTS=["*"])
     def test_lan_host_stale_when_mismatch(self):
         import os
         os.environ["TAF_LAN_HOST"] = "192.168.0.100"

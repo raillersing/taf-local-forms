@@ -7,7 +7,7 @@ set -euo pipefail
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 PASS="${GREEN}PASS${NC}"; FAIL="${RED}FAIL${NC}"; WARN="${YELLOW}SKIP${NC}"
 RESULT_PASS=0; RESULT_FAIL=0; RESULT_SKIP=0
-record() { local s=$1; shift; echo -e "  [$s] $*"; case $s in PASS) ((RESULT_PASS++));; FAIL) ((RESULT_FAIL++));; SKIP) ((RESULT_SKIP++));; esac; }
+record() { local s=$1; shift; echo -e "  [$s] $*"; case $s in PASS) RESULT_PASS=$((RESULT_PASS + 1));; FAIL) RESULT_FAIL=$((RESULT_FAIL + 1));; SKIP) RESULT_SKIP=$((RESULT_SKIP + 1));; esac; }
 
 # ------------------------------------------------------------------
 echo -e "${CYAN}═══ TAf Local Forms — LAN Diagnostic ${NC}"
@@ -103,15 +103,7 @@ fi
 # 9. ALLOWED_HOSTS / CSRF
 echo ""
 echo -e "${CYAN}── 6. Django allowed hosts ──${NC}"
-ENV_FILE=".env"
-if [ -f "$ENV_FILE" ]; then
-    AH=$(grep -E '^ALLOWED_HOSTS=' "$ENV_FILE" | head -1) || AH="# (not set, using defaults)"
-    CT=$(grep -E '^CSRF_TRUSTED_ORIGINS=' "$ENV_FILE" | head -1) || CT="# (not set, using defaults)"
-    record PASS "ALLOWED_HOSTS: $AH"
-    record PASS "CSRF_TRUSTED_ORIGINS: $CT"
-else
-    record SKIP "No .env file found (Docker default config)"
-fi
+record SKIP "Configuration sensible non inspectée par ce diagnostic (voir la page réseau authentifiée)"
 
 # 10. Windows firewall hints
 echo ""

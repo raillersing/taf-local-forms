@@ -38,6 +38,12 @@ services:
     volumes:
       - taf_local_forms_data:/app/data
       - taf_local_forms_media:/app/media
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1', 8000), timeout=3); s.close()"]
+      interval: 5s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy

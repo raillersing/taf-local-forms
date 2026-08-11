@@ -102,6 +102,10 @@ def get_network_access_context(request):
     current_request_host, current_request_port = _parse_host_port(current_request_host_raw)
     current_request_is_lan = _is_private_ip(current_request_host) and current_request_host not in EXCLUDED_HOSTS
 
+    # 8010 is the trainer/application port. Student links use the Windows
+    # portproxy port (8011 by default) and must never inherit TAF_HOST_PORT.
+    student_port = os.environ.get("TAF_STUDENT_PORT", "8011")
+
     raw_candidates = _get_ip_candidates()
     detected_ip_candidates = [ip for ip in raw_candidates if not _is_docker_ip(ip)]
     detected_ip_candidates = detected_ip_candidates[:5]
@@ -112,30 +116,26 @@ def get_network_access_context(request):
     if current_request_is_lan:
         recommended_host = current_request_host
         if current_request_port:
-            recommended_port_num = current_request_port
-        elif configured_port:
-            recommended_port_num = configured_port
+            recommended_port_num = current_request_port if current_request_port == student_port else student_port
         else:
-            recommended_port_num = "8010"
+            recommended_port_num = student_port
         lan_host_source = "request"
     elif configured_host:
         recommended_host = configured_host
-        recommended_port_num = configured_port or "8010"
+        recommended_port_num = student_port
         lan_host_source = "settings"
     elif has_detected_ips:
         recommended_host = detected_ip_candidates[0]
-        recommended_port_num = configured_port or "8010"
+        recommended_port_num = student_port
         lan_host_source = "candidate"
     else:
         recommended_host = ""
-        recommended_port_num = configured_port or "8010"
+        recommended_port_num = student_port
         lan_host_source = "missing"
 
     # Port for URLs: use configured port, or current request port, or default
     port = configured_port or current_request_port or "8000"
 
-    # Student-facing port: assume a portproxy exposes the app on 8011 unless configured otherwise
-    student_port = os.environ.get("TAF_STUDENT_PORT", "8011")
     student_port_reachable = _check_port_reachable(recommended_host, student_port)
 
     has_lan_host = bool(configured_host)
@@ -157,6 +157,11 @@ def get_network_access_context(request):
         if recommended_host:
             return f"http://{recommended_host}:{port}{path}"
         return f"http://localhost:{port}{path}"
+
+    def student_url_for(path):
+        if recommended_host:
+            return f"http://{recommended_host}:{student_port}{path}"
+        return f"http://localhost:{student_port}{path}"
 
     warnings = []
 
@@ -217,9 +222,9 @@ def get_network_access_context(request):
         "port": port,
         "student_port": student_port,
         "student_port_reachable": student_port_reachable,
-        "student_form_url": url_for("/"),
+        "student_form_url": student_url_for("/"),
         "module_url_list": [
-            {"code": code, "number": meta["number"], "url": url_for(f"/module-{meta['number']}/")}
+            {"code": code, "number": meta["number"], "url": student_url_for(f"/module-{meta['number']}/")}
             for code, meta in MODULE_METADATA.items()
         ],
         "dashboard_url_list": [

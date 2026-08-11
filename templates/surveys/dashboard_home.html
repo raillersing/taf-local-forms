@@ -68,7 +68,7 @@
                     <button type="button" class="trainer-lan-refresh" id="refresh-lan-ip">Actualiser l’IP</button>
                 </div>
                 <strong class="trainer-metric-network" id="lan-ip-value">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong>
-                <small id="lan-ip-meta">Port élèves {% if network.student_port %}{{ network.student_port }}{% else %}8011{% endif %} · {% if network.lan_host_stale %}À resynchroniser{% elif network.lan_host_source == "settings" %}Synchronisée{% elif network.lan_host_source == "candidate" %}À confirmer{% else %}Non configurée{% endif %}</small>
+                <small id="lan-ip-meta">Port élèves {% if network.student_port %}{{ network.student_port }}{% else %}8011{% endif %} · {% if network.lan_host_stale %}À resynchroniser{% elif network.lan_host_source == "settings" %}Configurée, non confirmée{% elif network.lan_host_source == "candidate" %}Détectée, à confirmer{% else %}Non configurée{% endif %}</small>
                 <time id="lan-ip-updated" datetime="">Adresse lue au chargement</time>
                 <span class="trainer-lan-feedback" id="lan-ip-feedback" role="status" aria-live="polite"></span>
             </article>
@@ -170,8 +170,8 @@
 
     function sourceLabel(source) {
         if (source === 'helper') return 'IP Windows confirmée';
-        if (source === 'settings') return 'Réglage Django';
-        if (source === 'candidate') return 'IP candidate à confirmer';
+        if (source === 'settings') return 'IP configurée, non confirmée';
+        if (source === 'candidate') return 'IP détectée côté application, non confirmée';
         if (source === 'request') return 'Adresse de la requête';
         return 'Aucune IP LAN détectée';
     }
@@ -209,7 +209,7 @@
             .catch(function() {
                 return fetchJson(fallbackUrl, 4000).then(function(data) {
                     render(data, data.source || 'missing');
-                    feedback.textContent += ' Le helper Windows est indisponible.';
+                    feedback.textContent += ' Helper Windows indisponible : IP non confirmée.';
                 });
             })
             .catch(function() {
