@@ -4056,6 +4056,14 @@ table th {
 .trainer-metrics strong { margin: auto 0 12px; color: #071a42; font-size: clamp(2.5rem, 4vw, 4.4rem); letter-spacing: -.06em; line-height: 1; }
 .trainer-metrics small { color: #5d6f8c; font-weight: 700; line-height: 1.4; }
 .trainer-metrics .trainer-metric-network { font-size: clamp(1.15rem, 2vw, 2rem); overflow-wrap: anywhere; }
+.trainer-lan-metric-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.trainer-lan-refresh { min-height: 40px; padding: 7px 10px; border: 1px solid #9bbce4; border-radius: 8px; background: #edf5ff; color: #164d9e; cursor: pointer; font: inherit; font-size: .7rem; font-weight: 850; }
+.trainer-lan-refresh:hover, .trainer-lan-refresh:focus-visible { background: #dbeaff; }
+.trainer-lan-refresh:disabled { cursor: wait; opacity: .65; }
+.trainer-lan-metric time, .trainer-lan-feedback { color: #6b7d98; font-size: .7rem; font-weight: 700; line-height: 1.35; }
+.trainer-lan-feedback { min-height: 1em; }
+.trainer-lan-feedback.is-ok { color: #19724d; }
+.trainer-lan-feedback.is-warn { color: #9a5c10; }
 
 .trainer-section-note {
   max-width: 720px;

@@ -451,6 +451,31 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/admin/login/", response.url)
 
+    def test_lan_status_requires_login(self):
+        response = self.client.get(reverse("surveys:dashboard_lan_status_json"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response.url)
+
+    @patch.dict(os.environ, {"TAF_LAN_HOST": "", "PUBLIC_LAN_HOST": "", "TAF_HOST_PORT": ""})
+    @patch("surveys.network._get_ip_candidates", return_value=["192.168.0.123"])
+    def test_lan_status_returns_server_candidate_for_logged_in_trainer(self, mock_candidates):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_lan_status_json"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["recommended_lan_host"], "192.168.0.123")
+        self.assertEqual(response.json()["source"], "candidate")
+
+    def test_cockpit_exposes_ip_refresh_control(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+
+        response = self.client.get(reverse("surveys:dashboard_home"))
+
+        self.assertContains(response, "Actualiser l’IP")
+        self.assertContains(response, reverse("surveys:dashboard_lan_status_json"))
+
     def test_cockpit_renders_for_logged_in_trainer(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
 

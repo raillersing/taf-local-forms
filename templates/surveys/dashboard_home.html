@@ -62,7 +62,16 @@
         <article><span>Réponses reçues</span><strong>{{ total_submissions }}</strong><small>Sur les sessions actives</small></article>
         <article><span>Présences live</span><strong id="home-presence-total">—</strong><small>Élèves connectés maintenant</small></article>
         <article><span>Historique</span><strong>{{ historical_students }}</strong><small>Élèves uniques · {{ historical_submissions }} réponses</small></article>
-            <article><span>LAN</span><strong class="trainer-metric-network">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong><small>Port élèves {% if network.recommended_lan_port %}{{ network.recommended_lan_port }}{% else %}8011{% endif %} · {% if network.lan_host_stale %}<a href="{% url 'surveys:dashboard_network_control' %}">À resynchroniser</a>{% elif network.lan_host_source == "settings" %}Synchronisée{% elif network.lan_host_source == "candidate" %}À confirmer{% else %}Non configurée{% endif %}</small></article>
+            <article class="trainer-lan-metric">
+                <div class="trainer-lan-metric-head">
+                    <span>LAN du laptop</span>
+                    <button type="button" class="trainer-lan-refresh" id="refresh-lan-ip">Actualiser l’IP</button>
+                </div>
+                <strong class="trainer-metric-network" id="lan-ip-value">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong>
+                <small id="lan-ip-meta">Port élèves {% if network.student_port %}{{ network.student_port }}{% else %}8011{% endif %} · {% if network.lan_host_stale %}À resynchroniser{% elif network.lan_host_source == "settings" %}Synchronisée{% elif network.lan_host_source == "candidate" %}À confirmer{% else %}Non configurée{% endif %}</small>
+                <time id="lan-ip-updated" datetime="">Adresse lue au chargement</time>
+                <span class="trainer-lan-feedback" id="lan-ip-feedback" role="status" aria-live="polite"></span>
+            </article>
     </section>
 
     <section class="trainer-module-cards" aria-labelledby="module-cards-heading">
@@ -138,6 +147,82 @@
     }
     poll();
     setInterval(poll, 15000);
+})();
+</script>
+<script>
+(function() {
+    var button = document.getElementById('refresh-lan-ip');
+    var value = document.getElementById('lan-ip-value');
+    var meta = document.getElementById('lan-ip-meta');
+    var updated = document.getElementById('lan-ip-updated');
+    var feedback = document.getElementById('lan-ip-feedback');
+    if (!button || !value || !meta || !updated || !feedback) return;
+
+    var fallbackUrl = '{% url "surveys:dashboard_lan_status_json" %}';
+    var helperUrl = 'http://127.0.0.1:8019/status';
+    var originalLabel = button.textContent;
+
+    function formatTime(isoValue) {
+        var parsed = isoValue ? new Date(isoValue) : new Date();
+        if (isNaN(parsed.getTime())) parsed = new Date();
+        return parsed.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+    }
+
+    function sourceLabel(source) {
+        if (source === 'helper') return 'IP Windows confirmée';
+        if (source === 'settings') return 'Réglage Django';
+        if (source === 'candidate') return 'IP candidate à confirmer';
+        if (source === 'request') return 'Adresse de la requête';
+        return 'Aucune IP LAN détectée';
+    }
+
+    function render(data, source) {
+        var host = data.lan_ip || data.recommended_lan_host || '';
+        var port = data.student_port || (data.diagnostics && data.diagnostics.lan_port) || data.recommended_lan_port || '8011';
+        value.textContent = host || '—';
+        meta.textContent = 'Port élèves ' + port + ' · ' + sourceLabel(source || data.source);
+        updated.textContent = 'Dernière lecture : ' + formatTime(data.timestamp);
+        updated.dateTime = data.timestamp || new Date().toISOString();
+        feedback.textContent = host ? 'Adresse actualisée.' : 'Aucune adresse LAN disponible.';
+        feedback.className = host ? 'trainer-lan-feedback is-ok' : 'trainer-lan-feedback is-warn';
+    }
+
+    function fetchJson(url, timeout) {
+        var controller = new AbortController();
+        var timer = setTimeout(function() { controller.abort(); }, timeout);
+        return fetch(url, {headers: {'Accept': 'application/json'}, signal: controller.signal})
+            .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .finally(function() { clearTimeout(timer); });
+    }
+
+    function refresh() {
+        button.disabled = true;
+        button.textContent = 'Lecture…';
+        feedback.textContent = 'Recherche de l’adresse actuelle…';
+        feedback.className = 'trainer-lan-feedback';
+
+        fetchJson(helperUrl, 4000)
+            .then(function(data) { render(data, 'helper'); })
+            .catch(function() {
+                return fetchJson(fallbackUrl, 4000).then(function(data) {
+                    render(data, data.source || 'missing');
+                    feedback.textContent += ' Le helper Windows est indisponible.';
+                });
+            })
+            .catch(function() {
+                feedback.textContent = 'Actualisation impossible. Ouvre la page Contrôle LAN.';
+                feedback.className = 'trainer-lan-feedback is-warn';
+            })
+            .finally(function() {
+                button.disabled = false;
+                button.textContent = originalLabel;
+            });
+    }
+
+    button.addEventListener('click', refresh);
 })();
 </script>
 {% endblock %}

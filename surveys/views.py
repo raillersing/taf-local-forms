@@ -3531,6 +3531,23 @@ def dashboard_presence_json(request: HttpRequest) -> JsonResponse:
 
 
 @never_cache
+@login_required
+def dashboard_lan_status_json(request: HttpRequest) -> JsonResponse:
+    """Return the server-side LAN candidate for the cockpit refresh fallback."""
+    from .network import get_network_access_context
+
+    net_ctx = get_network_access_context(request)
+    return JsonResponse({
+        "recommended_lan_host": net_ctx.get("recommended_lan_host", ""),
+        "recommended_lan_port": net_ctx.get("recommended_lan_port", "8011"),
+        "student_port": net_ctx.get("student_port", "8011"),
+        "detected_ip_candidates": net_ctx.get("detected_ip_candidates", []),
+        "source": net_ctx.get("lan_host_source", "missing"),
+        "timestamp": timezone.now().isoformat(),
+    })
+
+
+@never_cache
 @staff_member_required
 def dashboard_settings(request: HttpRequest) -> HttpResponse:
     from .network import get_network_access_context
