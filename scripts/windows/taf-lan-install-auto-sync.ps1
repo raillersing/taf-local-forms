@@ -44,13 +44,14 @@ if (-not (Test-Path -LiteralPath $syncScript)) {
 
 $taskName = "TAf Local Forms LAN Sync"
 $action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$syncScript`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$syncScript`" -NonInteractive"
 
 $trigger = New-ScheduledTaskTrigger -AtLogOn
 $trigger.RepetitionInterval = (New-TimeSpan -Minutes 5)
-$trigger.RepetitionDuration = (New-TimeSpan -Hours 1)
+$trigger.RepetitionDuration = (New-TimeSpan -Days 3650)
 
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType InteractiveToken -RunLevel Highest
 
 # --------------------------------------------------
 # Creation ou mise a jour
@@ -59,11 +60,11 @@ $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyConti
 
 if ($existingTask) {
     Write-Host "La tache '$taskName' existe deja. Mise a jour en cours..." -ForegroundColor Yellow
-    Set-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings | Out-Null
+    Set-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal | Out-Null
     Write-Host "  -> Tache mise a jour avec succes." -ForegroundColor Green
 } else {
     Write-Host "Creation de la tache '$taskName'..." -ForegroundColor Yellow
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -User "NT AUTHORITY\SYSTEM" | Out-Null
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal | Out-Null
     Write-Host "  -> Tache creee avec succes." -ForegroundColor Green
 }
 

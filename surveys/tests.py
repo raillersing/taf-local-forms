@@ -188,6 +188,23 @@ class ReliableDashboardMetricsTests(TestCase):
         self.assertIn("History Student", export_body)
         self.assertNotIn("Active Student", export_body)
 
+    def test_cockpit_module_cards_explain_participation_and_session_state(self):
+        trainer = get_user_model().objects.create_user(
+            username="cards-trainer",
+            password="cards-password",
+        )
+        student = Student.objects.create(full_name="Carte Test", class_level="seconde")
+        self.create_module_2_submission(student, self.session_2)
+        self.client.login(username="cards-trainer", password="cards-password")
+
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        module_2 = next(item for item in response.context["module_list"] if item["module_number"] == "2")
+
+        self.assertEqual(module_2["active_student_count"], 1)
+        self.assertEqual(module_2["session_status"], "Réponses ouvertes")
+        self.assertContains(response, "Participation par module")
+        self.assertContains(response, "Élèves uniques ayant répondu")
+
 
 class Module1FirstContactTests(TestCase):
     def setUp(self):

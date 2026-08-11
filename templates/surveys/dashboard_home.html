@@ -62,22 +62,30 @@
         <article><span>Réponses reçues</span><strong>{{ total_submissions }}</strong><small>Sur les sessions actives</small></article>
         <article><span>Présences live</span><strong id="home-presence-total">—</strong><small>Élèves connectés maintenant</small></article>
         <article><span>Historique</span><strong>{{ historical_students }}</strong><small>Élèves uniques · {{ historical_submissions }} réponses</small></article>
-        <article><span>LAN</span><strong class="trainer-metric-network">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong><small>Port élèves {% if network.recommended_lan_port %}{{ network.recommended_lan_port }}{% else %}8011{% endif %}</small></article>
+            <article><span>LAN</span><strong class="trainer-metric-network">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong><small>Port élèves {% if network.recommended_lan_port %}{{ network.recommended_lan_port }}{% else %}8011{% endif %} · {% if network.lan_host_stale %}<a href="{% url 'surveys:dashboard_network_control' %}">À resynchroniser</a>{% elif network.lan_host_source == "settings" %}Synchronisée{% elif network.lan_host_source == "candidate" %}À confirmer{% else %}Non configurée{% endif %}</small></article>
     </section>
 
     <section class="trainer-module-cards" aria-labelledby="module-cards-heading">
         <header>
             <span class="section-kicker">Vue par module</span>
-            <h2 id="module-cards-heading">Réponses de la séance active</h2>
+            <h2 id="module-cards-heading">Participation par module</h2>
+            <p class="trainer-section-note">Élèves uniques ayant répondu dans la séance active. Le score est affiché uniquement pour les questionnaires notés.</p>
         </header>
         <div class="trainer-module-cards-grid">
             {% for item in module_list %}
-            <article class="trainer-mini-card{% if item.accepting_responses %} is-open{% endif %}">
-                <span class="trainer-mini-number">0{{ item.module_number }}</span>
+            <article class="trainer-mini-card{% if item.accepting_responses %} is-open{% endif %}{% if not item.has_active_session %} is-unavailable{% endif %}">
+                <div class="trainer-mini-card-head">
+                    <span class="trainer-mini-number">0{{ item.module_number }}</span>
+                    <span class="trainer-mini-status">{{ item.session_status }}</span>
+                </div>
                 <h3>{{ item.display_title }}</h3>
+                <div class="trainer-mini-primary">
+                    <strong>{{ item.active_student_count }}</strong>
+                    <span>élève{{ item.active_student_count|pluralize }} unique{{ item.active_student_count|pluralize }}</span>
+                </div>
                 <div class="trainer-mini-stats">
-                    <span><strong>{{ item.submission_count }}</strong> réponse{{ item.submission_count|pluralize }}</span>
-                    {% if item.score_available %}<span><strong>{{ item.average_score|floatformat:0 }}%</strong> score moyen</span>{% else %}<span>Questionnaire non noté</span>{% endif %}
+                    <span>{{ item.submission_count }} réponse{{ item.submission_count|pluralize }}</span>
+                    {% if item.score_available %}<span>Score moyen <strong>{{ item.average_score|floatformat:0 }}%</strong></span>{% else %}<span>Questionnaire non noté</span>{% endif %}
                 </div>
             </article>
             {% endfor %}

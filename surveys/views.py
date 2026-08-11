@@ -31,6 +31,7 @@ from .dashboard_metrics import (
     module_score_metrics,
     sessions_with_responses_count,
     submission_queryset,
+    unique_student_identities,
 )
 from .forms import (
     LearningResourceForm,
@@ -305,6 +306,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         active_queryset = submission_queryset(mod.code, active_session) if active_session else submission_queryset(mod.code).none()
         historical_queryset = submission_queryset(mod.code)
         submission_count = active_queryset.count()
+        active_student_count = len(unique_student_identities([active_queryset]))
         historical_submission_count = historical_queryset.count()
         max_score = _max_score_for_module(mod.code)
         module_score_sum, module_score_max, avg_score = module_score_metrics(mod.code, active_queryset)
@@ -319,12 +321,18 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
             "accepting_responses": accepting,
             "active_session_id": active_session.pk if active_session else None,
             "submission_count": submission_count,
+            "active_student_count": active_student_count,
             "historical_submission_count": historical_submission_count,
             "max_score": max_score,
             "average_score": avg_score,
             "score_available": avg_score is not None,
             "score_sum": module_score_sum,
             "score_max": module_score_max,
+            "session_status": (
+                ("Réponses ouvertes" if accepting else "Séance active · réponses fermées")
+                if active_session
+                else "Aucune séance active"
+            ),
         }
         module_list.append(module_item)
         if active_module is None and active_session is not None:

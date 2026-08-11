@@ -70,7 +70,7 @@ function Get-ActiveLanIp {
     } | ForEach-Object {
         $ip = $_
         $hasGateway = Get-NetRoute -DestinationPrefix "0.0.0.0/0" |
-            Where-Object { $_.NextHop -eq $ip.IPAddress }
+            Where-Object { $_.InterfaceIndex -eq $ip.InterfaceIndex -and $_.NextHop -ne "0.0.0.0" }
         $prio = if ($hasGateway) { 0 } else { 1 }
         [PSCustomObject]@{
             IPAddress      = $ip.IPAddress

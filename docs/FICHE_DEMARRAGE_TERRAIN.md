@@ -139,7 +139,7 @@ Depuis F023, l'application peut détecter automatiquement l'adresse LAN :
 1. **Connexion via IP LAN** : si tu accèdes au dashboard via `http://192.168.x.x:8011/dashboard/`, l'application détecte cette adresse et l'utilise comme adresse recommandée pour les élèves.
 2. **Bouton « Utiliser l'adresse actuelle »** : dans `/dashboard/settings/`, un clic configure automatiquement `TAF_LAN_HOST`, `TAF_HOST_PORT`, `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS`.
 3. **Script Windows** : `.\scripts\windows\taf-lan-sync.ps1` (PowerShell Admin) détecte l'IP Wi-Fi, configure le portproxy `8011→8010`, le pare-feu, et synchronise l'application.
-4. **Tâche planifiée** : `.\scripts\windows\taf-lan-install-auto-sync.ps1` installe une synchronisation automatique au logon.
+4. **Tâche planifiée** : `.\scripts\windows\taf-lan-install-auto-sync.ps1` installe une synchronisation automatique au logon puis toutes les 5 minutes. Elle choisit automatiquement l’interface réseau prioritaire, afin de maintenir l’IP, le portproxy, le pare-feu et la configuration Django cohérents après un changement de Wi-Fi.
 
 ### TAf LAN Helper (nouveau)
 

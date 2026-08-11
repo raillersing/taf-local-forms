@@ -2,7 +2,8 @@
 
 param(
     [string]$WslDistribution = $env:TAF_WSL_DISTRO,
-    [string]$WslProjectPath = $env:TAF_WSL_PROJECT_PATH
+    [string]$WslProjectPath = $env:TAF_WSL_PROJECT_PATH,
+    [switch]$NonInteractive
 )
 
 <#
@@ -42,8 +43,8 @@ $candidates = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
     $_.IPAddress -notlike "172.*"
 } | ForEach-Object {
     $ip = $_
-    $hasGateway = Get-NetRoute -DestinationPrefix "0.0.0.0/0" |
-        Where-Object { $_.NextHop -eq $ip.IPAddress }
+        $hasGateway = Get-NetRoute -DestinationPrefix "0.0.0.0/0" |
+        Where-Object { $_.InterfaceIndex -eq $ip.InterfaceIndex -and $_.NextHop -ne "0.0.0.0" }
     $prio = if ($hasGateway) { 0 } else { 1 }
     [PSCustomObject]@{
         IPAddress      = $ip.IPAddress
@@ -73,9 +74,14 @@ if ($candidates.Count -eq 1) {
     for ($i = 0; $i -lt $candidates.Count; $i++) {
         Write-Host "  [$i] $($candidates[$i].InterfaceAlias) - $($candidates[$i].IPAddress)"
     }
-    $choice = Read-Host "  Choisissez le numero (defaut: 0)"
-    if ([string]::IsNullOrWhiteSpace($choice)) { $choice = 0 }
-    $selected = $candidates[[int]$choice]
+    if ($NonInteractive) {
+        $selected = $candidates[0]
+        Write-Host "  Mode automatique : première interface prioritaire sélectionnée." -ForegroundColor Yellow
+    } else {
+        $choice = Read-Host "  Choisissez le numero (defaut: 0)"
+        if ([string]::IsNullOrWhiteSpace($choice)) { $choice = 0 }
+        $selected = $candidates[[int]$choice]
+    }
     Write-Host "  -> Selectionne : $($selected.InterfaceAlias) - $($selected.IPAddress)" -ForegroundColor Green
 }
 

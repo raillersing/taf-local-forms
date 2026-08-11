@@ -4057,6 +4057,54 @@ table th {
 .trainer-metrics small { color: #5d6f8c; font-weight: 700; line-height: 1.4; }
 .trainer-metrics .trainer-metric-network { font-size: clamp(1.15rem, 2vw, 2rem); overflow-wrap: anywhere; }
 
+.trainer-section-note {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: #5d6f8c;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.trainer-module-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.trainer-mini-card {
+  display: grid;
+  gap: 14px;
+  min-height: 230px;
+  padding: 20px;
+  border: 1px solid #cbd9eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(26, 64, 112, .07);
+}
+
+.trainer-mini-card.is-open { border-color: #8fbbea; }
+.trainer-mini-card.is-unavailable { opacity: .72; }
+.trainer-mini-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.trainer-mini-number { color: #225fc7; font-size: .78rem; font-weight: 950; letter-spacing: .12em; }
+.trainer-mini-status { color: #5d6f8c; font-size: .68rem; font-weight: 850; line-height: 1.25; text-align: right; }
+.trainer-mini-card.is-open .trainer-mini-status { color: #19724d; }
+.trainer-mini-card h3 { margin: 0; color: #071a42; font-size: 1.02rem; line-height: 1.2; }
+.trainer-mini-primary { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+.trainer-mini-primary strong { color: #071a42; font-size: 2.6rem; letter-spacing: -.06em; line-height: 1; }
+.trainer-mini-primary span { color: #31517e; font-size: .78rem; font-weight: 800; }
+.trainer-mini-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-top: 12px; border-top: 1px solid #e1e9f4; color: #5d6f8c; font-size: .78rem; font-weight: 700; line-height: 1.35; }
+.trainer-mini-stats strong { color: #225fc7; }
+
+@media (max-width: 1050px) {
+  .trainer-module-cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .trainer-module-cards-grid { grid-template-columns: 1fr; }
+  .trainer-mini-card { min-height: 0; }
+}
+
 .trainer-runbook {
   display: grid;
   grid-template-columns: minmax(250px, .75fr) minmax(0, 1.4fr);

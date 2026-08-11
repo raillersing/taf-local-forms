@@ -319,7 +319,7 @@ ainsi que des scripts de diagnostic et synchronisation :
 - `.\scripts\windows\taf-lan-show-status.ps1` — statut réseau Windows (lecture seule)
 - `.\scripts\windows\taf-lan-open-port.ps1` — ouvrir le port 8010 dans le pare-feu Windows (Admin requis)
 - `.\scripts\windows\taf-lan-sync.ps1` — synchronisation complète : détecte l'IP Wi-Fi, configure le portproxy `8011→8010`, crée la règle pare-feu pour `8011`, synchronise l'application Django (Admin requis)
-- `.\scripts\windows\taf-lan-install-auto-sync.ps1` — installe une tâche planifiée qui exécute `taf-lan-sync.ps1` au logon (Admin requis)
+- `.\scripts\windows\taf-lan-install-auto-sync.ps1` — installe une tâche planifiée persistante qui resynchronise `taf-lan-sync.ps1` au logon puis toutes les 5 minutes (Admin requis)
 
 Cette page affiche :
 
