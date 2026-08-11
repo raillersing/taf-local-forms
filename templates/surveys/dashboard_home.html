@@ -176,14 +176,14 @@
         return 'Aucune IP LAN détectée';
     }
 
-    function render(data, source) {
-        var host = data.lan_ip || data.recommended_lan_host || '';
+    function render(data, source, confirmed) {
+        var host = confirmed ? (data.lan_ip || '') : '';
         var port = data.student_port || (data.diagnostics && data.diagnostics.lan_port) || data.recommended_lan_port || '8011';
-        value.textContent = host || '—';
+        value.textContent = host || 'Non confirmée';
         meta.textContent = 'Port élèves ' + port + ' · ' + sourceLabel(source || data.source);
         updated.textContent = 'Dernière lecture : ' + formatTime(data.timestamp);
         updated.dateTime = data.timestamp || new Date().toISOString();
-        feedback.textContent = host ? 'Adresse actualisée.' : 'Aucune adresse LAN disponible.';
+        feedback.textContent = host ? 'Adresse Windows actualisée.' : 'IP Windows non confirmée.';
         feedback.className = host ? 'trainer-lan-feedback is-ok' : 'trainer-lan-feedback is-warn';
     }
 
@@ -205,10 +205,10 @@
         feedback.className = 'trainer-lan-feedback';
 
         fetchJson(helperUrl, 4000)
-            .then(function(data) { render(data, 'helper'); })
+            .then(function(data) { render(data, 'helper', true); })
             .catch(function() {
                 return fetchJson(fallbackUrl, 4000).then(function(data) {
-                    render(data, data.source || 'missing');
+                    render(data, data.source || 'missing', false);
                     feedback.textContent += ' Helper Windows indisponible : IP non confirmée.';
                 });
             })
