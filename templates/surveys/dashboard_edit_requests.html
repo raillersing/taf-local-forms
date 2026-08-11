@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Demandes de modification — Dashboard{% endblock %}
+
+{% block main_nav %}
+    {% include "surveys/partials/nav_trainer.html" %}
+{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid">
+    <nav class="breadcrumb-shell" aria-label="Fil d'Ariane">
+        <ol class="ldlc-breadcrumb">
+            <li class="crumb-item"><a href="{% url 'surveys:dashboard_home' %}" class="crumb-link">Dashboard</a></li>
+            <li class="crumb-item"><span class="crumb-sep">›</span><span class="crumb-current">Demandes de modification</span></li>
+        </ol>
+    </nav>
+
+    <div class="card header-card" style="margin-bottom: 2rem;">
+        <h1 style="color: var(--navy-800, #0f2d59); margin-bottom: 0.5rem;">Demandes de modification des élèves</h1>
+        <p style="color: var(--slate-600, #4b5563); font-size: 1.1rem; line-height: 1.5;">
+            Gère ici les demandes des élèves qui ont soumis par erreur et ont besoin de modifier leurs réponses.
+        </p>
+    </div>
+
+    {% if messages %}
+        <div class="messages" style="margin-bottom: 1.5rem;">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" style="padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; font-weight: 500;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card" style="padding: 0; overflow-x: auto;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+            <thead>
+                <tr style="background-color: var(--navy-900, #0b2240); color: white; border-bottom: 2px solid #e2e8f0;">
+                    <th style="padding: 1rem;">Élève</th>
+                    <th style="padding: 1rem;">Session</th>
+                    <th style="padding: 1rem;">Module</th>
+                    <th style="padding: 1rem;">Date demande</th>
+                    <th style="padding: 1rem;">Statut</th>
+                    <th style="padding: 1rem;">Actions / Lien de re-soumission</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in edit_requests_data %}
+                <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: middle;">
+                    <td style="padding: 1rem;">
+                        <strong>{{ item.request.student.full_name }}</strong><br>
+                        <small style="color: #64748b;">{{ item.request.student.get_class_level_display }}</small>
+                    </td>
+                    <td style="padding: 1rem;">{{ item.request.session.session_code }}</td>
+                    <td style="padding: 1rem;">{{ item.request.session.module.title }}</td>
+                    <td style="padding: 1rem;">{{ item.request.requested_at|date:"d/m/Y H:i" }}</td>
+                    <td style="padding: 1rem;">
+                        {% if item.request.status == "pending" %}
+                            <span class="badge badge-warning" style="background-color: #fef3c7; color: #92400e; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">En attente</span>
+                        {% elif item.request.status == "approved" %}
+                            <span class="badge badge-success" style="background-color: #d1fae5; color: #065f46; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Approuvée</span>
+                        {% elif item.request.status == "completed" %}
+                            <span class="badge badge-info" style="background-color: #e0f2fe; color: #075985; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Modifiée</span>
+                        {% elif item.request.status == "expired" %}
+                            <span class="badge" style="background-color: #fee2e2; color: #991b1b; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Expirée</span>
+                        {% elif item.request.status == "cancelled" %}
+                            <span class="badge" style="background-color: #f3f4f6; color: #4b5563; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Annulée</span>
+                        {% else %}
+                            <span class="badge" style="background-color: #f3f4f6; color: #374151; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Rejetée</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if item.request.status == "pending" %}
+                            <div style="display: flex; gap: 0.5rem;">
+                                <form method="post" action="{% url 'surveys:approve_edit_request' pk=item.request.pk %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="primary-button" style="padding: 0.4rem 1rem; min-height: auto; font-size: 0.9rem; background-color: #10b981; border-color: #10b981;">Approuver</button>
+                                </form>
+                                <form method="post" action="{% url 'surveys:reject_edit_request' pk=item.request.pk %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="secondary-button" style="padding: 0.4rem 1rem; min-height: auto; font-size: 0.9rem; color: #ef4444; border-color: #ef4444;">Rejeter</button>
+                                </form>
+                            </div>
+                        {% elif item.request.status == "approved" %}
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <button class="primary-button" onclick="showQrModal('{{ item.request.student.full_name|escapejs }}', '{{ item.link|escapejs }}')" style="padding: 0.4rem 0.75rem; min-height: auto; font-size: 0.85rem; background-color: var(--accent-light, #3b82f6); border-color: var(--accent-light, #3b82f6); display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <span>📱 Partager (QR)</span>
+                                </button>
+                                <input type="hidden" value="{{ item.link }}" id="link-{{ item.request.pk }}">
+                                <button class="secondary-button" onclick="copyLink('link-{{ item.request.pk }}')" style="padding: 0.4rem 0.75rem; min-height: auto; font-size: 0.85rem; border-color: #cbd5e1; color: #475569;">Copier</button>
+                                <form method="post" action="{% url 'surveys:revoke_edit_request' pk=item.request.pk %}" style="display: inline; margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="secondary-button" style="padding: 0.4rem 0.75rem; min-height: auto; font-size: 0.85rem; color: #ef4444; border-color: #fca5a5; background-color: #fef2f2;">Révoquer</button>
+                                </form>
+                            </div>
+                        {% elif item.request.status == "completed" %}
+                            <span style="color: #10b981; font-style: italic; font-weight: 500;">Modification effectuée</span>
+                        {% elif item.request.status == "expired" %}
+                            <span style="color: #991b1b; font-style: italic;">Lien expiré (15 minutes écoulées)</span>
+                        {% elif item.request.status == "cancelled" %}
+                            <span style="color: #64748b; font-style: italic;">Lien révoqué par le formateur</span>
+                        {% else %}
+                            <span style="color: #94a3b8; font-style: italic;">Demande rejetée</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding: 3rem; text-align: center; color: #64748b;">
+                        Aucune demande de modification enregistrée pour le moment.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal overlay for QR Code Sharing -->
+    <div id="qr-modal" class="modal-backdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(11, 34, 64, 0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 450px; width: 90%; background-color: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); text-align: center; position: relative; border-top: 5px solid var(--accent-light, #3b82f6);">
+            <button onclick="closeQrModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
+            <h3 style="color: var(--navy-800, #0f2d59); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 600;">Partager le lien de correction</h3>
+            <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">
+                Présente cet écran à l'élève <strong id="modal-student-name"></strong> pour qu'il scanne le QR code avec son téléphone.
+            </p>
+            <div id="modal-qrcode" style="display: flex; justify-content: center; margin-bottom: 1.5rem; padding: 1rem; background-color: white; border: 1px solid #e2e8f0; border-radius: 8px; width: max-content; margin-left: auto; margin-right: auto;"></div>
+            <div style="margin-bottom: 1.5rem; text-align: left;">
+                <label style="font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Lien de correction</label>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                    <input type="text" id="modal-link-input" readonly style="font-family: monospace; font-size: 0.85rem; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; flex-grow: 1; background-color: #f8fafc;">
+                    <button class="secondary-button" onclick="copyModalLink()" style="padding: 0.5rem 1rem; min-height: auto; font-size: 0.85rem; border-color: var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6);">Copier</button>
+                </div>
+            </div>
+            <button onclick="closeQrModal()" class="primary-button" style="width: 100%; min-height: 40px; font-weight: 600; border-radius: 6px;">Fermer</button>
+        </div>
+    </div>
+</main>
+
+{% load static %}
+<script src="{% static 'js/vendor/qrcode.js' %}"></script>
+<script>
+function copyLink(inputId) {
+    var copyText = document.getElementById(inputId);
+    navigator.clipboard.writeText(copyText.value).then(function() {
+        alert("Lien copié avec succès ! Transmets-le à l'élève.");
+    }, function() {
+        alert("Erreur lors de la copie. Copie manuellement le champ.");
+    });
+}
+
+function showQrModal(studentName, link) {
+    document.getElementById("modal-student-name").textContent = studentName;
+    document.getElementById("modal-link-input").value = link;
+    
+    var qrContainer = document.getElementById("modal-qrcode");
+    qrContainer.innerHTML = ""; // Clear previous QR Code
+    
+    if (typeof QRCode !== "undefined") {
+        new QRCode(qrContainer, {
+            text: link,
+            width: 180,
+            height: 180,
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    } else {
+        qrContainer.innerHTML = "<p style='color: #ef4444;'>Erreur: Générateur de QR Code hors-ligne non chargé.</p>";
+    }
+    
+    document.getElementById("qr-modal").style.display = "flex";
+}
+
+function closeQrModal() {
+    document.getElementById("qr-modal").style.display = "none";
+}
+
+function copyModalLink() {
+    var input = document.getElementById("modal-link-input");
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(function() {
+        alert("Lien copié avec succès !");
+    }, function() {
+        alert("Erreur lors de la copie. Copie manuellement le champ.");
+    });
+}
+
+// Close modal when clicking outside the card
+window.addEventListener("click", function(event) {
+    var modal = document.getElementById("qr-modal");
+    if (event.target === modal) {
+        closeQrModal();
+    }
+});
+</script>
+{% endblock %}

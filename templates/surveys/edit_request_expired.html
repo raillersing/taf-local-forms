@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Lien expiré{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; text-align: center; padding: 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1.5rem; animation: bounce 2s infinite;">⏳</div>
+    
+    <h1 style="color: var(--navy-800, #0f2d59); margin-bottom: 1rem; font-size: 2rem;">Lien de modification expiré</h1>
+    
+    <p style="font-size: 1.15rem; color: #475569; max-width: 500px; margin-bottom: 2rem; line-height: 1.6;">
+        Le lien de modification à usage unique a expiré (il est valable 15 minutes après approbation). 
+    </p>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem; max-width: 500px; margin-bottom: 2rem; text-align: left;">
+        <h3 style="font-size: 1rem; color: var(--navy-700, #1e3a8a); margin-bottom: 0.5rem; font-weight: 600;">Que faire ?</h3>
+        <ul style="margin: 0; padding-left: 1.25rem; color: #475569; font-size: 0.95rem; line-height: 1.5;">
+            <li>Demande simplement au formateur de valider à nouveau ta demande.</li>
+            <li>Une fois re-validée, scanne le nouveau code pour corriger tes réponses.</li>
+        </ul>
+    </div>
+    
+    <a href="{% url 'surveys:home' %}" class="primary-button" style="text-decoration: none; padding: 0.75rem 2rem; border-radius: 6px; font-weight: 600;">
+        Retour à l'accueil
+    </a>
+</main>
+{% endblock %}

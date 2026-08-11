@@ -11,7 +11,6 @@
     if (hiddenField) {
         hiddenField.value = clientId;
     }
-    var schoolIdInput = document.querySelector('[name="school_id_number"]');
     var classLevelInput = document.querySelector('[name="class_level"]');
     var heartbeat = function() {
         var data = {
@@ -19,9 +18,6 @@
             client_id: clientId,
             current_path: window.location.pathname
         };
-        if (schoolIdInput && schoolIdInput.value) {
-            data.school_id_number = schoolIdInput.value;
-        }
         if (classLevelInput && classLevelInput.value) {
             data.class_level = classLevelInput.value;
         }

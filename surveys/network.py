@@ -3,6 +3,8 @@ import socket
 import subprocess
 from urllib.parse import urlparse
 
+from .constants import MODULE_METADATA
+
 
 PRIVATE_IP_PREFIXES = (
     "192.168.",
@@ -76,6 +78,18 @@ def _parse_host_port(host_string):
     return hostname, port
 
 
+def _check_port_reachable(host, port, timeout=2):
+    """Try to open a TCP connection to host:port. Return bool."""
+    if not host or not port:
+        return False
+    try:
+        port_num = int(port)
+        with socket.create_connection((host, port_num), timeout=timeout):
+            return True
+    except Exception:
+        return False
+
+
 def get_network_access_context(request):
     taf_host_port = os.environ.get("TAF_HOST_PORT", "")
     taf_lan_host = os.environ.get("TAF_LAN_HOST", "").strip()
@@ -119,6 +133,10 @@ def get_network_access_context(request):
 
     # Port for URLs: use configured port, or current request port, or default
     port = configured_port or current_request_port or "8000"
+
+    # Student-facing port: assume a portproxy exposes the app on 8011 unless configured otherwise
+    student_port = os.environ.get("TAF_STUDENT_PORT", "8011")
+    student_port_reachable = _check_port_reachable(recommended_host, student_port)
 
     has_lan_host = bool(configured_host)
 
@@ -197,31 +215,26 @@ def get_network_access_context(request):
         "lan_host_source": lan_host_source,
         "lan_host_stale": lan_host_stale,
         "port": port,
+        "student_port": student_port,
+        "student_port_reachable": student_port_reachable,
         "student_form_url": url_for("/"),
-        "module_2_url": url_for("/module-2/"),
-        "module_3_url": url_for("/module-3/"),
-        "module_4_url": url_for("/module-4/"),
-        "module_5_url": url_for("/module-5/"),
-        "module_6_url": url_for("/module-6/"),
-        "module_7_url": url_for("/module-7/"),
-        "module_8_url": url_for("/module-8/"),
+        "module_url_list": [
+            {"code": code, "number": meta["number"], "url": url_for(f"/module-{meta['number']}/")}
+            for code, meta in MODULE_METADATA.items()
+        ],
+        "dashboard_url_list": [
+            {"code": code, "number": meta["number"], "url": url_for(f"/dashboard/module-{meta['number']}/")}
+            for code, meta in MODULE_METADATA.items()
+            if meta.get("dashboard_url_name")
+        ],
+        "csv_url_list": [
+            {"code": code, "number": meta["number"], "url": url_for(f"/dashboard/export/module-{meta['number']}.csv")}
+            for code, meta in MODULE_METADATA.items()
+            if meta.get("csv_url_name")
+        ],
         "cockpit_url": url_for("/dashboard/"),
         "dashboard_network_url": url_for("/dashboard/network/"),
         "dashboard_settings_url": url_for("/dashboard/settings/"),
-        "dashboard_module_2_url": url_for("/dashboard/module-2/"),
-        "dashboard_module_3_url": url_for("/dashboard/module-3/"),
-        "dashboard_module_4_url": url_for("/dashboard/module-4/"),
-        "dashboard_module_5_url": url_for("/dashboard/module-5/"),
-        "dashboard_module_6_url": url_for("/dashboard/module-6/"),
-        "dashboard_module_7_url": url_for("/dashboard/module-7/"),
-        "dashboard_module_8_url": url_for("/dashboard/module-8/"),
-        "csv_module_2_url": url_for("/dashboard/export/module-2.csv"),
-        "csv_module_3_url": url_for("/dashboard/export/module-3.csv"),
-        "csv_module_4_url": url_for("/dashboard/export/module-4.csv"),
-        "csv_module_5_url": url_for("/dashboard/export/module-5.csv"),
-        "csv_module_6_url": url_for("/dashboard/export/module-6.csv"),
-        "csv_module_7_url": url_for("/dashboard/export/module-7.csv"),
-        "csv_module_8_url": url_for("/dashboard/export/module-8.csv"),
         "admin_url": url_for("/admin/"),
         "warnings": warnings,
         "under_wsl": under_wsl,

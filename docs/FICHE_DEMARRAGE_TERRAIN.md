@@ -39,6 +39,7 @@ Chaque page détail affiche :
 
 ### Adresses principales
 | Module 3 – Recherche efficace | `http://127.0.0.1:8010/module-3/` |
+| Module 1 – Première prise de contact | `http://127.0.0.1:8010/module-1/` |
 | Module 4 – Sources fiables | `http://127.0.0.1:8010/module-4/` |
 | Module 5 – Email et outils de communication | `http://127.0.0.1:8010/module-5/` |
 | Module 6 – Ressources éducatives en ligne | `http://127.0.0.1:8010/module-6/` |
@@ -129,7 +130,7 @@ CSRF_TRUSTED_ORIGINS=http://localhost:8010,http://127.0.0.1:8010,http://192.168.
 
 Remplacez `192.168.0.102` par **votre véritable IP** (voir `ipconfig` ci-dessus).
 
-> **Ne modifiez pas** `SECRET_KEY` si vous n'avez pas de valeur de remplacement — mais changez-la avant une vraie séance.
+> **Avant le premier démarrage Docker**, renseignez `SECRET_KEY` et `POSTGRES_PASSWORD` avec des valeurs uniques. Docker refuse volontairement les valeurs absentes ou de démonstration.
 
 ## Synchronisation automatique de l'IP (nouveau)
 
@@ -194,6 +195,7 @@ Vous devriez voir le service `web` avec l'état `Up`.
 Chargez les données de chaque module. Cette opération est **idempotente** (on peut la répéter sans risque).
 
 ```bash
+docker compose exec web python manage.py seed_module1
 docker compose exec web python manage.py seed_module2
 docker compose exec web python manage.py seed_module3
 docker compose exec web python manage.py seed_module4
@@ -233,6 +235,7 @@ Testez que tout est accessible depuis le laptop :
 
 ```bash
 curl -I http://127.0.0.1:8010/
+curl -I http://127.0.0.1:8010/module-1/
 curl -I http://127.0.0.1:8010/module-2/
 curl -I http://127.0.0.1:8010/module-3/
 curl -I http://127.0.0.1:8010/module-4/

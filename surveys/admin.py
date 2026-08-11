@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 
-from .models import Chapter, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
+from .models import Chapter, EditRequest, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
 
 admin.site.site_header = getattr(settings, "ADMIN_SITE_HEADER", "TAf Local Forms")
 admin.site.site_title = getattr(settings, "ADMIN_SITE_TITLE", "TAf Admin")
@@ -11,9 +11,9 @@ admin.site.site_url = "/dashboard/"
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ("school_id_number", "full_name", "class_level", "group_name")
+    list_display = ("full_name", "class_level", "group_name")
     list_filter = ("class_level", "group_name")
-    search_fields = ("school_id_number", "full_name")
+    search_fields = ("full_name",)
 
 
 @admin.register(TrainingModule)
@@ -32,23 +32,22 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
     list_display = (
-        "school_id_number_snapshot",
         "student",
         "session",
         "computed_score",
         "created_at",
     )
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    search_fields = ("student__full_name",)
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
 
 
 @admin.register(Module1Submission)
 class Module1SubmissionAdmin(admin.ModelAdmin):
-    list_display = ("school_id_number_snapshot", "paper_full_name", "paper_class_level", "paper_school_name", "session", "created_at")
+    list_display = ("student", "paper_full_name", "paper_class_level", "paper_school_name", "session", "created_at")
     list_filter = ("session", "paper_class_level", "paper_school_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "paper_full_name", "paper_school_name")
+    search_fields = ("paper_full_name", "paper_school_name", "student__full_name")
     autocomplete_fields = ("student", "session")
     readonly_fields = ("created_at", "updated_at")
 
@@ -56,14 +55,13 @@ class Module1SubmissionAdmin(admin.ModelAdmin):
 @admin.register(Module3Submission)
 class Module3SubmissionAdmin(admin.ModelAdmin):
     list_display = (
-        "school_id_number_snapshot",
         "student",
         "session",
         "computed_score",
         "created_at",
     )
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    search_fields = ("student__full_name",)
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
 
@@ -71,14 +69,13 @@ class Module3SubmissionAdmin(admin.ModelAdmin):
 @admin.register(Module4Submission)
 class Module4SubmissionAdmin(admin.ModelAdmin):
     list_display = (
-        "school_id_number_snapshot",
         "student",
         "session",
         "computed_score",
         "created_at",
     )
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    search_fields = ("student__full_name",)
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
 
@@ -86,14 +83,13 @@ class Module4SubmissionAdmin(admin.ModelAdmin):
 @admin.register(Module5Submission)
 class Module5SubmissionAdmin(admin.ModelAdmin):
     list_display = (
-        "school_id_number_snapshot",
         "student",
         "session",
         "computed_score",
         "created_at",
     )
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    search_fields = ("student__full_name",)
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
 
@@ -101,14 +97,13 @@ class Module5SubmissionAdmin(admin.ModelAdmin):
 @admin.register(Module6Submission)
 class Module6SubmissionAdmin(admin.ModelAdmin):
     list_display = (
-        "school_id_number_snapshot",
         "student",
         "session",
         "computed_score",
         "created_at",
     )
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    search_fields = ("student__full_name",)
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
 
@@ -116,23 +111,22 @@ class Module6SubmissionAdmin(admin.ModelAdmin):
 @admin.register(Module7Submission)
 class Module7SubmissionAdmin(admin.ModelAdmin):
     list_display = (
-        "school_id_number_snapshot",
         "student",
         "session",
         "computed_score",
         "created_at",
     )
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    search_fields = ("student__full_name",)
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
 
 
 @admin.register(Module8Submission)
 class Module8SubmissionAdmin(admin.ModelAdmin):
-    list_display = ("school_id_number_snapshot", "student", "session", "computed_score", "created_at")
+    list_display = ("student", "session", "computed_score", "created_at")
     list_filter = ("session", "student__class_level", "student__group_name", "created_at")
-    search_fields = ("school_id_number_snapshot", "student__school_id_number", "student__full_name")
+    search_fields = ("student__full_name",)
     autocomplete_fields = ("student", "session")
     readonly_fields = ("computed_score",)
 
@@ -170,3 +164,12 @@ class LearningResourceAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     readonly_fields = ("created_at", "updated_at")
     autocomplete_fields = ("subject", "chapter")
+
+
+@admin.register(EditRequest)
+class EditRequestAdmin(admin.ModelAdmin):
+    list_display = ("student", "session", "module_code", "status", "requested_at", "one_time_token")
+    list_filter = ("status", "module_code", "session", "requested_at")
+    search_fields = ("student__full_name", "one_time_token")
+    autocomplete_fields = ("student", "session")
+    readonly_fields = ("requested_at",)

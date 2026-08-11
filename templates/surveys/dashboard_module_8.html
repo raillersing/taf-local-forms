@@ -79,7 +79,6 @@
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Numero</th>
                         <th>Nom</th>
                         <th>Classe</th>
                         <th>Groupe</th>
@@ -90,7 +89,6 @@
                     {% for s in submissions %}
                     <tr>
                         <td>{{ s.created_at|date:"d/m H:i" }}</td>
-                        <td>{{ s.school_id_number_snapshot }}</td>
                         <td>{{ s.student.full_name }}</td>
                         <td>{{ s.student.get_class_level_display }}</td>
                         <td>{{ s.student.group_name }}</td>

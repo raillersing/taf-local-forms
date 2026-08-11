@@ -1,5 +1,10 @@
 #Requires -RunAsAdministrator
 
+param(
+    [string]$WslDistribution = $env:TAF_WSL_DISTRO,
+    [string]$WslProjectPath = $env:TAF_WSL_PROJECT_PATH
+)
+
 <#
 .SYNOPSIS
     Configure le portproxy Windows et le pare-feu pour exposer TAf Local Forms sur le LAN.
@@ -13,6 +18,12 @@
 #>
 
 $ErrorActionPreference = "Stop"
+$wslToolsPath = Join-Path $PSScriptRoot "taf-lan-wsl.ps1"
+if (-not (Test-Path $wslToolsPath)) {
+    throw "Utilitaire WSL introuvable: $wslToolsPath"
+}
+. $wslToolsPath
+$wslContext = Get-TafWslContext -ScriptDirectory $PSScriptRoot -WslDistribution $WslDistribution -WslProjectPath $WslProjectPath
 
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "  TAf Local Forms - Synchronisation LAN" -ForegroundColor Cyan
@@ -125,9 +136,15 @@ Write-Host ""
 Write-Host "[5/6] Synchronisation des parametres LAN Django..." -ForegroundColor Yellow
 
 try {
-    $output = wsl -d Ubuntu -e bash -c "cd /home/raillersing/projects/taf-local-forms && docker compose exec -T web python manage.py sync_lan_settings --lan-host $LanIp --lan-port $LanPort" 2>&1
+    $wslResult = Invoke-TafWslCompose -Context $wslContext -ComposeArguments @(
+        "exec", "-T", "web", "python", "manage.py", "sync_lan_settings",
+        "--lan-host", $LanIp, "--lan-port", $LanPort
+    )
+    if ($wslResult.ExitCode -ne 0) {
+        throw "La synchronisation Django a echoue : $($wslResult.Output)"
+    }
     Write-Host "  -> Succes :" -ForegroundColor Green
-    $output | ForEach-Object { Write-Host "     $_" }
+    $wslResult.Output | ForEach-Object { Write-Host "     $_" }
 } catch {
     Write-Host "  -> Impossible d'executer la commande dans WSL." -ForegroundColor Red
     Write-Host "     Demarrez d'abord docker compose up -d depuis WSL puis relancez ce script." -ForegroundColor Red

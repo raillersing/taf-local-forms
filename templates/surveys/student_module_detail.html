@@ -12,15 +12,7 @@
 <main id="content" class="content-grid student-detail-page">
     {% url 'surveys:home' as home_url %}
     {% url 'surveys:student_modules' as modules_url %}
-    {% if module.code == "MODULE_1" %}{% url 'surveys:module_1' as questionnaire_url %}{% endif %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Accueil" crumb_1_url=home_url crumb_2_label="Modules" crumb_2_url=modules_url current_label=module.title %}
-    {% if module.code == "MODULE_2" %}{% url 'surveys:module_2' as questionnaire_url %}{% endif %}
-    {% if module.code == "MODULE_3" %}{% url 'surveys:module_3' as questionnaire_url %}{% endif %}
-    {% if module.code == "MODULE_4" %}{% url 'surveys:module_4' as questionnaire_url %}{% endif %}
-    {% if module.code == "MODULE_5" %}{% url 'surveys:module_5' as questionnaire_url %}{% endif %}
-    {% if module.code == "MODULE_6" %}{% url 'surveys:module_6' as questionnaire_url %}{% endif %}
-    {% if module.code == "MODULE_7" %}{% url 'surveys:module_7' as questionnaire_url %}{% endif %}
-    {% if module.code == "MODULE_8" %}{% url 'surveys:module_8' as questionnaire_url %}{% endif %}
     <section class="student-detail-hero learning-page" aria-labelledby="module-detail-heading">
         <header class="learning-hero">
             <div class="learning-hero-number" aria-hidden="true">{{ module.code|slice:"7:" }}</div>
@@ -50,21 +42,9 @@
 
         <div class="learning-content">
             {% if module.code == "MODULE_1" %}
-                <p>Ce questionnaire de première prise de contact aide à mieux connaître ton expérience, ton accès au numérique et tes besoins. Ce n’est pas un examen : réponds simplement et honnêtement.</p>
-            {% elif module.code == "MODULE_2" %}
-                {% include "surveys/partials/module_2_pedagogy.html" %}
-            {% elif module.code == "MODULE_3" %}
-                {% include "surveys/partials/module_3_pedagogy.html" %}
-            {% elif module.code == "MODULE_4" %}
-                {% include "surveys/partials/module_4_pedagogy.html" %}
-            {% elif module.code == "MODULE_5" %}
-                {% include "surveys/partials/module_5_pedagogy.html" %}
-            {% elif module.code == "MODULE_6" %}
-                {% include "surveys/partials/module_6_pedagogy.html" %}
-            {% elif module.code == "MODULE_7" %}
-                {% include "surveys/partials/module_7_pedagogy.html" %}
-            {% elif module.code == "MODULE_8" %}
-                {% include "surveys/partials/module_8_pedagogy.html" %}
+                <p>{{ summary }}</p>
+            {% else %}
+                {% include pedagogy_partial %}
             {% endif %}
         </div>
 
@@ -76,41 +56,9 @@
             </div>
             {% if has_active_session %}
                 {% if accepting_responses %}
-                    {% if module.code == "MODULE_1" %}
-                        <a class="cta-student" href="{% url 'surveys:module_1' %}">Commencer le questionnaire</a>
-                    {% elif module.code == "MODULE_2" %}
-                        <a class="cta-student" href="{% url 'surveys:module_2' %}">Commencer le questionnaire</a>
-                    {% elif module.code == "MODULE_3" %}
-                        <a class="cta-student" href="{% url 'surveys:module_3' %}">Commencer le questionnaire</a>
-                    {% elif module.code == "MODULE_4" %}
-                        <a class="cta-student" href="{% url 'surveys:module_4' %}">Commencer le questionnaire</a>
-                    {% elif module.code == "MODULE_5" %}
-                        <a class="cta-student" href="{% url 'surveys:module_5' %}">Commencer le questionnaire</a>
-                    {% elif module.code == "MODULE_6" %}
-                        <a class="cta-student" href="{% url 'surveys:module_6' %}">Commencer le questionnaire</a>
-                    {% elif module.code == "MODULE_7" %}
-                        <a class="cta-student" href="{% url 'surveys:module_7' %}">Commencer le questionnaire</a>
-                    {% elif module.code == "MODULE_8" %}
-                        <a class="cta-student" href="{% url 'surveys:module_8' %}">Commencer le questionnaire</a>
-                    {% endif %}
+                    <a class="cta-student" href="{{ questionnaire_url }}">Commencer le questionnaire</a>
                 {% else %}
-                    {% if module.code == "MODULE_1" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_1' %}">Consulter le questionnaire</a>
-                    {% elif module.code == "MODULE_2" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_2' %}">Consulter le questionnaire</a>
-                    {% elif module.code == "MODULE_3" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_3' %}">Consulter le questionnaire</a>
-                    {% elif module.code == "MODULE_4" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_4' %}">Consulter le questionnaire</a>
-                    {% elif module.code == "MODULE_5" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_5' %}">Consulter le questionnaire</a>
-                    {% elif module.code == "MODULE_6" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_6' %}">Consulter le questionnaire</a>
-                    {% elif module.code == "MODULE_7" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_7' %}">Consulter le questionnaire</a>
-                    {% elif module.code == "MODULE_8" %}
-                        <a class="cta-consult" href="{% url 'surveys:module_8' %}">Consulter le questionnaire</a>
-                    {% endif %}
+                    <a class="cta-consult" href="{{ questionnaire_url }}">Consulter le questionnaire</a>
                 {% endif %}
             {% else %}
                 <p class="muted">Aucune session active pour ce module. Reviens plus tard ou demande au formateur.</p>

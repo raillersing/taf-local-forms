@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load survey_tags %}
 
 {% block title %}Modules formateur — Cockpit{% endblock %}
 {% block page_header %}{% endblock %}
@@ -11,6 +12,23 @@
 <main id="content" class="content-grid dashboard-modules-page">
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Modules" %}
+
+    {% pending_edit_requests_count as pending_count %}
+    {% if pending_count > 0 %}
+        <div class="alert alert-warning" style="margin-top: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #f59e0b; background-color: #fef3c7; color: #92400e; padding: 1.25rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.5rem;">⚠️</span>
+                <div>
+                    <strong style="font-size: 1.05rem;">Demandes de modification en attente</strong>
+                    <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #b45309;">Il y a {{ pending_count }} demande{{ pending_count|pluralize }} de modification d'élève en attente d'approbation.</p>
+                </div>
+            </div>
+            <a href="{% url 'surveys:dashboard_edit_requests' %}" class="primary-button" style="padding: 0.5rem 1.25rem; min-height: auto; font-size: 0.9rem; background-color: #d97706; border-color: #d97706; color: white; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 6px;">
+                Gérer les demandes
+            </a>
+        </div>
+    {% endif %}
+
     <section class="trainer-modules-hero" aria-labelledby="trainer-modules-heading">
         <div class="trainer-modules-index" aria-hidden="true">08</div>
         <div class="trainer-modules-intro">

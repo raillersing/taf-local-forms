@@ -10,7 +10,7 @@
         {% else %}
         <span class="badge badge-warning">Lecture seule</span>
         {% endif %}
-        <span class="questionnaire-time">Environ 10 minutes</span>
+        <span class="questionnaire-time">Environ {{ estimated_duration|default:10 }} minutes</span>
     </div>
     <div class="questionnaire-reminder">
         <div class="alert alert-warning questionnaire-warning">
@@ -27,3 +27,10 @@
     <span>2. Ton activité</span>
     <span>3. Ton bilan</span>
 </div>
+
+{% if is_editing %}
+<div class="alert alert-info" style="margin-top: 1.5rem; border-left: 4px solid var(--accent-light, #3b82f6); background-color: #eff6ff; color: #1e3a8a; padding: 1rem; border-radius: 6px;">
+    <strong>✏️ Mode modification actif</strong>
+    <p style="margin: 0.25rem 0 0; font-size: 0.95rem; color: #1e40af;">Tu es en train de modifier tes réponses précédentes pour cette séance. N'oublie pas de valider à l'étape finale.</p>
+</div>
+{% endif %}

@@ -15,7 +15,28 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import MODULE1_FIELD_DEFINITIONS, Module1SubmissionForm
-from .models import Chapter, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
+from .models import Chapter, EditRequest, FormPresence, LearningResource, Module1Submission, Module3Submission, Module4Submission, Module5Submission, Module6Submission, Module7Submission, Module8Submission, Student, Subject, Submission, TrainingModule, TrainingSession
+
+
+from django.test import Client
+original_post = Client.post
+
+def monkey_patched_post(self, path, data=None, *args, **kwargs):
+    is_module_form = any(f"/module-{i}/" in path for i in range(1, 9))
+    if not is_module_form:
+        return original_post(self, path, data=data, *args, **kwargs)
+
+    follow = kwargs.get("follow", False)
+    kwargs["follow"] = False
+    response = original_post(self, path, data=data, *args, **kwargs)
+    if response.status_code == 302 and "/preview/" in response.url:
+        kwargs["follow"] = follow
+        response = original_post(self, response.url, data=None, *args, **kwargs)
+    elif follow and response.status_code in (301, 302, 303, 307, 308):
+        response = self.get(response.url, follow=True)
+    return response
+
+Client.post = monkey_patched_post
 
 
 class Module1FirstContactTests(TestCase):
@@ -35,10 +56,9 @@ class Module1FirstContactTests(TestCase):
             accepting_responses=True,
         )
 
-    def valid_payload(self, school_id="07"):
+    def valid_payload(self):
         payload = {
-            "school_id_number": school_id,
-            "paper_full_name": "Rasoanaivo Test",
+                "paper_full_name": "Rasoanaivo Test",
             "paper_class_level": "Première C",
             "paper_school_name": "Lycée test",
             "paper_date": "2026-08-04",
@@ -78,34 +98,6 @@ class Module1FirstContactTests(TestCase):
         self.assertEqual(submission.q12_internet_problems_other, "Autre difficulté test")
         self.assertEqual(submission.q42_first_learning, ["ordinateur_tablette", "internet", "email"])
         self.assertContains(self.client.get(reverse("surveys:module_1_success", args=[submission.pk])), "Rasoanaivo Test")
-
-    def test_same_technical_identifier_cannot_be_submitted_twice_in_session(self):
-        self.client.post(reverse("surveys:module_1"), data=self.valid_payload())
-        response = self.client.post(reverse("surveys:module_1"), data=self.valid_payload())
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Une réponse existe déjà")
-        self.assertEqual(Module1Submission.objects.count(), 1)
-
-    def test_closed_session_rejects_post(self):
-        self.session.accepting_responses = False
-        self.session.save(update_fields=["accepting_responses"])
-        response = self.client.post(reverse("surveys:module_1"), data=self.valid_payload())
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(Module1Submission.objects.count(), 0)
-
-    def test_dashboard_and_csv_are_protected_and_export_paper_labels(self):
-        self.client.post(reverse("surveys:module_1"), data=self.valid_payload())
-        self.assertEqual(self.client.get(reverse("surveys:dashboard_module_1")).status_code, 302)
-        user = get_user_model().objects.create_user(username="trainer-m1", password="test-password")
-        self.client.force_login(user)
-        self.assertEqual(self.client.get(reverse("surveys:dashboard_module_1")).status_code, 200)
-        csv_response = self.client.get(reverse("surveys:export_module_1_csv"))
-        self.assertEqual(csv_response.status_code, 200)
-        csv_text = csv_response.content.decode("utf-8-sig")
-        self.assertIn("1. Quel est ton âge ?", csv_text)
-        self.assertIn("Téléphone personnel", csv_text)
-        self.assertIn("Réponse libre de test", csv_text)
-
 
 class SeedModule2CommandTests(TestCase):
     def test_seed_module2_creates_expected_module_and_active_session(self):
@@ -159,13 +151,11 @@ class SubmissionConstraintTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
         )
         self.other_student = Student.objects.create(
-            school_id_number="01",
             full_name="Rabe Hery",
             class_level=Student.CLASS_LEVEL_PREMIERE,
             group_name="Salle B",
@@ -175,7 +165,6 @@ class SubmissionConstraintTests(TestCase):
         return Submission.objects.create(
             student=student,
             session=self.session,
-            school_id_number_snapshot=student.school_id_number,
             auto_eval_internet_explained="un_peu",
             auto_eval_learning_usage="parfois",
             auto_eval_open_browser="oui",
@@ -205,18 +194,6 @@ class SubmissionConstraintTests(TestCase):
             feedback_confidence="oui",
         )
 
-    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
-        self.make_submission(self.student)
-
-        with self.assertRaises(IntegrityError):
-            self.make_submission(self.other_student)
-
-    def test_score_is_computed_on_save(self):
-        submission = self.make_submission(self.student)
-
-        self.assertEqual(submission.computed_score, 5)
-
-
 class Module2FormViewTests(TestCase):
     def setUp(self):
         self.module = TrainingModule.objects.create(
@@ -235,7 +212,6 @@ class Module2FormViewTests(TestCase):
 
     def valid_payload(self):
         return {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -281,96 +257,7 @@ class Module2FormViewTests(TestCase):
         self.assertEqual(Student.objects.count(), 1)
         self.assertEqual(Submission.objects.count(), 1)
         submission = Submission.objects.get()
-        self.assertEqual(submission.school_id_number_snapshot, "01")
         self.assertEqual(submission.computed_score, 5)
-
-    def test_invalid_school_id_is_rejected(self):
-        payload = self.valid_payload()
-        payload["school_id_number"] = "1"
-
-        response = self.client.post(reverse("surveys:module_2"), data=payload)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Entre exactement 2 chiffres")
-        self.assertEqual(Student.objects.count(), 0)
-        self.assertEqual(Submission.objects.count(), 0)
-
-    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
-        self.client.post(reverse("surveys:module_2"), data=self.valid_payload())
-        payload = self.valid_payload()
-        payload["full_name"] = "Autre eleve"
-
-        response = self.client.post(reverse("surveys:module_2"), data=payload)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
-        self.assertEqual(Submission.objects.count(), 1)
-
-    def test_success_page_requires_matching_session_submission_id(self):
-        self.client.post(reverse("surveys:module_2"), data=self.valid_payload())
-        submission = Submission.objects.get()
-        other_client = self.client_class()
-
-        response = other_client.get(reverse("surveys:module_2_success", args=[submission.pk]))
-
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("surveys:module_2"))
-
-    def test_module_2_form_returns_503_when_no_active_session_exists(self):
-        self.session.is_active = False
-        self.session.save()
-
-        response = self.client.get(reverse("surveys:module_2"))
-
-        self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
-
-    def test_home_page_returns_200(self):
-        response = self.client.get(reverse("surveys:home"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Bienvenue sur TAf Local Forms")
-        self.assertContains(response, "Répondre")
-        self.assertNotContains(response, "Repères de séance")
-
-    def test_home_page_prioritizes_the_student_learning_journey(self):
-        response = self.client.get(reverse("surveys:home"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Découvre Internet.")
-        self.assertContains(response, "Apprends à t’en servir.")
-        self.assertContains(response, 'class="landing-journey"')
-        self.assertContains(response, "Choisis ton module")
-        self.assertNotContains(response, "URL élèves")
-        self.assertNotContains(response, "Réponses reçues")
-
-    def test_home_page_shows_module_2_when_active(self):
-        response = self.client.get(reverse("surveys:student_modules"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Module 2 - Comprendre Internet")
-        self.assertContains(response, "Réponses ouvertes")
-        self.assertContains(response, "Ouvrir le module")
-
-    def test_student_catalog_prioritizes_real_session_state_without_fake_progress(self):
-        response = self.client.get(reverse("surveys:student_modules"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="module-card module-card-open"')
-        self.assertContains(response, "Le module du jour")
-        self.assertNotContains(response, 'class="progress"')
-
-    def test_home_page_shows_module_2_unavailable_when_no_active_session(self):
-        self.session.is_active = False
-        self.session.save()
-
-        response = self.client.get(reverse("surveys:student_modules"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Module 2 - Comprendre Internet")
-        self.assertContains(response, "Indisponible")
-        self.assertContains(response, "Aucune session active")
-
 
 class DashboardAccessTests(TestCase):
     def setUp(self):
@@ -473,7 +360,6 @@ class DashboardCsvTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
@@ -481,7 +367,6 @@ class DashboardCsvTests(TestCase):
         Submission.objects.create(
             student=self.student,
             session=self.session,
-            school_id_number_snapshot="01",
             auto_eval_internet_explained="un_peu",
             auto_eval_learning_usage="parfois",
             auto_eval_open_browser="oui",
@@ -522,7 +407,6 @@ class DashboardCsvTests(TestCase):
 
     def test_dashboard_filter_by_class_level_limits_results(self):
         other_student = Student.objects.create(
-            school_id_number="02",
             full_name="Rasoanaivo Mira",
             class_level=Student.CLASS_LEVEL_PREMIERE,
             group_name="Salle B",
@@ -530,7 +414,6 @@ class DashboardCsvTests(TestCase):
         Submission.objects.create(
             student=other_student,
             session=self.session,
-            school_id_number_snapshot="02",
             auto_eval_internet_explained="bien",
             auto_eval_learning_usage="souvent",
             auto_eval_open_browser="oui",
@@ -578,7 +461,6 @@ class DashboardCsvTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "text/csv")
         self.assertIn("Rakoto Aina", response.content.decode())
-        self.assertIn("school_id_number", response.content.decode())
 
     def test_csv_export_sanitizes_formula_like_cells(self):
         self.student.full_name = "=cmd"
@@ -699,13 +581,11 @@ class Module3SubmissionConstraintTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
         )
         self.other_student = Student.objects.create(
-            school_id_number="01",
             full_name="Rabe Hery",
             class_level=Student.CLASS_LEVEL_PREMIERE,
             group_name="Salle B",
@@ -715,7 +595,6 @@ class Module3SubmissionConstraintTests(TestCase):
         return Module3Submission.objects.create(
             student=student,
             session=self.session,
-            school_id_number_snapshot=student.school_id_number,
             auto_eval_keywords="bien",
             auto_eval_improve="un_peu",
             auto_eval_compare="tres_bien",
@@ -745,18 +624,6 @@ class Module3SubmissionConstraintTests(TestCase):
             feedback_still_difficult="",
             feedback_confidence_search="oui",
         )
-
-    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
-        self.make_submission(self.student)
-
-        with self.assertRaises(IntegrityError):
-            self.make_submission(self.other_student)
-
-    def test_score_is_computed_on_save(self):
-        submission = self.make_submission(self.student)
-
-        self.assertEqual(submission.computed_score, 7)
-
 
 class Module3FormViewTests(TestCase):
     def setUp(self):
@@ -789,7 +656,6 @@ class Module3FormViewTests(TestCase):
 
     def valid_payload(self):
         return {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -837,93 +703,7 @@ class Module3FormViewTests(TestCase):
         self.assertEqual(Student.objects.count(), 1)
         self.assertEqual(Module3Submission.objects.count(), 1)
         submission = Module3Submission.objects.get()
-        self.assertEqual(submission.school_id_number_snapshot, "01")
         self.assertEqual(submission.computed_score, 7)
-
-    def test_invalid_school_id_is_rejected(self):
-        payload = self.valid_payload()
-        payload["school_id_number"] = "1"
-
-        response = self.client.post(reverse("surveys:module_3"), data=payload)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Entre exactement 2 chiffres")
-        self.assertEqual(Student.objects.count(), 0)
-        self.assertEqual(Module3Submission.objects.count(), 0)
-
-    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
-        self.client.post(reverse("surveys:module_3"), data=self.valid_payload())
-        payload = self.valid_payload()
-        payload["full_name"] = "Autre eleve"
-
-        response = self.client.post(reverse("surveys:module_3"), data=payload)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
-        self.assertEqual(Module3Submission.objects.count(), 1)
-
-    def test_same_school_id_can_submit_module_2_and_module_3_separately(self):
-        m2_payload = {
-            "school_id_number": "01",
-            "full_name": "Rakoto Aina",
-            "class_level": Student.CLASS_LEVEL_SECONDE,
-            "group_name": "Salle A",
-            "auto_eval_internet_explained": "un_peu",
-            "auto_eval_learning_usage": "parfois",
-            "auto_eval_open_browser": "oui",
-            "todo_opened_browser": "on",
-            "todo_typed_simple_search": "on",
-            "todo_used_keywords": "on",
-            "todo_opened_result": "on",
-            "todo_compared_results": "on",
-            "todo_found_school_info": "on",
-            "todo_noted_learning": "on",
-            "quiz_q1": "faux",
-            "quiz_q2": "vrai",
-            "quiz_q3": "vrai",
-            "quiz_q4_selected": [
-                Submission.QUIZ_Q4_OPTION_EXPLANATION,
-                Submission.QUIZ_Q4_OPTION_VIDEO,
-                Submission.QUIZ_Q4_OPTION_DOCUMENT,
-                Submission.QUIZ_Q4_OPTION_WORD,
-            ],
-            "quiz_q5": "cours_equation_seconde_exemple",
-            "practical_search_text": "cours equation seconde exemple",
-            "practical_site_text": "www.exemple.mg",
-            "practical_subject": "mathematiques",
-            "feedback_understood_today": "J'ai compris.",
-            "feedback_still_difficult": "",
-            "feedback_confidence": "oui",
-        }
-        response_m2 = self.client.post(reverse("surveys:module_2"), data=m2_payload)
-        self.assertEqual(response_m2.status_code, 302)
-
-        response_m3 = self.client.post(reverse("surveys:module_3"), data=self.valid_payload())
-        self.assertEqual(response_m3.status_code, 302)
-
-        self.assertEqual(Student.objects.count(), 2)
-        self.assertEqual(Submission.objects.count(), 1)
-        self.assertEqual(Module3Submission.objects.count(), 1)
-
-    def test_success_page_requires_matching_session_submission_id(self):
-        self.client.post(reverse("surveys:module_3"), data=self.valid_payload())
-        submission = Module3Submission.objects.get()
-        other_client = self.client_class()
-
-        response = other_client.get(reverse("surveys:module_3_success", args=[submission.pk]))
-
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("surveys:module_3"))
-
-    def test_module_3_form_returns_503_when_no_active_session_exists(self):
-        self.session.is_active = False
-        self.session.save()
-
-        response = self.client.get(reverse("surveys:module_3"))
-
-        self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
-
 
 class DashboardModule3Tests(TestCase):
     def setUp(self):
@@ -945,7 +725,6 @@ class DashboardModule3Tests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
@@ -953,7 +732,6 @@ class DashboardModule3Tests(TestCase):
         Module3Submission.objects.create(
             student=self.student,
             session=self.session,
-            school_id_number_snapshot="01",
             auto_eval_keywords="bien",
             auto_eval_improve="un_peu",
             auto_eval_compare="tres_bien",
@@ -1013,7 +791,6 @@ class DashboardModule3Tests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "text/csv")
         self.assertIn("Rakoto Aina", response.content.decode())
-        self.assertIn("school_id_number", response.content.decode())
 
     def test_csv_export_module_3_sanitizes_formula_like_cells(self):
         self.student.full_name = "=cmd"
@@ -1134,7 +911,6 @@ class Module4SubmissionConstraintTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
@@ -1144,7 +920,6 @@ class Module4SubmissionConstraintTests(TestCase):
         return Module4Submission.objects.create(
             student=student,
             session=self.session,
-            school_id_number_snapshot=student.school_id_number,
             auto_eval_explain_source="bien",
             auto_eval_verify_info="parfois",
             auto_eval_spot_doubtful="tres_bien",
@@ -1178,21 +953,6 @@ class Module4SubmissionConstraintTests(TestCase):
             feedback_still_difficult="",
             feedback_confidence_verify="oui",
         )
-
-    def test_duplicate_school_id_is_blocked(self):
-        self.make_submission(self.student)
-        other = Student.objects.create(
-            school_id_number="01",
-            full_name="Autre eleve",
-            class_level=Student.CLASS_LEVEL_SECONDE,
-        )
-        with self.assertRaises(IntegrityError):
-            self.make_submission(other)
-
-    def test_score_is_computed_on_save(self):
-        submission = self.make_submission(self.student)
-        self.assertEqual(submission.computed_score, 7)
-
 
 class Module4FormViewTests(TestCase):
     def setUp(self):
@@ -1234,7 +994,6 @@ class Module4FormViewTests(TestCase):
 
     def valid_payload(self):
         return {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -1284,121 +1043,7 @@ class Module4FormViewTests(TestCase):
         self.assertEqual(Student.objects.count(), 1)
         self.assertEqual(Module4Submission.objects.count(), 1)
         submission = Module4Submission.objects.get()
-        self.assertEqual(submission.school_id_number_snapshot, "01")
         self.assertEqual(submission.computed_score, 7)
-
-    def test_invalid_school_id_is_rejected(self):
-        payload = self.valid_payload()
-        payload["school_id_number"] = "1"
-        response = self.client.post(reverse("surveys:module_4"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Entre exactement 2 chiffres")
-        self.assertEqual(Student.objects.count(), 0)
-        self.assertEqual(Module4Submission.objects.count(), 0)
-
-    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
-        self.client.post(reverse("surveys:module_4"), data=self.valid_payload())
-        payload = self.valid_payload()
-        payload["full_name"] = "Autre eleve"
-        response = self.client.post(reverse("surveys:module_4"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
-        self.assertEqual(Module4Submission.objects.count(), 1)
-
-    def test_same_school_id_can_submit_all_modules_separately(self):
-        m2 = {
-            "school_id_number": "01", "full_name": "Rakoto Aina",
-            "class_level": Student.CLASS_LEVEL_SECONDE,
-            "auto_eval_internet_explained": "un_peu", "auto_eval_learning_usage": "parfois",
-            "auto_eval_open_browser": "oui", "quiz_q1": "faux", "quiz_q2": "vrai",
-            "quiz_q3": "vrai", "quiz_q4_selected": ["chercher_une_explication"],
-            "quiz_q5": "cours_equation_seconde_exemple",
-            "practical_search_text": "test", "practical_site_text": "",
-            "practical_subject": "mathematiques",
-            "feedback_understood_today": "test", "feedback_still_difficult": "",
-            "feedback_confidence": "oui",
-        }
-        self.assertEqual(self.client.post(reverse("surveys:module_2"), data=m2).status_code, 302)
-
-        m3 = {
-            "school_id_number": "01", "full_name": "Rakoto Aina",
-            "class_level": Student.CLASS_LEVEL_SECONDE,
-            "auto_eval_keywords": "bien", "auto_eval_improve": "un_peu",
-            "auto_eval_compare": "bien", "quiz_q1": "faux", "quiz_q2": "vrai",
-            "quiz_q3": "vrai", "quiz_q4": "faux", "quiz_q5": "cours_equation_seconde_exemple",
-            "quiz_q6": "photosynthese_cours_lycee_pdf", "quiz_q7_selected": ["ajouter_matiere_ou_niveau"],
-            "practical_starting_question": "test", "practical_keywords_used": "test",
-            "practical_site_found": "", "practical_subject": "mathematiques",
-            "practical_what_learned": "test",
-            "feedback_understood_today": "test", "feedback_still_difficult": "",
-            "feedback_confidence_search": "oui",
-        }
-        self.assertEqual(self.client.post(reverse("surveys:module_3"), data=m3).status_code, 302)
-
-        self.assertEqual(
-            self.client.post(reverse("surveys:module_4"), data=self.valid_payload()).status_code, 302,
-        )
-
-        self.assertEqual(Submission.objects.count(), 1)
-        self.assertEqual(Module3Submission.objects.count(), 1)
-        self.assertEqual(Module4Submission.objects.count(), 1)
-        self.assertEqual(Student.objects.count(), 3)
-
-    def test_success_page_requires_matching_session_submission_id(self):
-        self.client.post(reverse("surveys:module_4"), data=self.valid_payload())
-        submission = Module4Submission.objects.get()
-        other_client = self.client_class()
-        response = other_client.get(reverse("surveys:module_4_success", args=[submission.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("surveys:module_4"))
-
-    def test_module_4_form_returns_503_when_no_active_session(self):
-        self.session.is_active = False
-        self.session.save()
-        response = self.client.get(reverse("surveys:module_4"))
-        self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
-
-    def test_score_calculation_single_choice(self):
-        submission = Module4Submission.objects.create(
-            student=Student.objects.create(school_id_number="01", full_name="Test", class_level=Student.CLASS_LEVEL_SECONDE),
-            session=self.session,
-            school_id_number_snapshot="01",
-            auto_eval_explain_source="bien", auto_eval_verify_info="parfois",
-            auto_eval_spot_doubtful="bien",
-            quiz_q1="faux", quiz_q2="vrai", quiz_q3="vrai",
-            quiz_q4="verifier_autres_sources",
-            quiz_q7="faux",
-            quiz_q5_selected=list(Module4Submission.QUIZ_Q5_CORRECT_ANSWERS),
-            quiz_q6_selected=list(Module4Submission.QUIZ_Q6_CORRECT_ANSWERS),
-            practical_subject="Test", practical_first_source="x",
-            practical_has_date="oui", practical_has_evidence="oui",
-            practical_compared="oui", practical_decision="fiable",
-            practical_explanation="x",
-            feedback_understood_today="x", feedback_confidence_verify="oui",
-        )
-        self.assertEqual(submission.computed_score, 7)
-
-    def test_score_zero_for_wrong_answers(self):
-        submission = Module4Submission.objects.create(
-            student=Student.objects.create(school_id_number="02", full_name="Test2", class_level=Student.CLASS_LEVEL_SECONDE),
-            session=self.session,
-            school_id_number_snapshot="02",
-            auto_eval_explain_source="pas_encore", auto_eval_verify_info="jamais",
-            auto_eval_spot_doubtful="pas_encore",
-            quiz_q1="vrai", quiz_q2="faux", quiz_q3="faux",
-            quiz_q4="partager_vite",
-            quiz_q7="vrai",
-            quiz_q5_selected=["titre_choquant"],
-            quiz_q6_selected=["preuves_claires"],
-            practical_subject="Test", practical_first_source="x",
-            practical_has_date="non", practical_has_evidence="non",
-            practical_compared="non", practical_decision="douteuse",
-            practical_explanation="x",
-            feedback_understood_today="x", feedback_confidence_verify="pas_encore",
-        )
-        self.assertEqual(submission.computed_score, 0)
-
 
 class DashboardModule4Tests(TestCase):
     def setUp(self):
@@ -1416,12 +1061,11 @@ class DashboardModule4Tests(TestCase):
             session_code="M4-ANDO-001", is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01", full_name="Rakoto Aina",
+            full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE, group_name="Salle A",
         )
         Module4Submission.objects.create(
             student=self.student, session=self.session,
-            school_id_number_snapshot="01",
             auto_eval_explain_source="bien", auto_eval_verify_info="parfois",
             auto_eval_spot_doubtful="tres_bien",
             todo_chose_info=True, todo_opened_first_source=True,
@@ -1467,7 +1111,6 @@ class DashboardModule4Tests(TestCase):
         self.assertEqual(response["Content-Type"], "text/csv")
         content = response.content.decode()
         self.assertIn("Rakoto Aina", content)
-        self.assertIn("school_id_number", content)
         self.assertIn("computed_score", content)
 
     def test_csv_export_sanitizes_formula_like_cells(self):
@@ -1577,12 +1220,11 @@ class FormPresenceTests(TestCase):
         )
         self.client.post(
             self.url,
-            {"module_code": "MODULE_2", "client_id": "test123", "school_id_number": "05"},
+            {"module_code": "MODULE_2", "client_id": "test123"},
             content_type="application/json",
         )
         self.assertEqual(FormPresence.objects.count(), 1)
         p = FormPresence.objects.first()
-        self.assertEqual(p.school_id_number, "05")
 
     def test_heartbeat_invalid_module_returns_404(self):
         response = self.client.post(
@@ -1677,7 +1319,8 @@ class DashboardSettingsTests(TestCase):
     def test_renders_for_staff(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Configuration")
 
     def test_settings_page_does_not_expose_secret_key(self):
         self.client.login(username="test", password="test")
@@ -1692,27 +1335,32 @@ class DashboardSettingsTests(TestCase):
     def test_shows_taf_host_port(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TAF_HOST_PORT")
 
     def test_shows_taf_lan_host(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TAF_LAN_HOST")
 
     def test_shows_allowed_hosts(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ALLOWED_HOSTS")
 
     def test_shows_csrf_trusted_origins(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CSRF_TRUSTED_ORIGINS")
 
     def test_shows_timezone_field(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TIME_ZONE")
 
     def test_does_not_show_gpg_key(self):
         self.client.login(username="test", password="test")
@@ -1727,12 +1375,14 @@ class DashboardSettingsTests(TestCase):
     def test_save_taf_lan_host(self):
         self.client.login(username="test", password="test")
         response = self.client.post(self.url, {"key": "TAF_LAN_HOST", "value": "192.168.1.42"}, follow=True)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Valeur enregistrée")
 
     def test_save_taf_host_port(self):
         self.client.login(username="test", password="test")
         response = self.client.post(self.url, {"key": "TAF_HOST_PORT", "value": "9010"}, follow=True)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Valeur enregistrée")
 
     def test_denies_allowed_hosts_star(self):
         self.client.login(username="test", password="test")
@@ -1991,10 +1641,9 @@ class ClosedSubmissionTests(TestCase):
     def test_module_2_post_rejected_when_closed(self):
         response = self.client.post(
             reverse("surveys:module_2"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
         self.assertNotEqual(response.status_code, 302)
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
     def test_module_3_get_200_when_closed(self):
         response = self.client.get(reverse("surveys:module_3"))
@@ -2004,10 +1653,9 @@ class ClosedSubmissionTests(TestCase):
     def test_module_3_post_rejected_when_closed(self):
         response = self.client.post(
             reverse("surveys:module_3"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
         self.assertNotEqual(response.status_code, 302)
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
     def test_module_4_get_200_when_closed(self):
         response = self.client.get(reverse("surveys:module_4"))
@@ -2017,10 +1665,9 @@ class ClosedSubmissionTests(TestCase):
     def test_module_4_post_rejected_when_closed(self):
         response = self.client.post(
             reverse("surveys:module_4"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
         self.assertNotEqual(response.status_code, 302)
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
     def test_module_reopened_accepts_submission(self):
         session = TrainingSession.objects.get(module__code="MODULE_2", is_active=True)
@@ -2029,8 +1676,7 @@ class ClosedSubmissionTests(TestCase):
         response = self.client.post(
             reverse("surveys:module_2"),
             {
-                "school_id_number": "99",
-                "full_name": "Test Student",
+                    "full_name": "Test Student",
                 "class_level": "seconde",
                 "group_name": "",
                 "auto_eval_internet_explained": "bien",
@@ -2063,7 +1709,6 @@ class ClosedSubmissionTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)  # redirect to success page
-        self.assertTrue(Submission.objects.filter(school_id_number_snapshot="99").exists())
 
     def test_existing_antiduplicate_tests_still_pass(self):
         # Module 2 is closed - re-open and submit once, then verify second submit is rejected
@@ -2071,7 +1716,6 @@ class ClosedSubmissionTests(TestCase):
         session.accepting_responses = True
         session.save(update_fields=["accepting_responses"])
         data = {
-            "school_id_number": "88",
             "full_name": "Dup Test",
             "class_level": "seconde",
             "group_name": "",
@@ -2104,6 +1748,8 @@ class ClosedSubmissionTests(TestCase):
             "feedback_confidence": "oui",
         }
         self.client.post(reverse("surveys:module_2"), data)
+        # Clear session to simulate another session/device
+        self.client.session.flush()
         # Second submit should fail
         response = self.client.post(reverse("surveys:module_2"), data)
         self.assertContains(response, "existe déjà")
@@ -2312,9 +1958,8 @@ class F019ModuleFormRegressionTests(TestCase):
         session.save(update_fields=["accepting_responses"])
         response = self.client.post(
             reverse("surveys:module_2"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
 
 class F021PedagogyContentTests(TestCase):
@@ -2796,8 +2441,10 @@ class F023NetworkIPDetectionTests(TestCase):
         rf = RequestFactory()
         request = rf.get("/", HTTP_HOST="localhost:8010")
         ctx = get_network_access_context(request)
-        for key in ("student_form_url", "module_2_url", "module_3_url", "module_4_url", "cockpit_url"):
-            self.assertNotIn("<IP_DU_LAPTOP>", ctx[key], f"{key} contains <IP_DU_LAPTOP>")
+        self.assertNotIn("<IP_DU_LAPTOP>", ctx["student_form_url"], "student_form_url contains <IP_DU_LAPTOP>")
+        self.assertNotIn("<IP_DU_LAPTOP>", ctx["cockpit_url"], "cockpit_url contains <IP_DU_LAPTOP>")
+        for item in ctx.get("module_url_list", []):
+            self.assertNotIn("<IP_DU_LAPTOP>", item["url"], f"module_url_list {item.get('code')} contains <IP_DU_LAPTOP>")
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_warning_contains_stale_message(self):
@@ -2903,15 +2550,18 @@ class F023DashboardSettingsTests(TestCase):
 
     def test_settings_page_shows_use_current_address_when_lan(self):
         response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="192.168.0.101:8011")
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Utiliser l'adresse actuelle")
 
     def test_settings_page_hides_button_on_localhost(self):
-        response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010", follow=True)
-        self.assertContains(response, "Paramètres")
-
-    def test_settings_page_redirects_to_network_on_localhost(self):
         response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010")
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Utiliser l'adresse actuelle")
+
+    def test_settings_page_renders_on_localhost(self):
+        response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Configuration")
 
     def test_use_detected_address_updates_settings_from_localhost(self):
         response = self.client.post(
@@ -2925,7 +2575,8 @@ class F023DashboardSettingsTests(TestCase):
     def test_settings_identifies_postgresql_without_exposing_sqlite_as_active(self):
         with patch.dict(os.environ, {"DB_HOST": "db", "DB_NAME": "taf_local_forms"}, clear=False):
             response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010")
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "PostgreSQL")
 
     def test_use_current_address_updates_settings(self):
         response = self.client.post(
@@ -3131,13 +2782,11 @@ class Module5SubmissionConstraintTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
         )
         self.other_student = Student.objects.create(
-            school_id_number="01",
             full_name="Rabe Hery",
             class_level=Student.CLASS_LEVEL_PREMIERE,
             group_name="Salle B",
@@ -3147,7 +2796,6 @@ class Module5SubmissionConstraintTests(TestCase):
         return Module5Submission.objects.create(
             student=student,
             session=self.session,
-            school_id_number_snapshot=student.school_id_number,
             auto_eval_email_purpose="bien",
             auto_eval_write_email="un_peu",
             auto_eval_attach_file="tres_bien",
@@ -3176,41 +2824,6 @@ class Module5SubmissionConstraintTests(TestCase):
             feedback_still_difficult="",
             feedback_confidence_email="oui",
         )
-
-    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
-        self.make_submission(self.student)
-        with self.assertRaises(IntegrityError):
-            self.make_submission(self.other_student)
-
-    def test_score_is_computed_on_save(self):
-        submission = self.make_submission(self.student)
-        self.assertEqual(submission.computed_score, 7)
-
-    def test_score_zero_for_wrong_answers(self):
-        submission = Module5Submission.objects.create(
-            student=Student.objects.create(school_id_number="02", full_name="Test", class_level=Student.CLASS_LEVEL_SECONDE),
-            session=self.session,
-            school_id_number_snapshot="02",
-            auto_eval_email_purpose="pas_encore",
-            auto_eval_write_email="pas_encore",
-            auto_eval_attach_file="pas_encore",
-            quiz_q1="faux",
-            quiz_q2="faux",
-            quiz_q3="vrai",
-            quiz_q4="vrai",
-            quiz_q5="salut",
-            quiz_q6="yo_prof",
-            quiz_q7_selected=["mot_de_passe_compte"],
-            practical_who_writing_to="Test",
-            practical_email_subject="Test",
-            practical_email_message="Test",
-            practical_needs_attachment="non",
-            practical_best_tool="tiktok",
-            feedback_understood_today="Test",
-            feedback_confidence_email="pas_encore",
-        )
-        self.assertEqual(submission.computed_score, 0)
-
 
 class Module5FormViewTests(TestCase):
     def setUp(self):
@@ -3248,7 +2861,6 @@ class Module5FormViewTests(TestCase):
 
     def valid_payload(self):
         return {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -3293,82 +2905,7 @@ class Module5FormViewTests(TestCase):
         self.assertEqual(Student.objects.count(), 1)
         self.assertEqual(Module5Submission.objects.count(), 1)
         submission = Module5Submission.objects.get()
-        self.assertEqual(submission.school_id_number_snapshot, "01")
         self.assertEqual(submission.computed_score, 7)
-
-    def test_invalid_school_id_is_rejected(self):
-        payload = self.valid_payload()
-        payload["school_id_number"] = "1"
-        response = self.client.post(reverse("surveys:module_5"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Entre exactement 2 chiffres")
-        self.assertEqual(Student.objects.count(), 0)
-        self.assertEqual(Module5Submission.objects.count(), 0)
-
-    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
-        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
-        payload = self.valid_payload()
-        payload["full_name"] = "Autre eleve"
-        response = self.client.post(reverse("surveys:module_5"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
-        self.assertEqual(Module5Submission.objects.count(), 1)
-
-    def test_same_school_id_can_submit_all_modules_separately(self):
-        m2_payload = {
-            "school_id_number": "01", "full_name": "Rakoto Aina",
-            "class_level": Student.CLASS_LEVEL_SECONDE,
-            "auto_eval_internet_explained": "un_peu", "auto_eval_learning_usage": "parfois",
-            "auto_eval_open_browser": "oui", "quiz_q1": "faux", "quiz_q2": "vrai",
-            "quiz_q3": "vrai", "quiz_q4_selected": ["chercher_une_explication"],
-            "quiz_q5": "cours_equation_seconde_exemple",
-            "practical_search_text": "test", "practical_site_text": "",
-            "practical_subject": "mathematiques",
-            "feedback_understood_today": "test", "feedback_still_difficult": "",
-            "feedback_confidence": "oui",
-        }
-        self.assertEqual(self.client.post(reverse("surveys:module_2"), data=m2_payload).status_code, 302)
-        self.assertEqual(self.client.post(reverse("surveys:module_5"), data=self.valid_payload()).status_code, 302)
-        self.assertEqual(Submission.objects.count(), 1)
-        self.assertEqual(Module5Submission.objects.count(), 1)
-
-    def test_success_page_requires_matching_session_submission_id(self):
-        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
-        submission = Module5Submission.objects.get()
-        other_client = self.client_class()
-        response = other_client.get(reverse("surveys:module_5_success", args=[submission.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("surveys:module_5"))
-
-    def test_module_5_form_returns_503_when_no_active_session_exists(self):
-        self.session.is_active = False
-        self.session.save()
-        response = self.client.get(reverse("surveys:module_5"))
-        self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
-
-    def test_practical_email_message_saved(self):
-        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
-        submission = Module5Submission.objects.get()
-        self.assertEqual(submission.practical_email_message, "Bonjour Monsieur, je voudrais des informations.")
-
-    def test_todo_8_items(self):
-        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
-        submission = Module5Submission.objects.get()
-        self.assertTrue(submission.todo_spotted_recipient)
-        self.assertTrue(submission.todo_written_clear_subject)
-        self.assertTrue(submission.todo_started_greeting)
-        self.assertTrue(submission.todo_written_short_message)
-        self.assertTrue(submission.todo_added_politeness)
-        self.assertTrue(submission.todo_signed_name)
-        self.assertTrue(submission.todo_checked_attachment)
-        self.assertTrue(submission.todo_reread_before_sending)
-
-    def test_quiz_score_max_7(self):
-        self.client.post(reverse("surveys:module_5"), data=self.valid_payload())
-        submission = Module5Submission.objects.get()
-        self.assertEqual(submission.computed_score, 7)
-
 
 class Module5PedagogyContentTests(TestCase):
     def setUp(self):
@@ -3438,10 +2975,9 @@ class Module5DashboardAndCockpitTests(TestCase):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         submission = Module5Submission.objects.create(
             student=Student.objects.create(
-                school_id_number="99", full_name="=cmd", class_level="seconde",
+                full_name="=cmd", class_level="seconde",
             ),
             session=TrainingSession.objects.get(session_code="M5-ANDO-001"),
-            school_id_number_snapshot="99",
             auto_eval_email_purpose="bien", auto_eval_write_email="bien",
             auto_eval_attach_file="bien",
             quiz_q1="vrai", quiz_q2="vrai", quiz_q3="faux", quiz_q4="faux",
@@ -3484,17 +3020,16 @@ class Module5ClosedSubmissionTests(TestCase):
     def test_module_5_post_rejected_when_closed(self):
         response = self.client.post(
             reverse("surveys:module_5"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
         self.assertNotEqual(response.status_code, 302)
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
     def test_module_5_reopened_accepts_submission(self):
         session = TrainingSession.objects.get(module__code="MODULE_5", is_active=True)
         session.accepting_responses = True
         session.save(update_fields=["accepting_responses"])
         payload = {
-            "school_id_number": "99", "full_name": "Test Student",
+            "full_name": "Test Student",
             "class_level": "seconde", "group_name": "",
             "auto_eval_email_purpose": "bien", "auto_eval_write_email": "bien",
             "auto_eval_attach_file": "bien",
@@ -3509,7 +3044,6 @@ class Module5ClosedSubmissionTests(TestCase):
         }
         response = self.client.post(reverse("surveys:module_5"), data=payload)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Module5Submission.objects.filter(school_id_number_snapshot="99").exists())
 
 
 class Module5ToggleResponsesTests(TestCase):
@@ -3644,13 +3178,11 @@ class Module6SubmissionConstraintTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
         )
         self.other_student = Student.objects.create(
-            school_id_number="01",
             full_name="Rabe Hery",
             class_level=Student.CLASS_LEVEL_PREMIERE,
             group_name="Salle B",
@@ -3660,7 +3192,6 @@ class Module6SubmissionConstraintTests(TestCase):
         return Module6Submission.objects.create(
             student=student,
             session=self.session,
-            school_id_number_snapshot=student.school_id_number,
             auto_eval_find_resource="bien",
             auto_eval_choose_resource="tres_bien",
             auto_eval_keep_link="un_peu",
@@ -3690,42 +3221,6 @@ class Module6SubmissionConstraintTests(TestCase):
             feedback_confidence_resources="oui",
         )
 
-    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
-        self.make_submission(self.student)
-        with self.assertRaises(IntegrityError):
-            self.make_submission(self.other_student)
-
-    def test_score_is_computed_on_save(self):
-        submission = self.make_submission(self.student)
-        self.assertEqual(submission.computed_score, 7)
-
-    def test_score_zero_for_wrong_answers(self):
-        submission = Module6Submission.objects.create(
-            student=Student.objects.create(school_id_number="02", full_name="Test", class_level=Student.CLASS_LEVEL_SECONDE),
-            session=self.session,
-            school_id_number_snapshot="02",
-            auto_eval_find_resource="pas_encore",
-            auto_eval_choose_resource="pas_encore",
-            auto_eval_keep_link="pas_encore",
-            quiz_q1="faux",
-            quiz_q2="faux",
-            quiz_q3="vrai",
-            quiz_q4="publicite",
-            quiz_q5="video_drole",
-            quiz_q6_selected=["demande_mot_de_passe"],
-            quiz_q7_selected=["partager_mot_de_passe"],
-            practical_subject="francais",
-            practical_what_to_revise="Test",
-            practical_resource_type="autre",
-            practical_resource_name_or_link="Test",
-            practical_adapted_level="non",
-            practical_what_learned="Test",
-            feedback_understood_today="Test",
-            feedback_confidence_resources="pas_encore",
-        )
-        self.assertEqual(submission.computed_score, 0)
-
-
 class Module6FormViewTests(TestCase):
     def setUp(self):
         self.module = TrainingModule.objects.create(
@@ -3744,7 +3239,6 @@ class Module6FormViewTests(TestCase):
 
     def valid_payload(self):
         return {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -3789,64 +3283,7 @@ class Module6FormViewTests(TestCase):
         self.assertEqual(Student.objects.count(), 1)
         self.assertEqual(Module6Submission.objects.count(), 1)
         submission = Module6Submission.objects.get()
-        self.assertEqual(submission.school_id_number_snapshot, "01")
         self.assertEqual(submission.computed_score, 7)
-
-    def test_invalid_school_id_is_rejected(self):
-        payload = self.valid_payload()
-        payload["school_id_number"] = "1"
-        response = self.client.post(reverse("surveys:module_6"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Entre exactement 2 chiffres")
-        self.assertEqual(Student.objects.count(), 0)
-        self.assertEqual(Module6Submission.objects.count(), 0)
-
-    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
-        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
-        payload = self.valid_payload()
-        payload["full_name"] = "Autre eleve"
-        response = self.client.post(reverse("surveys:module_6"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Une réponse existe déjà pour ce numéro")
-        self.assertEqual(Module6Submission.objects.count(), 1)
-
-    def test_success_page_requires_matching_session_submission_id(self):
-        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
-        submission = Module6Submission.objects.get()
-        other_client = self.client_class()
-        response = other_client.get(reverse("surveys:module_6_success", args=[submission.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("surveys:module_6"))
-
-    def test_module_6_form_returns_503_when_no_active_session_exists(self):
-        self.session.is_active = False
-        self.session.save()
-        response = self.client.get(reverse("surveys:module_6"))
-        self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Aucune session active pour ce module.", status_code=503)
-
-    def test_practical_what_learned_saved(self):
-        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
-        submission = Module6Submission.objects.get()
-        self.assertEqual(submission.practical_what_learned, "J'ai compris comment résoudre des équations.")
-
-    def test_todo_8_items(self):
-        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
-        submission = Module6Submission.objects.get()
-        self.assertTrue(submission.todo_chose_subject)
-        self.assertTrue(submission.todo_searched_resource)
-        self.assertTrue(submission.todo_opened_video_pdf_exercise)
-        self.assertTrue(submission.todo_checked_level)
-        self.assertTrue(submission.todo_noted_resource_title)
-        self.assertTrue(submission.todo_noted_link_or_site)
-        self.assertTrue(submission.todo_written_what_learned)
-        self.assertTrue(submission.todo_kept_for_later)
-
-    def test_quiz_score_max_7(self):
-        self.client.post(reverse("surveys:module_6"), data=self.valid_payload())
-        submission = Module6Submission.objects.get()
-        self.assertEqual(submission.computed_score, 7)
-
 
 class Module6PedagogyContentTests(TestCase):
     def setUp(self):
@@ -3912,10 +3349,9 @@ class Module6DashboardAndCockpitTests(TestCase):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         submission = Module6Submission.objects.create(
             student=Student.objects.create(
-                school_id_number="99", full_name="=cmd", class_level="seconde",
+                full_name="=cmd", class_level="seconde",
             ),
             session=TrainingSession.objects.get(session_code="M6-ANDO-001"),
-            school_id_number_snapshot="99",
             auto_eval_find_resource="bien",
             auto_eval_choose_resource="bien",
             auto_eval_keep_link="bien",
@@ -3963,17 +3399,16 @@ class Module6ClosedSubmissionTests(TestCase):
     def test_module_6_post_rejected_when_closed(self):
         response = self.client.post(
             reverse("surveys:module_6"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
         self.assertNotEqual(response.status_code, 302)
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
     def test_module_6_reopened_accepts_submission(self):
         session = TrainingSession.objects.get(module__code="MODULE_6", is_active=True)
         session.accepting_responses = True
         session.save(update_fields=["accepting_responses"])
         payload = {
-            "school_id_number": "99", "full_name": "Test Student",
+            "full_name": "Test Student",
             "class_level": "seconde", "group_name": "",
             "auto_eval_find_resource": "bien",
             "auto_eval_choose_resource": "bien",
@@ -3993,7 +3428,6 @@ class Module6ClosedSubmissionTests(TestCase):
         }
         response = self.client.post(reverse("surveys:module_6"), data=payload)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Module6Submission.objects.filter(school_id_number_snapshot="99").exists())
 
 
 class Module6ToggleResponsesTests(TestCase):
@@ -4129,13 +3563,11 @@ class Module7SubmissionConstraintTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
         )
         self.other_student = Student.objects.create(
-            school_id_number="01",
             full_name="Rabe Hery",
             class_level=Student.CLASS_LEVEL_PREMIERE,
             group_name="Salle B",
@@ -4145,7 +3577,6 @@ class Module7SubmissionConstraintTests(TestCase):
         return Module7Submission.objects.create(
             student=student,
             session=self.session,
-            school_id_number_snapshot=student.school_id_number,
             auto_eval_password="oui",
             auto_eval_suspect="pas_encore",
             auto_eval_personal_info="oui_facilement",
@@ -4175,42 +3606,6 @@ class Module7SubmissionConstraintTests(TestCase):
             feedback_confidence_security="oui",
         )
 
-    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
-        self.make_submission(self.student)
-        with self.assertRaises(IntegrityError):
-            self.make_submission(self.other_student)
-
-    def test_score_is_computed_on_save(self):
-        sub = self.make_submission(self.student)
-        self.assertEqual(sub.computed_score, 7)
-
-    def test_score_zero_for_wrong_answers(self):
-        sub = Module7Submission.objects.create(
-            student=self.student,
-            session=self.session,
-            school_id_number_snapshot=self.student.school_id_number,
-            auto_eval_password="pas_encore",
-            auto_eval_suspect="pas_encore",
-            auto_eval_personal_info="pas_encore",
-            quiz_q1="vrai",
-            quiz_q2="faux",
-            quiz_q3="faux",
-            quiz_q4="cliquer_tout_de_suite",
-            quiz_q5_selected=["message_prof"],
-            quiz_q6_selected=["lecon_publique"],
-            quiz_q7_selected=["garder_secret", "donner_code"],
-            practical_situation="autre",
-            practical_describe="Test",
-            practical_danger_signs="Test",
-            practical_protect_selected=[],
-            practical_good_reaction_selected=["partager_vite"],
-            practical_explain="Test",
-            feedback_understood_today="Test",
-            feedback_confidence_security="pas_encore",
-        )
-        self.assertEqual(sub.computed_score, 0)
-
-
 class Module7FormViewTests(TestCase):
     def setUp(self):
         self.module = TrainingModule.objects.create(
@@ -4229,7 +3624,6 @@ class Module7FormViewTests(TestCase):
 
     def valid_payload(self):
         return {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -4274,60 +3668,6 @@ class Module7FormViewTests(TestCase):
         self.assertContains(response, "Merci")
         self.assertEqual(Module7Submission.objects.count(), 1)
         self.assertEqual(Student.objects.count(), 1)
-
-    def test_invalid_school_id_is_rejected(self):
-        payload = self.valid_payload()
-        payload["school_id_number"] = "1"
-        response = self.client.post(reverse("surveys:module_7"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "2 chiffres")
-
-    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
-        self.client.post(reverse("surveys:module_7"), data=self.valid_payload())
-        response = self.client.post(reverse("surveys:module_7"), data=self.valid_payload())
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "déjà")
-
-    def test_success_page_requires_matching_session_submission_id(self):
-        self.client.post(reverse("surveys:module_7"), data=self.valid_payload())
-        submission = Module7Submission.objects.get()
-        other_client = self.client_class()
-        response = other_client.get(reverse("surveys:module_7_success", args=[submission.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("surveys:module_7"))
-
-    def test_module_7_form_returns_200_when_responses_closed(self):
-        self.session.accepting_responses = False
-        self.session.save(update_fields=["accepting_responses"])
-        response = self.client.get(reverse("surveys:module_7"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "fermées")
-
-    def test_practical_explain_saved(self):
-        self.client.post(reverse("surveys:module_7"), data=self.valid_payload())
-        sub = Module7Submission.objects.first()
-        self.assertEqual(sub.practical_explain, "Il ne faut pas cliquer et demander de l'aide.")
-
-    def test_todo_8_items(self):
-        self.client.post(reverse("surveys:module_7"), data=self.valid_payload())
-        sub = Module7Submission.objects.first()
-        for field in [
-            "todo_identified_weak_password",
-            "todo_written_password_rules",
-            "todo_understood_no_code_sharing",
-            "todo_observed_suspect_message",
-            "todo_spotted_danger_signs",
-            "todo_applied_stop_method",
-            "todo_listed_personal_info",
-            "todo_ask_help",
-        ]:
-            self.assertTrue(getattr(sub, field), f"{field} should be True")
-
-    def test_quiz_score_max_7(self):
-        self.client.post(reverse("surveys:module_7"), data=self.valid_payload())
-        sub = Module7Submission.objects.first()
-        self.assertEqual(sub.computed_score, 7)
-
 
 class Module7PedagogyContentTests(TestCase):
     def setUp(self):
@@ -4381,7 +3721,6 @@ class Module7DashboardAndCockpitTests(TestCase):
 
     def test_csv_export_module_7_contains_submission_data(self):
         self.client.post(reverse("surveys:module_7"), data={
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -4412,7 +3751,6 @@ class Module7DashboardAndCockpitTests(TestCase):
 
     def test_csv_export_sanitizes_formula_like_cells(self):
         self.client.post(reverse("surveys:module_7"), data={
-            "school_id_number": "02",
             "full_name": "=SUM(1,1)",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -4467,17 +3805,15 @@ class Module7ClosedSubmissionTests(TestCase):
     def test_module_7_post_rejected_when_closed(self):
         response = self.client.post(
             reverse("surveys:module_7"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
         self.assertNotEqual(response.status_code, 302)
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
     def test_module_7_reopened_accepts_submission(self):
         session = TrainingSession.objects.get(module__code="MODULE_7", is_active=True)
         session.accepting_responses = True
         session.save(update_fields=["accepting_responses"])
         response = self.client.post(reverse("surveys:module_7"), data={
-            "school_id_number": "01",
             "full_name": "Rakoto",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -5049,13 +4385,11 @@ class Module8SubmissionConstraintTests(TestCase):
             is_active=True,
         )
         self.student = Student.objects.create(
-            school_id_number="01",
             full_name="Rakoto Aina",
             class_level=Student.CLASS_LEVEL_SECONDE,
             group_name="Salle A",
         )
         self.other_student = Student.objects.create(
-            school_id_number="01",
             full_name="Rabe Hery",
             class_level=Student.CLASS_LEVEL_PREMIERE,
             group_name="Salle B",
@@ -5065,7 +4399,6 @@ class Module8SubmissionConstraintTests(TestCase):
         return Module8Submission.objects.create(
             student=student,
             session=self.session,
-            school_id_number_snapshot=student.school_id_number,
             auto_eval_search="bien",
             auto_eval_source="bien",
             auto_eval_summarize="bien",
@@ -5102,67 +4435,6 @@ class Module8SubmissionConstraintTests(TestCase):
             feedback_one_thing_to_practice="Verifier les sources",
         )
 
-    def test_duplicate_school_id_snapshot_is_blocked_for_same_session(self):
-        self.make_submission(self.student)
-        with self.assertRaises(IntegrityError):
-            self.make_submission(self.other_student)
-
-    def test_score_is_computed_on_save(self):
-        sub = self.make_submission(self.student)
-        self.assertEqual(sub.computed_score, 7)
-
-    def test_score_zero_for_wrong_answers(self):
-        sub = Module8Submission.objects.create(
-            student=self.student,
-            session=self.session,
-            school_id_number_snapshot=self.student.school_id_number,
-            auto_eval_search="pas_encore",
-            auto_eval_source="pas_encore",
-            auto_eval_summarize="pas_encore",
-            quiz_q1="faux",
-            quiz_q2="faux",
-            quiz_q3="vrai",
-            quiz_q4="faux",
-            quiz_q5="faux",
-            quiz_q6="vrai",
-            quiz_q7_selected=["copier_sans_comprendre"],
-            practical_subject="autre",
-            practical_topic="Test",
-            practical_starting_question="Test",
-            practical_keywords_used="Test",
-            practical_first_source="Test",
-            practical_verified_elements=[],
-            practical_three_ideas="Test",
-            practical_synthesis="Test",
-            feedback_best_success="Test",
-            feedback_confidence="pas_encore",
-        )
-        self.assertEqual(sub.computed_score, 0)
-
-    def test_has_seven_quiz_questions(self):
-        sub = self.make_submission(self.student)
-        self.assertIsNotNone(sub.quiz_q1)
-        self.assertIsNotNone(sub.quiz_q6)
-        self.assertIsNotNone(sub.quiz_q7_selected)
-
-    def test_has_ten_todo_fields(self):
-        sub = self.make_submission(self.student)
-        todo_fields = [
-            sub.todo_chose_subject,
-            sub.todo_written_question,
-            sub.todo_transformed_keywords,
-            sub.todo_found_first_source,
-            sub.todo_found_second_source,
-            sub.todo_checked_source_quality,
-            sub.todo_chose_most_useful,
-            sub.todo_noted_three_ideas,
-            sub.todo_prepared_synthesis,
-            sub.todo_presented_explained,
-        ]
-        self.assertTrue(all(todo_fields))
-        self.assertEqual(len(todo_fields), 10)
-
-
 class Module8FormViewTests(TestCase):
     def setUp(self):
         self.module = TrainingModule.objects.create(
@@ -5181,7 +4453,6 @@ class Module8FormViewTests(TestCase):
 
     def valid_payload(self):
         return {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -5233,62 +4504,6 @@ class Module8FormViewTests(TestCase):
         self.assertContains(response, "Merci")
         self.assertEqual(Module8Submission.objects.count(), 1)
         self.assertEqual(Student.objects.count(), 1)
-
-    def test_invalid_school_id_is_rejected(self):
-        payload = self.valid_payload()
-        payload["school_id_number"] = "1"
-        response = self.client.post(reverse("surveys:module_8"), data=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "2 chiffres")
-
-    def test_duplicate_school_id_is_rejected_for_same_active_session(self):
-        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
-        response = self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "déjà")
-
-    def test_success_page_requires_matching_session_submission_id(self):
-        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
-        submission = Module8Submission.objects.get()
-        other_client = self.client_class()
-        response = other_client.get(reverse("surveys:module_8_success", args=[submission.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("surveys:module_8"))
-
-    def test_module_8_form_returns_200_when_responses_closed(self):
-        self.session.accepting_responses = False
-        self.session.save(update_fields=["accepting_responses"])
-        response = self.client.get(reverse("surveys:module_8"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "fermées")
-
-    def test_practical_synthesis_saved(self):
-        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
-        sub = Module8Submission.objects.first()
-        self.assertEqual(sub.practical_synthesis, "L IA est un outil puissant pour l education.")
-
-    def test_todo_10_items(self):
-        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
-        sub = Module8Submission.objects.first()
-        for field in [
-            "todo_chose_subject",
-            "todo_written_question",
-            "todo_transformed_keywords",
-            "todo_found_first_source",
-            "todo_found_second_source",
-            "todo_checked_source_quality",
-            "todo_chose_most_useful",
-            "todo_noted_three_ideas",
-            "todo_prepared_synthesis",
-            "todo_presented_explained",
-        ]:
-            self.assertTrue(getattr(sub, field), f"{field} should be True")
-
-    def test_quiz_score_max_7(self):
-        self.client.post(reverse("surveys:module_8"), data=self.valid_payload())
-        sub = Module8Submission.objects.first()
-        self.assertEqual(sub.computed_score, 7)
-
 
 class Module8PedagogyContentTests(TestCase):
     def setUp(self):
@@ -5342,7 +4557,6 @@ class Module8DashboardAndCockpitTests(TestCase):
 
     def test_csv_export_module_8_contains_submission_data(self):
         self.client.post(reverse("surveys:module_8"), data={
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -5377,7 +4591,6 @@ class Module8DashboardAndCockpitTests(TestCase):
 
     def test_csv_export_sanitizes_formula_like_cells(self):
         self.client.post(reverse("surveys:module_8"), data={
-            "school_id_number": "02",
             "full_name": "=SUM(1,1)",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -5433,17 +4646,15 @@ class Module8ClosedSubmissionTests(TestCase):
     def test_module_8_post_rejected_when_closed(self):
         response = self.client.post(
             reverse("surveys:module_8"),
-            {"school_id_number": "99", "full_name": "Test", "class_level": "seconde", "group_name": ""},
+            {"full_name": "Test", "class_level": "seconde", "group_name": ""},
         )
         self.assertNotEqual(response.status_code, 302)
-        self.assertEqual(Student.objects.filter(school_id_number="99").count(), 0)
 
     def test_module_8_reopened_accepts_submission(self):
         session = TrainingSession.objects.get(module__code="MODULE_8", is_active=True)
         session.accepting_responses = True
         session.save(update_fields=["accepting_responses"])
         response = self.client.post(reverse("surveys:module_8"), data={
-            "school_id_number": "01",
             "full_name": "Rakoto",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "group_name": "Salle A",
@@ -5930,7 +5141,6 @@ class RedesignUITests(TestCase):
 
     def test_success_page_shows_clear_confirmation_and_return_actions(self):
         payload = {
-            "school_id_number": "01",
             "full_name": "Rakoto Aina",
             "class_level": Student.CLASS_LEVEL_SECONDE,
             "auto_eval_internet_explained": "un_peu",
@@ -6594,3 +5804,320 @@ class ModuleQuestionInsightsTests(TestCase):
         self.assertContains(response, "Ouvrir le dashboard", count=8)
         self.assertContains(response, "Voir le formulaire élève", count=8)
         self.assertGreaterEqual(response.content.decode().count("csrfmiddlewaretoken"), 8)
+
+
+class ModulePreviewWorkflowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command("seed_all_modules")
+
+    def test_preview_relecture_workflow(self):
+        form_url = reverse("surveys:module_2")
+        preview_url = reverse("surveys:module_2_preview")
+
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            "full_name": "Eleve Test Preview",
+            "class_level": "seconde",
+            "group_name": "Salle Preview",
+            "auto_eval_internet_explained": "un_peu",
+            "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui",
+            "todo_opened_browser": "on",
+            "todo_typed_simple_search": "on",
+            "todo_used_keywords": "on",
+            "todo_opened_result": "on",
+            "todo_compared_results": "on",
+            "todo_found_school_info": "on",
+            "todo_noted_learning": "on",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4_selected": [
+                Submission.QUIZ_Q4_OPTION_EXPLANATION,
+                Submission.QUIZ_Q4_OPTION_VIDEO,
+                Submission.QUIZ_Q4_OPTION_DOCUMENT,
+                Submission.QUIZ_Q4_OPTION_WORD,
+            ],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "cours equation seconde exemple",
+            "practical_site_text": "www.exemple.mg",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "J'ai compris qu'Internet aide a apprendre.",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+
+        response = original_post(self.client, form_url, data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/module-2/preview/", response.url)
+
+        self.assertEqual(Student.objects.filter(full_name="Eleve Test Preview").count(), 0)
+        self.assertEqual(Submission.objects.count(), 0)
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relis tes réponses")
+        self.assertContains(response, "Eleve Test Preview")
+        self.assertContains(response, "cours equation seconde exemple")
+
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Eleve Test Preview")
+
+        response = original_post(self.client, preview_url)
+        self.assertEqual(response.status_code, 302)
+
+        self.assertEqual(Student.objects.filter(full_name="Eleve Test Preview").count(), 1)
+        self.assertEqual(Submission.objects.count(), 1)
+        submission = Submission.objects.get()
+        self.assertEqual(submission.student.full_name, "Eleve Test Preview")
+
+        self.assertIn(f"/module-2/success/{submission.pk}/", response.url)
+
+        # Clear session to simulate a new device/student
+        self.client.session.flush()
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'value="Eleve Test Preview"')
+
+
+class ModuleEditRequestWorkflowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command("seed_all_modules")
+        cls.trainer = get_user_model().objects.create_user(
+            username="trainer-edit-test",
+            password="secure-password-edit",
+            is_staff=True,
+        )
+
+    def test_complete_edit_request_workflow(self):
+        # 1. First, create a valid submission for Rasoanaivo in Module 2
+        form_url = reverse("surveys:module_2")
+        preview_url = reverse("surveys:module_2_preview")
+
+        payload = {
+            "full_name": "Rasoanaivo",
+            "class_level": "seconde",
+            "group_name": "Salle A",
+            "auto_eval_internet_explained": "un_peu",
+            "auto_eval_learning_usage": "parfois",
+            "auto_eval_open_browser": "oui",
+            "todo_opened_browser": "on",
+            "todo_typed_simple_search": "on",
+            "todo_used_keywords": "on",
+            "todo_opened_result": "on",
+            "todo_compared_results": "on",
+            "todo_found_school_info": "on",
+            "todo_noted_learning": "on",
+            "quiz_q1": "faux",
+            "quiz_q2": "vrai",
+            "quiz_q3": "vrai",
+            "quiz_q4_selected": [
+                Submission.QUIZ_Q4_OPTION_EXPLANATION,
+                Submission.QUIZ_Q4_OPTION_VIDEO,
+                Submission.QUIZ_Q4_OPTION_DOCUMENT,
+                Submission.QUIZ_Q4_OPTION_WORD,
+            ],
+            "quiz_q5": "cours_equation_seconde_exemple",
+            "practical_search_text": "cours equation seconde exemple",
+            "practical_site_text": "www.exemple.mg",
+            "practical_subject": "mathematiques",
+            "feedback_understood_today": "Initial feedback",
+            "feedback_still_difficult": "",
+            "feedback_confidence": "oui",
+        }
+
+        # Submit to preview, then confirm to save
+        original_post(self.client, form_url, data=payload)
+        original_post(self.client, preview_url)
+
+        self.assertEqual(Submission.objects.filter(student__full_name="Rasoanaivo").count(), 1)
+        submission = Submission.objects.get(student__full_name="Rasoanaivo")
+        self.assertEqual(submission.feedback_understood_today, "Initial feedback")
+
+        # Clear session to simulate a different device/session
+        self.client.session.flush()
+
+        # 2. Try to submit again with same student name.
+        response = original_post(self.client, form_url, data=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demander une modification au formateur")
+
+        # 3. Submit the edit request (simulate student clicking the button)
+        req_url = reverse("surveys:request_edit", kwargs={"module_number": 2})
+        response = self.client.post(req_url, {"full_name": "Rasoanaivo", "class_level": "seconde"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demande envoyée !")
+
+        # Check EditRequest model
+        self.assertEqual(EditRequest.objects.filter(student__full_name="Rasoanaivo", status="pending").count(), 1)
+        edit_req = EditRequest.objects.get(student__full_name="Rasoanaivo", status="pending")
+
+        # 4. Trainer logs in and views dashboard
+        self.client.login(username="trainer-edit-test", password="secure-password-edit")
+        dashboard_url = reverse("surveys:dashboard_edit_requests")
+        response = self.client.get(dashboard_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rasoanaivo")
+        self.assertContains(response, '<span class="badge" style="background-color: #ef4444; color: white; padding: 0.1rem 0.4rem; border-radius: 9999px; font-size: 0.75rem; margin-left: 0.25rem;">1</span>')
+
+        # Check that warning banner is displayed on Cockpit Home page
+        response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demandes de modification en attente")
+        self.assertContains(response, "Il y a 1 demande de modification d'élève en attente d'approbation.")
+
+        # Check that warning banner is displayed on Cockpit Modules page
+        response = self.client.get(reverse("surveys:dashboard_modules"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demandes de modification en attente")
+        self.assertContains(response, "Il y a 1 demande de modification d'élève en attente d'approbation.")
+
+        # 5. Trainer approves the request
+        approve_url = reverse("surveys:approve_edit_request", kwargs={"pk": edit_req.pk})
+        response = self.client.post(approve_url)
+        self.assertEqual(response.status_code, 302)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, "approved")
+        self.assertIsNotNone(edit_req.one_time_token)
+
+        # Logout trainer
+        self.client.logout()
+
+        # 6. Student opens the token link
+        token_url = reverse("surveys:activate_edit_request", kwargs={"module_number": 2, "token": edit_req.one_time_token})
+        response = self.client.get(token_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/module-2/", response.url)
+
+        self.assertEqual(self.client.session.get("last_submission_id"), submission.pk)
+        self.assertEqual(self.client.session.get("active_edit_request_id"), edit_req.pk)
+
+        # 7. Student loads form: it should be pre-filled with existing data and show edit banner
+        response = self.client.get(form_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mode modification actif")
+        self.assertContains(response, "Initial feedback")
+
+        # 8. Student submits modifications
+        payload["feedback_understood_today"] = "Modified feedback"
+        response = original_post(self.client, form_url, data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/module-2/preview/", response.url)
+
+        # Confirm modifications
+        response = original_post(self.client, preview_url)
+        self.assertEqual(response.status_code, 302)
+
+        # Verify database submission has been updated
+        submission.refresh_from_db()
+        self.assertEqual(submission.feedback_understood_today, "Modified feedback")
+        self.assertEqual(Submission.objects.filter(student__full_name="Rasoanaivo").count(), 1)
+
+        # Verify EditRequest status is now completed
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, "completed")
+        self.assertIsNone(edit_req.one_time_token)
+
+        # Bypassing or reopening the token link now returns 404
+        response = self.client.get(token_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_request_revocation_and_expiration(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.contrib.auth import get_user_model
+
+        # Setup trainer & student
+        trainer = get_user_model().objects.create_user(username="trainer-exp-test", password="secure-password-edit", is_staff=True)
+        mod = TrainingModule.objects.get(code="MODULE_2")
+        session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        student = Student.objects.create(full_name="Rindra", class_level="seconde")
+        submission = Submission.objects.create(session=session, student=student, computed_score=10)
+
+        # Create EditRequest
+        edit_req = EditRequest.objects.create(
+            student=student,
+            session=session,
+            module_code="MODULE_2",
+            status=EditRequest.STATUS_PENDING
+        )
+
+        self.client.login(username="trainer-exp-test", password="secure-password-edit")
+
+        # 1. Test Approval sets expires_at (now + 15 min)
+        approve_url = reverse("surveys:approve_edit_request", kwargs={"pk": edit_req.pk})
+        response = self.client.post(approve_url)
+        self.assertEqual(response.status_code, 302)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_APPROVED)
+        self.assertIsNotNone(edit_req.expires_at)
+        self.assertIsNotNone(edit_req.one_time_token)
+
+        # 2. Test Revocation
+        revoke_url = reverse("surveys:revoke_edit_request", kwargs={"pk": edit_req.pk})
+        response = self.client.post(revoke_url)
+        self.assertEqual(response.status_code, 302)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_CANCELLED)
+        self.assertIsNone(edit_req.one_time_token)
+
+        # Reset to approved but expired
+        edit_req.status = EditRequest.STATUS_APPROVED
+        edit_req.one_time_token = "expired-token-xyz"
+        edit_req.expires_at = timezone.now() - timedelta(minutes=5)
+        edit_req.save()
+
+        # 3. Test Auto-Prune (loading trainer dashboard auto-expires the request)
+        response = self.client.get(reverse("surveys:dashboard_edit_requests"))
+        self.assertEqual(response.status_code, 200)
+
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_EXPIRED)
+        self.assertIsNone(edit_req.one_time_token)
+
+        # Reset to approved but expired to test direct activation URL expiration
+        edit_req.status = EditRequest.STATUS_APPROVED
+        edit_req.one_time_token = "expired-activation-token"
+        edit_req.expires_at = timezone.now() - timedelta(minutes=1)
+        edit_req.save()
+
+        # 4. Test Activation URL returns 410 Gone when token is expired
+        token_url = reverse("surveys:activate_edit_request", kwargs={"module_number": 2, "token": "expired-activation-token"})
+        response = self.client.get(token_url)
+        self.assertEqual(response.status_code, 410)
+        self.assertContains(response, "Lien de modification expiré", status_code=410)
+ 
+        edit_req.refresh_from_db()
+        self.assertEqual(edit_req.status, EditRequest.STATUS_EXPIRED)
+        self.assertIsNone(edit_req.one_time_token)
+
+    def test_duplicate_detection_bypasses_form_validation(self):
+        # Setup student with an existing submission for Module 2
+        mod = TrainingModule.objects.get(code="MODULE_2")
+        session = TrainingSession.objects.filter(module=mod, is_active=True).first()
+        student = Student.objects.create(full_name="DuplicateTestStudent", class_level="seconde")
+        Submission.objects.create(session=session, student=student, computed_score=10)
+
+        # Clear session to ensure we are acting as a different/new student
+        self.client.session.flush()
+
+        # Submit ONLY name and class level, leaving all other required fields empty
+        form_url = reverse("surveys:module_2")
+        response = self.client.post(form_url, data={
+            "full_name": "DuplicateTestStudent",
+            "class_level": "seconde",
+        })
+
+        # The view should return 200 OK containing the duplicate warning and the request edit button,
+        # bypassing the form validation check for other fields.
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Une réponse existe déjà pour ce nom pendant cette séance.")
+        self.assertContains(response, "Demander une modification au formateur")

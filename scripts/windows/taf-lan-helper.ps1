@@ -15,7 +15,9 @@ param(
     [int]$Port = 8019,
     [string]$BindAddress = "127.0.0.1",
     [int]$DockerPort = 8010,
-    [int]$LanPort = 8011
+    [int]$LanPort = 8011,
+    [string]$WslDistribution = $env:TAF_WSL_DISTRO,
+    [string]$WslProjectPath = $env:TAF_WSL_PROJECT_PATH
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,6 +27,11 @@ $ErrorActionPreference = "Stop"
 # --------------------------------------------------
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+$wslToolsPath = Join-Path $scriptDir "taf-lan-wsl.ps1"
+if (-not (Test-Path $wslToolsPath)) {
+    throw "Utilitaire WSL introuvable: $wslToolsPath"
+}
+. $wslToolsPath
 $logDir = Join-Path $projectRoot "logs\windows"
 if (-not (Test-Path $logDir)) {
     $null = New-Item -ItemType Directory -Path $logDir -Force
@@ -120,12 +127,25 @@ function Test-LanUrl {
     }
 }
 
+function Test-DjangoHost {
+    param([string]$Ip)
+    if (-not $Ip) { return $false }
+    try {
+        $headers = @{ Host = "$Ip`:$LanPort" }
+        $response = Invoke-WebRequest -Uri "http://127.0.0.1:$DockerPort/" -Headers $headers -Method Head -TimeoutSec 5
+        return $response.StatusCode -eq 200
+    } catch {
+        return $false
+    }
+}
+
 function Get-Status {
     $lanIp = Get-ActiveLanIp
     $localOk = Test-LocalApp
     $portproxy = Get-PortproxyStatus
     $firewall = Get-FirewallStatus
     $lanOk = if ($lanIp) { Test-LanUrl -Ip $lanIp } else { $false }
+    $djangoAllowsIp = if ($lanIp) { Test-DjangoHost -Ip $lanIp } else { $false }
 
     $studentUrl = if ($lanIp) { "http://$lanIp`:$LanPort/" } else { $null }
 
@@ -141,6 +161,12 @@ function Get-Status {
         portproxy   = $portproxy.exists
         firewall    = $firewall.exists
         lan_ok      = $lanOk
+        helper_running = $true
+        local_app_ok = $localOk
+        portproxy_ok = $portproxy.exists
+        firewall_ok = $firewall.exists -and $firewall.enabled
+        django_allows_ip = $djangoAllowsIp
+        student_url_ok = $lanOk
         diagnostics = @{
             local_port  = $DockerPort
             lan_port    = $LanPort
@@ -183,16 +209,20 @@ function Invoke-Sync {
 
     # WSL sync
     try {
-        $syncOutput = wsl -d Ubuntu -e bash -c "cd /home/raillersing/projects/taf-local-forms && docker compose exec -T web python manage.py sync_lan_settings --lan-host $lanIp --lan-port $LanPort" 2>&1
-        $wslOk = $true
-        $wslMessage = $syncOutput
+        $wslContext = Get-TafWslContext -ScriptDirectory $scriptDir -WslDistribution $WslDistribution -WslProjectPath $WslProjectPath
+        $wslResult = Invoke-TafWslCompose -Context $wslContext -ComposeArguments @(
+            "exec", "-T", "web", "python", "manage.py", "sync_lan_settings",
+            "--lan-host", $lanIp, "--lan-port", $LanPort
+        )
+        $wslOk = ($wslResult.ExitCode -eq 0)
+        $wslMessage = $wslResult.Output
     } catch {
         $wslOk = $false
         $wslMessage = $_.Exception.Message
     }
 
     $studentUrl = "http://${lanIp}:${LanPort}/"
-    $ok = $proxyOk -and $fwOk
+    $ok = $proxyOk -and $fwOk -and $wslOk
 
     return @{
         success     = $ok
@@ -204,6 +234,11 @@ function Invoke-Sync {
             firewall  = $fwOk
             wsl_sync  = $wslOk
         }
+        local_app_ok = (Test-LocalApp)
+        portproxy_ok = $proxyOk
+        firewall_ok = $fwOk
+        django_allows_ip = $wslOk
+        student_url_ok = $false
     }
 }
 
@@ -234,10 +269,13 @@ function Invoke-Test {
     $studentUrl = if ($lanIp) { "http://$lanIp`:$LanPort/" } else { $null }
 
     return @{
-        success     = $true
+        success     = $lanOk
         message     = if ($lanOk) { "URL eleves accessible : $studentUrl" } else { "URL eleves inaccessible. Verifiez la configuration LAN." }
         lan_ip      = $lanIp
         student_url = $studentUrl
+        local_app_ok = $localOk
+        django_allows_ip = $false
+        student_url_ok = $lanOk
         diagnostics = @{
             local_accessible = $localOk
             lan_accessible   = $lanOk
@@ -247,8 +285,12 @@ function Invoke-Test {
 
 function Invoke-RestartApp {
     try {
-        $output = wsl -d Ubuntu -e bash -c "cd /home/raillersing/projects/taf-local-forms && docker compose restart web" 2>&1
-        return @{ success = $true; message = "Application redemarree."; output = $output }
+        $wslContext = Get-TafWslContext -ScriptDirectory $scriptDir -WslDistribution $WslDistribution -WslProjectPath $WslProjectPath
+        $wslResult = Invoke-TafWslCompose -Context $wslContext -ComposeArguments @("restart", "web")
+        if ($wslResult.ExitCode -ne 0) {
+            return @{ success = $false; message = "Le redemarrage Docker a echoue."; output = $wslResult.Output }
+        }
+        return @{ success = $true; message = "Application redemarree."; output = $wslResult.Output }
     } catch {
         return @{ success = $false; message = "Erreur lors du redemarrage: $($_.Exception.Message)" }
     }
@@ -360,7 +402,7 @@ try {
                         Write-Log "WARN" "404 → $method $path"
                     }
                 } catch {
-                    Write-Log "ERROR" "Erreur route $method $path: $($_.Exception.Message)"
+                    Write-Log "ERROR" "Erreur route $method ${path}: $($_.Exception.Message)"
                     try {
                         if ($res -and $res.OutputStream -and $res.OutputStream.CanWrite) {
                             Send-Error $res 500 "Erreur interne: $($_.Exception.Message)"

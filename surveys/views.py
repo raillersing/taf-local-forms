@@ -8,7 +8,7 @@ from django import forms as django_forms
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Sum
 from django.db import IntegrityError, connection
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +16,14 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from .constants import (
+    MODULE_METADATA,
+    get_module_csv_url,
+    get_module_dashboard_url,
+    get_module_detail_url,
+    get_module_form_url,
+    get_module_metadata,
+)
 from .forms import (
     LearningResourceForm,
     MODULE1_FIELD_DEFINITIONS,
@@ -38,6 +46,7 @@ from .models import (
     Module6Submission,
     Module7Submission,
     Module8Submission,
+    EditRequest,
     Student,
     Subject,
     Submission,
@@ -46,18 +55,41 @@ from .models import (
 )
 
 
-MODULE_2_SUMMARY = (
-    "Internet est un grand réseau qui relie des ordinateurs, des téléphones, "
-    "des serveurs et des sites web dans le monde. Il peut aider à apprendre, "
-    "faire des recherches, communiquer et préparer son avenir. Mais il faut "
-    "savoir chercher correctement et rester prudent."
-)
+def _build_preview_items(form) -> list[dict]:
+    from django import forms
+    preview_items = []
+    for name, field in form.fields.items():
+        value = form.cleaned_data.get(name)
+        if value is None or value == "" or value == []:
+            display_value = "Non renseigné"
+        elif isinstance(field, forms.MultipleChoiceField):
+            choice_dict = dict(field.choices)
+            display_value = ", ".join(choice_dict.get(v, str(v)) for v in value)
+        elif isinstance(field, forms.ChoiceField):
+            choice_dict = dict(field.choices)
+            display_value = choice_dict.get(value, str(value))
+        elif isinstance(field, forms.BooleanField):
+            display_value = "Oui" if value else "Non"
+        else:
+            display_value = str(value)
+        preview_items.append({
+            'label': field.label,
+            'value': display_value,
+            'name': name
+        })
+    return preview_items
 
-MODULE_1_SUMMARY = (
-    "Ce questionnaire de première prise de contact aide l'équipe TAfHSSiM à "
-    "mieux connaître ton accès aux outils numériques, tes habitudes, tes "
-    "besoins et ce que tu aimerais apprendre. Ce n'est pas un examen."
-)
+
+def _get_submission_initial_data(submission, module_number: int) -> dict:
+    from django.forms.models import model_to_dict
+    data = model_to_dict(submission)
+    if module_number == 1:
+        pass
+    else:
+        data["full_name"] = submission.student.full_name
+        data["class_level"] = submission.student.class_level
+        data["group_name"] = submission.student.group_name
+    return data
 
 
 def sanitize_csv_cell(value):
@@ -70,7 +102,7 @@ def sanitize_csv_cell(value):
 
 
 QUESTION_INSIGHT_EXCLUDED_FIELDS = {
-    "school_id_number", "full_name", "class_level", "group_name",
+    "full_name", "class_level", "group_name",
     "paper_full_name", "paper_class_level", "paper_school_name", "paper_date",
 }
 
@@ -212,7 +244,6 @@ def _build_home_context(request: HttpRequest | None = None) -> dict:
         + Module6Submission.objects.count()
         + Module7Submission.objects.count()
         + Module8Submission.objects.count()
-        + Module1Submission.objects.count()
     )
     net_ctx = get_network_access_context(request) if request else {}
     return {
@@ -248,6 +279,31 @@ def _submission_count_for_module(module_code: str) -> int:
     return counter() if counter else 0
 
 
+def _max_score_for_module(module_code: str) -> int:
+    meta = MODULE_METADATA.get(module_code, {})
+    return meta.get("max_score", 0)
+
+
+def _score_totals_for_module(module_code: str, max_score: int) -> tuple[int, int]:
+    if module_code == "MODULE_1":
+        count = Module1Submission.objects.count()
+        return 0, count * max_score
+    model = {
+        "MODULE_2": Submission,
+        "MODULE_3": Module3Submission,
+        "MODULE_4": Module4Submission,
+        "MODULE_5": Module5Submission,
+        "MODULE_6": Module6Submission,
+        "MODULE_7": Module7Submission,
+        "MODULE_8": Module8Submission,
+    }.get(module_code)
+    if model is None:
+        return 0, 0
+    total = model.objects.aggregate(total=Sum("computed_score"))["total"] or 0
+    count = model.objects.count()
+    return total, count * max_score
+
+
 def _published_resources_queryset():
     return LearningResource.objects.filter(is_published=True).select_related("subject", "chapter")
 
@@ -269,24 +325,25 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         + Module8Submission.objects.count()
     )
     total_students = Student.objects.count()
-    avg_score_m2 = Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m3 = Module3Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m4 = Module4Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m5 = Module5Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m6 = Module6Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m7 = Module7Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score_m8 = Module8Submission.objects.aggregate(avg=Avg("computed_score"))["avg"] or 0
-    avg_score = (avg_score_m2 + avg_score_m3 + avg_score_m4 + avg_score_m5 + avg_score_m6 + avg_score_m7 + avg_score_m8) / 7
+
     modules = TrainingModule.objects.all().order_by("code")
     module_list = []
     modules_open = 0
     active_module = None
+    global_score_sum = 0
+    global_score_max = 0
     for mod in modules:
         module_number = mod.code.removeprefix("MODULE_")
         active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
         accepting = active_session.accepting_responses if active_session else False
         if accepting:
             modules_open += 1
+        submission_count = _submission_count_for_module(mod.code)
+        max_score = _max_score_for_module(mod.code)
+        module_score_sum, module_score_max = _score_totals_for_module(mod.code, max_score)
+        avg_score = round((module_score_sum / module_score_max) * 100, 1) if module_score_max else 0
+        global_score_sum += module_score_sum
+        global_score_max += module_score_max
         module_item = {
             "module": mod,
             "module_number": module_number,
@@ -295,11 +352,17 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
             "has_active_session": active_session is not None,
             "accepting_responses": accepting,
             "active_session_id": active_session.pk if active_session else None,
-            "submission_count": _submission_count_for_module(mod.code),
+            "submission_count": submission_count,
+            "max_score": max_score,
+            "average_score": avg_score,
+            "score_sum": module_score_sum,
+            "score_max": module_score_max,
         }
         module_list.append(module_item)
         if active_module is None and active_session is not None:
             active_module = module_item
+
+    average_score = round((global_score_sum / global_score_max) * 100, 1) if global_score_max else 0
 
     student_access_url = ""
     if net_ctx.get("recommended_lan_host"):
@@ -308,7 +371,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     return {
         "total_submissions": total_submissions,
         "total_students": total_students,
-        "average_score": avg_score,
+        "average_score": average_score,
         "module_list": module_list,
         "modules_open": modules_open,
         "active_module": active_module,
@@ -324,28 +387,16 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
 
 @never_cache
 def student_modules(request: HttpRequest) -> HttpResponse:
-    from django.urls import reverse
-    URL_MAP = {
-        "MODULE_1": "surveys:student_module_1_detail",
-        "MODULE_2": "surveys:student_module_2_detail",
-        "MODULE_3": "surveys:student_module_3_detail",
-        "MODULE_4": "surveys:student_module_4_detail",
-        "MODULE_5": "surveys:student_module_5_detail",
-        "MODULE_6": "surveys:student_module_6_detail",
-        "MODULE_7": "surveys:student_module_7_detail",
-        "MODULE_8": "surveys:student_module_8_detail",
-    }
     modules = TrainingModule.objects.all().order_by("code")
     module_data = []
     for mod in modules:
         active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
-        detail_url = reverse(URL_MAP[mod.code])
         module_data.append({
             "module": mod,
             "display_title": _prototype_module_title(mod),
             "has_active_session": active_session is not None,
             "active_session": active_session,
-            "detail_url": detail_url,
+            "detail_url": get_module_detail_url(mod.code),
         })
     return render(request, "surveys/student_modules.html", {"module_data": module_data})
 
@@ -355,25 +406,19 @@ def student_module_detail(request: HttpRequest, module_code: str) -> HttpRespons
     mod = get_object_or_404(TrainingModule, code=module_code)
     active_session = TrainingSession.objects.filter(module=mod, is_active=True).first()
     accepting = active_session.accepting_responses if active_session else False
-
-    summary_map = {
-        "MODULE_1": MODULE_1_SUMMARY,
-        "MODULE_2": MODULE_2_SUMMARY,
-        "MODULE_3": MODULE_3_SUMMARY,
-        "MODULE_4": MODULE_4_SUMMARY,
-        "MODULE_5": MODULE_5_SUMMARY,
-        "MODULE_6": MODULE_6_SUMMARY,
-        "MODULE_7": MODULE_7_SUMMARY,
-        "MODULE_8": MODULE_8_SUMMARY,
-    }
-    summary = summary_map.get(module_code, "")
+    meta = get_module_metadata(module_code)
 
     return render(request, "surveys/student_module_detail.html", {
         "module": mod,
         "active_session": active_session,
         "has_active_session": active_session is not None,
         "accepting_responses": accepting,
-        "summary": summary,
+        "summary": meta.get("summary", ""),
+        "questionnaire_url": get_module_form_url(module_code),
+        "estimated_duration": meta.get("estimated_duration", 10),
+        "max_score": meta.get("max_score", 0),
+        "module_number": meta.get("number", module_code.removeprefix("MODULE_")),
+        "pedagogy_partial": meta.get("pedagogy_partial", ""),
     })
 
 
@@ -424,71 +469,218 @@ def module_1_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_1_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
+
     if request.method == "POST":
         if not accepting:
             form = Module1SubmissionForm()
             return render(request, "surveys/module_1_form.html", {
                 "form": form, "sections": _module1_form_sections(form), "session": session,
-                "module": session.module, "module_1_summary": MODULE_1_SUMMARY,
+                "module": session.module, "module_1_summary": get_module_metadata("MODULE_1").get("summary", ""),
                 "accepting_responses": False,
             }, status=403)
+
+        paper_full_name = request.POST.get("paper_full_name", "").strip()
+        paper_class_level = request.POST.get("paper_class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if paper_full_name:
+            if Module1Submission.objects.filter(session=session, paper_full_name=paper_full_name).exists():
+                sub_id_in_session = request.session.get("last_module1_submission_id")
+                is_this_submission = False
+                if sub_id_in_session:
+                    try:
+                        ex_sub = Module1Submission.objects.get(pk=sub_id_in_session)
+                        if ex_sub.paper_full_name == paper_full_name:
+                            is_this_submission = True
+                    except Module1Submission.DoesNotExist:
+                        pass
+                if not is_this_submission:
+                    has_duplicate = True
+
+        if has_duplicate:
+            form = Module1SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 1})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(request, "surveys/module_1_form.html", {
+                "form": form, "sections": _module1_form_sections(form), "session": session,
+                "module": session.module, "module_1_summary": get_module_metadata("MODULE_1").get("summary", ""),
+                "accepting_responses": True,
+            })
+
         form = Module1SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            if Module1Submission.objects.filter(session=session, school_id_number_snapshot=school_id_number).exists():
-                form.add_error("school_id_number", "Une réponse existe déjà pour ce numéro pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
-            else:
-                paper_class = form.cleaned_data["paper_class_level"].strip().casefold()
-                if "seconde" in paper_class:
-                    student_class_level = Student.CLASS_LEVEL_SECONDE
-                elif "première" in paper_class or "premiere" in paper_class:
-                    student_class_level = Student.CLASS_LEVEL_PREMIERE
-                else:
-                    student_class_level = Student.CLASS_LEVEL_AUTRE
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["paper_full_name"],
-                    class_level=student_class_level,
-                    group_name="",
-                )
-                submission_data = {
-                    key: value for key, value in form.cleaned_data.items()
-                    if key != "school_id_number"
-                }
-                for field_name in ("q46_digital_level", "q47_search_level", "q48_device_confidence"):
-                    if submission_data[field_name] == "":
-                        submission_data[field_name] = None
-                    elif submission_data[field_name] is not None:
-                        submission_data[field_name] = int(submission_data[field_name])
-                try:
-                    submission = Module1Submission.objects.create(
-                        student=student, session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error("school_id_number", "Une réponse existe déjà pour ce numéro pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
-                else:
-                    request.session["last_module1_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_1", session)
-                    return redirect("surveys:module_1_success", submission_id=submission.pk)
+            preview_data = dict(form.cleaned_data)
+            if preview_data.get("paper_date"):
+                preview_data["paper_date"] = preview_data["paper_date"].isoformat()
+            request.session["module_1_preview_data"] = preview_data
+            return redirect("surveys:module_1_preview")
     else:
-        form = Module1SubmissionForm()
+        preview_data = request.session.get("module_1_preview_data")
+        sub_id_in_session = request.session.get("last_module1_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module1_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Module1Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 1)
+            except Module1Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            preview_data = dict(preview_data)
+            if isinstance(preview_data.get("paper_date"), str):
+                from datetime import date
+                preview_data["paper_date"] = date.fromisoformat(preview_data["paper_date"])
+            initial_data.update(preview_data)
+
+        form = Module1SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(request, "surveys/module_1_form.html", {
         "form": form, "sections": _module1_form_sections(form), "session": session,
-        "module": session.module, "module_1_summary": MODULE_1_SUMMARY,
+        "module": session.module, "module_1_summary": get_module_metadata("MODULE_1").get("summary", ""),
         "accepting_responses": accepting,
+        "is_editing": is_editing,
     })
 
 
 @never_cache
+def module_1_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_1", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_1_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_1_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_1")
+
+    preview_data = dict(preview_data)
+    if isinstance(preview_data.get("paper_date"), str):
+        from datetime import date
+        preview_data["paper_date"] = date.fromisoformat(preview_data["paper_date"])
+
+    form = Module1SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_1")
+
+    if request.method == "POST":
+        paper_full_name = form.cleaned_data["paper_full_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_module1_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Module1Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Module1Submission.DoesNotExist:
+                pass
+
+        if Module1Submission.objects.filter(session=session, paper_full_name=paper_full_name).exists():
+            if not submission or submission.paper_full_name != paper_full_name:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("paper_full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            paper_class = form.cleaned_data["paper_class_level"].strip().casefold()
+            if "seconde" in paper_class:
+                student_class_level = Student.CLASS_LEVEL_SECONDE
+            elif "première" in paper_class or "premiere" in paper_class:
+                student_class_level = Student.CLASS_LEVEL_PREMIERE
+            else:
+                student_class_level = Student.CLASS_LEVEL_AUTRE
+
+            student = Student.objects.filter(
+                full_name=paper_full_name,
+                class_level=student_class_level,
+            ).first()
+            if not student:
+                student = Student.objects.create(
+                    full_name=paper_full_name,
+                    class_level=student_class_level,
+                    group_name="",
+                )
+
+            submission_data = dict(form.cleaned_data)
+            for field_name in ("q46_digital_level", "q47_search_level", "q48_device_confidence"):
+                if submission_data[field_name] == "":
+                    submission_data[field_name] = None
+                elif submission_data[field_name] is not None:
+                    submission_data[field_name] = int(submission_data[field_name])
+
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Module1Submission.objects.create(
+                        student=student, session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("paper_full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_1_preview_data", None)
+                request.session["last_module1_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_1", session)
+                return redirect("surveys:module_1_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_1",
+        },
+    )
+
+
+@never_cache
 def module_1_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module1_submission_id") != submission_id:
+    sess_key = "last_module1_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_1")
     submission = get_object_or_404(Module1Submission.objects.select_related("session", "student"), pk=submission_id)
-    return render(request, "surveys/module_1_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_1")
+    return render(request, "surveys/module_1_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60]})
 
 
 @never_cache
@@ -527,9 +719,9 @@ def export_module_1_csv(request: HttpRequest) -> HttpResponse:
     response["Content-Disposition"] = 'attachment; filename="module-1-prise-contact.csv"'
     response.write("\ufeff")
     writer = csv.writer(response)
-    writer.writerow(["Date d'enregistrement", "Session", "Numéro technique", "Nom et prénom(s)", "Classe / Niveau", "Établissement", "Date du questionnaire"] + [label for _name, label, _kind, _choices in MODULE1_FIELD_DEFINITIONS])
+    writer.writerow(["Date d'enregistrement", "Session", "Nom et prénom(s)", "Classe / Niveau", "Établissement", "Date du questionnaire"] + [label for _name, label, _kind, _choices in MODULE1_FIELD_DEFINITIONS])
     for submission in submissions:
-        row = [submission.created_at, submission.session.session_code, submission.school_id_number_snapshot, submission.paper_full_name, submission.paper_class_level, submission.paper_school_name, submission.paper_date]
+        row = [submission.created_at, submission.session.session_code, submission.paper_full_name, submission.paper_class_level, submission.paper_school_name, submission.paper_date]
         row.extend(_module1_export_value(name, getattr(submission, name)) for name, _label, _kind, _choices in MODULE1_FIELD_DEFINITIONS)
         writer.writerow([sanitize_csv_cell(value) for value in row])
     return response
@@ -614,6 +806,7 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_2_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
 
     if request.method == "POST":
         if not accepting:
@@ -625,55 +818,77 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
                     "form": form,
                     "session": session,
                     "module": session.module,
-                    "module_2_summary": MODULE_2_SUMMARY,
+                    "module_2_summary": get_module_metadata("MODULE_2").get("summary", ""),
                     "accepting_responses": False,
                     "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
                 },
                 status=403,
             )
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student:
+                ex_sub = Submission.objects.filter(session=session, student=student).first()
+                if ex_sub:
+                    sub_id_in_session = request.session.get("last_submission_id")
+                    if sub_id_in_session != ex_sub.pk:
+                        has_duplicate = True
+
+        if has_duplicate:
+            form = Module2SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 2})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_2_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_2_summary": get_module_metadata("MODULE_2").get("summary", ""),
+                    "accepting_responses": True,
+                },
+            )
+
         form = Module2SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro. Demande au formateur si tu dois modifier ta réponse.",
-                )
-            else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
-                submission_data = {
-                    key: value
-                    for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
-                }
-                try:
-                    submission = Submission.objects.create(
-                        student=student,
-                        session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro. Demande au formateur si tu dois modifier ta réponse.",
-                    )
-                else:
-                    request.session["last_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_2", session)
-                    return redirect("surveys:module_2_success", submission_id=submission.pk)
+            request.session["module_2_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_2_preview")
     else:
-        form = Module2SubmissionForm()
+        preview_data = request.session.get("module_2_preview_data")
+        sub_id_in_session = request.session.get("last_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 2)
+            except Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            initial_data.update(preview_data)
+
+        form = Module2SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(
         request,
@@ -682,18 +897,126 @@ def module_2_form(request: HttpRequest) -> HttpResponse:
             "form": form,
             "session": session,
             "module": session.module,
-            "module_2_summary": MODULE_2_SUMMARY,
+            "module_2_summary": get_module_metadata("MODULE_2").get("summary", ""),
             "accepting_responses": accepting,
+            "is_editing": is_editing,
+        },
+    )
+
+
+@never_cache
+def module_2_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_2", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_2_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_2_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_2")
+
+    form = Module2SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_2")
+
+    if request.method == "POST":
+        full_name = form.cleaned_data["full_name"]
+        class_level = form.cleaned_data["class_level"]
+        group_name = form.cleaned_data["group_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Submission.DoesNotExist:
+                pass
+
+        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        if student and Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            if not student:
+                student = Student.objects.create(
+                    full_name=full_name,
+                    class_level=class_level,
+                    group_name=group_name,
+                )
+            elif student.group_name != group_name:
+                student.group_name = group_name
+                student.save(update_fields=["group_name"])
+
+            submission_data = {
+                key: value
+                for key, value in form.cleaned_data.items()
+                if key not in {"full_name", "class_level", "group_name"}
+            }
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Submission.objects.create(
+                        student=student,
+                        session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_2_preview_data", None)
+                request.session["last_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_2", session)
+                return redirect("surveys:module_2_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_2",
         },
     )
 
 
 @never_cache
 def module_2_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_submission_id") != submission_id:
+    sess_key = "last_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_2")
     submission = get_object_or_404(Submission.objects.select_related("session", "student"), pk=submission_id)
-    return render(request, "surveys/module_2_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_2")
+    return render(request, "surveys/module_2_success.html", {
+        "submission": submission,
+        "module_title": meta.get("summary", "")[:60] if meta.get("summary") else "Module 2",
+        "max_score": meta.get("max_score", 5),
+    })
 
 
 @never_cache
@@ -760,33 +1083,9 @@ def dashboard_support_upload(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_support_upload.html", {"form": form})
 
 
-MODULE_5_SUMMARY = (
-    "L'email sert à communiquer sérieusement avec un professeur, une école, "
-    "une université ou une organisation. Un bon email contient : un destinataire, "
-    "un objet clair, une salutation, un message court, une formule de politesse, "
-    "une signature et parfois une pièce jointe. Règle simple : clair, poli, complet, relu."
-)
 
-MODULE_6_SUMMARY = (
-    "Une ressource éducative en ligne est un contenu qui aide à apprendre : cours, vidéo, "
-    "exercice, PDF, dictionnaire, schéma ou quiz. Une bonne ressource est utile, claire, "
-    "adaptée à ton niveau et reliée à une matière scolaire. Règle simple : chercher, choisir, tester, noter."
-)
 
-MODULE_7_SUMMARY = (
-    "La sécurité en ligne, ce sont les bons gestes pour protéger tes comptes, tes fichiers, "
-    "tes photos et tes informations. Les risques les plus courants sont : mot de passe volé, "
-    "lien suspect, faux message, arnaque, cyberharcèlement et partage trop rapide. "
-    "Règle simple : protéger, vérifier, demander de l'aide."
-)
 
-MODULE_8_SUMMARY = (
-    "Le Module 8 est le module de synthèse. Tu vas utiliser tout ce que tu as appris "
-    "depuis le début : chercher une information, vérifier une source, choisir une ressource, "
-    "et produire un travail personnel. Tu réaliseras une mini-fiche d'apprentissage sur un "
-    "sujet de ton choix, en suivant une démarche complète : besoin → recherche → sélection "
-    "→ vérification → production."
-)
 
 
 @never_cache
@@ -802,6 +1101,7 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_5_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
 
     if request.method == "POST":
         if not accepting:
@@ -813,57 +1113,77 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
                     "form": form,
                     "session": session,
                     "module": session.module,
-                    "module_5_summary": MODULE_5_SUMMARY,
+                    "module_5_summary": get_module_metadata("MODULE_5").get("summary", ""),
                     "accepting_responses": False,
                     "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
                 },
                 status=403,
             )
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student:
+                ex_sub = Module5Submission.objects.filter(session=session, student=student).first()
+                if ex_sub:
+                    sub_id_in_session = request.session.get("last_module5_submission_id")
+                    if sub_id_in_session != ex_sub.pk:
+                        has_duplicate = True
+
+        if has_duplicate:
+            form = Module5SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 5})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_5_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_5_summary": get_module_metadata("MODULE_5").get("summary", ""),
+                    "accepting_responses": True,
+                },
+            )
+
         form = Module5SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module5Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
-            else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
-                submission_data = {
-                    key: value
-                    for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
-                }
-                try:
-                    submission = Module5Submission.objects.create(
-                        student=student,
-                        session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
-                else:
-                    request.session["last_module5_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_5", session)
-                    return redirect("surveys:module_5_success", submission_id=submission.pk)
+            request.session["module_5_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_5_preview")
     else:
-        form = Module5SubmissionForm()
+        preview_data = request.session.get("module_5_preview_data")
+        sub_id_in_session = request.session.get("last_module5_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module5_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Module5Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 5)
+            except Module5Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            initial_data.update(preview_data)
+
+        form = Module5SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(
         request,
@@ -872,20 +1192,124 @@ def module_5_form(request: HttpRequest) -> HttpResponse:
             "form": form,
             "session": session,
             "module": session.module,
-            "module_5_summary": MODULE_5_SUMMARY,
+            "module_5_summary": get_module_metadata("MODULE_5").get("summary", ""),
             "accepting_responses": accepting,
+            "is_editing": is_editing,
+        },
+    )
+
+
+@never_cache
+def module_5_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_5", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_5_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_5_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_5")
+
+    form = Module5SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_5")
+
+    if request.method == "POST":
+        full_name = form.cleaned_data["full_name"]
+        class_level = form.cleaned_data["class_level"]
+        group_name = form.cleaned_data["group_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_module5_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Module5Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Module5Submission.DoesNotExist:
+                pass
+
+        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        if student and Module5Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            if not student:
+                student = Student.objects.create(
+                    full_name=full_name,
+                    class_level=class_level,
+                    group_name=group_name,
+                )
+            elif student.group_name != group_name:
+                student.group_name = group_name
+                student.save(update_fields=["group_name"])
+
+            submission_data = {
+                key: value
+                for key, value in form.cleaned_data.items()
+                if key not in {"full_name", "class_level", "group_name"}
+            }
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Module5Submission.objects.create(
+                        student=student,
+                        session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_5_preview_data", None)
+                request.session["last_module5_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_5", session)
+                return redirect("surveys:module_5_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_5",
         },
     )
 
 
 @never_cache
 def module_5_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module5_submission_id") != submission_id:
+    sess_key = "last_module5_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_5")
     submission = get_object_or_404(
         Module5Submission.objects.select_related("session", "student"), pk=submission_id
     )
-    return render(request, "surveys/module_5_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_5")
+    return render(request, "surveys/module_5_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60], "max_score": meta.get("max_score", 7)})
 
 
 @never_cache
@@ -949,7 +1373,6 @@ def export_module_5_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -988,7 +1411,6 @@ def export_module_5_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1038,6 +1460,7 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_6_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
 
     if request.method == "POST":
         if not accepting:
@@ -1049,57 +1472,77 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
                     "form": form,
                     "session": session,
                     "module": session.module,
-                    "module_6_summary": MODULE_6_SUMMARY,
+                    "module_6_summary": get_module_metadata("MODULE_6").get("summary", ""),
                     "accepting_responses": False,
                     "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
                 },
                 status=403,
             )
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student:
+                ex_sub = Module6Submission.objects.filter(session=session, student=student).first()
+                if ex_sub:
+                    sub_id_in_session = request.session.get("last_module6_submission_id")
+                    if sub_id_in_session != ex_sub.pk:
+                        has_duplicate = True
+
+        if has_duplicate:
+            form = Module6SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 6})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_6_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_6_summary": get_module_metadata("MODULE_6").get("summary", ""),
+                    "accepting_responses": True,
+                },
+            )
+
         form = Module6SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module6Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
-            else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
-                submission_data = {
-                    key: value
-                    for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
-                }
-                try:
-                    submission = Module6Submission.objects.create(
-                        student=student,
-                        session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
-                else:
-                    request.session["last_module6_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_6", session)
-                    return redirect("surveys:module_6_success", submission_id=submission.pk)
+            request.session["module_6_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_6_preview")
     else:
-        form = Module6SubmissionForm()
+        preview_data = request.session.get("module_6_preview_data")
+        sub_id_in_session = request.session.get("last_module6_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module6_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Module6Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 6)
+            except Module6Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            initial_data.update(preview_data)
+
+        form = Module6SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(
         request,
@@ -1108,20 +1551,124 @@ def module_6_form(request: HttpRequest) -> HttpResponse:
             "form": form,
             "session": session,
             "module": session.module,
-            "module_6_summary": MODULE_6_SUMMARY,
+            "module_6_summary": get_module_metadata("MODULE_6").get("summary", ""),
             "accepting_responses": accepting,
+            "is_editing": is_editing,
+        },
+    )
+
+
+@never_cache
+def module_6_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_6", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_6_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_6_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_6")
+
+    form = Module6SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_6")
+
+    if request.method == "POST":
+        full_name = form.cleaned_data["full_name"]
+        class_level = form.cleaned_data["class_level"]
+        group_name = form.cleaned_data["group_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_module6_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Module6Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Module6Submission.DoesNotExist:
+                pass
+
+        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        if student and Module6Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            if not student:
+                student = Student.objects.create(
+                    full_name=full_name,
+                    class_level=class_level,
+                    group_name=group_name,
+                )
+            elif student.group_name != group_name:
+                student.group_name = group_name
+                student.save(update_fields=["group_name"])
+
+            submission_data = {
+                key: value
+                for key, value in form.cleaned_data.items()
+                if key not in {"full_name", "class_level", "group_name"}
+            }
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Module6Submission.objects.create(
+                        student=student,
+                        session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_6_preview_data", None)
+                request.session["last_module6_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_6", session)
+                return redirect("surveys:module_6_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_6",
         },
     )
 
 
 @never_cache
 def module_6_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module6_submission_id") != submission_id:
+    sess_key = "last_module6_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_6")
     submission = get_object_or_404(
         Module6Submission.objects.select_related("session", "student"), pk=submission_id
     )
-    return render(request, "surveys/module_6_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_6")
+    return render(request, "surveys/module_6_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60], "max_score": meta.get("max_score", 7)})
 
 
 @never_cache
@@ -1185,7 +1732,6 @@ def export_module_6_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1224,7 +1770,6 @@ def export_module_6_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1322,7 +1867,6 @@ def export_module_2_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1356,7 +1900,6 @@ def export_module_2_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1388,11 +1931,6 @@ def export_module_2_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
-MODULE_3_SUMMARY = (
-    "Une recherche efficace commence par de bons mots-clés. Il ne faut pas écrire "
-    "toute une longue phrase. Il faut choisir les mots importants, lire les premiers "
-    "résultats, comparer plusieurs liens, puis améliorer la recherche si nécessaire."
-)
 
 
 @never_cache
@@ -1408,6 +1946,7 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_3_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
 
     if request.method == "POST":
         if not accepting:
@@ -1419,57 +1958,77 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
                     "form": form,
                     "session": session,
                     "module": session.module,
-                    "module_3_summary": MODULE_3_SUMMARY,
+                    "module_3_summary": get_module_metadata("MODULE_3").get("summary", ""),
                     "accepting_responses": False,
                     "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
                 },
                 status=403,
             )
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student:
+                ex_sub = Module3Submission.objects.filter(session=session, student=student).first()
+                if ex_sub:
+                    sub_id_in_session = request.session.get("last_module3_submission_id")
+                    if sub_id_in_session != ex_sub.pk:
+                        has_duplicate = True
+
+        if has_duplicate:
+            form = Module3SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 3})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_3_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_3_summary": get_module_metadata("MODULE_3").get("summary", ""),
+                    "accepting_responses": True,
+                },
+            )
+
         form = Module3SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module3Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
-            else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
-                submission_data = {
-                    key: value
-                    for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
-                }
-                try:
-                    submission = Module3Submission.objects.create(
-                        student=student,
-                        session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
-                else:
-                    request.session["last_module3_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_3", session)
-                    return redirect("surveys:module_3_success", submission_id=submission.pk)
+            request.session["module_3_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_3_preview")
     else:
-        form = Module3SubmissionForm()
+        preview_data = request.session.get("module_3_preview_data")
+        sub_id_in_session = request.session.get("last_module3_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module3_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Module3Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 3)
+            except Module3Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            initial_data.update(preview_data)
+
+        form = Module3SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(
         request,
@@ -1478,20 +2037,124 @@ def module_3_form(request: HttpRequest) -> HttpResponse:
             "form": form,
             "session": session,
             "module": session.module,
-            "module_3_summary": MODULE_3_SUMMARY,
+            "module_3_summary": get_module_metadata("MODULE_3").get("summary", ""),
             "accepting_responses": accepting,
+            "is_editing": is_editing,
+        },
+    )
+
+
+@never_cache
+def module_3_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_3", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_3_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_3_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_3")
+
+    form = Module3SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_3")
+
+    if request.method == "POST":
+        full_name = form.cleaned_data["full_name"]
+        class_level = form.cleaned_data["class_level"]
+        group_name = form.cleaned_data["group_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_module3_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Module3Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Module3Submission.DoesNotExist:
+                pass
+
+        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        if student and Module3Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            if not student:
+                student = Student.objects.create(
+                    full_name=full_name,
+                    class_level=class_level,
+                    group_name=group_name,
+                )
+            elif student.group_name != group_name:
+                student.group_name = group_name
+                student.save(update_fields=["group_name"])
+
+            submission_data = {
+                key: value
+                for key, value in form.cleaned_data.items()
+                if key not in {"full_name", "class_level", "group_name"}
+            }
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Module3Submission.objects.create(
+                        student=student,
+                        session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_3_preview_data", None)
+                request.session["last_module3_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_3", session)
+                return redirect("surveys:module_3_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_3",
         },
     )
 
 
 @never_cache
 def module_3_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module3_submission_id") != submission_id:
+    sess_key = "last_module3_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_3")
     submission = get_object_or_404(
         Module3Submission.objects.select_related("session", "student"), pk=submission_id
     )
-    return render(request, "surveys/module_3_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_3")
+    return render(request, "surveys/module_3_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60], "max_score": meta.get("max_score", 7)})
 
 
 @never_cache
@@ -1557,7 +2220,6 @@ def export_module_3_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1597,7 +2259,6 @@ def export_module_3_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1635,13 +2296,6 @@ def export_module_3_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
-MODULE_4_SUMMARY = (
-    "Sur Internet, toutes les informations ne sont pas toujours vraies. "
-    "Une source fiable donne des informations claires, vérifiables et sérieuses. "
-    "Avant de croire ou partager une information, il faut regarder qui l'a publiée, "
-    "quand elle a été publiée, quelles preuves sont données, et comparer avec "
-    "d'autres sources."
-)
 
 
 @never_cache
@@ -1657,6 +2311,7 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_4_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
 
     if request.method == "POST":
         if not accepting:
@@ -1668,57 +2323,77 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
                     "form": form,
                     "session": session,
                     "module": session.module,
-                    "module_4_summary": MODULE_4_SUMMARY,
+                    "module_4_summary": get_module_metadata("MODULE_4").get("summary", ""),
                     "accepting_responses": False,
                     "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
                 },
                 status=403,
             )
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student:
+                ex_sub = Module4Submission.objects.filter(session=session, student=student).first()
+                if ex_sub:
+                    sub_id_in_session = request.session.get("last_module4_submission_id")
+                    if sub_id_in_session != ex_sub.pk:
+                        has_duplicate = True
+
+        if has_duplicate:
+            form = Module4SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 4})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_4_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_4_summary": get_module_metadata("MODULE_4").get("summary", ""),
+                    "accepting_responses": True,
+                },
+            )
+
         form = Module4SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module4Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
-            else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
-                submission_data = {
-                    key: value
-                    for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
-                }
-                try:
-                    submission = Module4Submission.objects.create(
-                        student=student,
-                        session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
-                else:
-                    request.session["last_module4_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_4", session)
-                    return redirect("surveys:module_4_success", submission_id=submission.pk)
+            request.session["module_4_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_4_preview")
     else:
-        form = Module4SubmissionForm()
+        preview_data = request.session.get("module_4_preview_data")
+        sub_id_in_session = request.session.get("last_module4_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module4_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Module4Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 4)
+            except Module4Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            initial_data.update(preview_data)
+
+        form = Module4SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(
         request,
@@ -1727,20 +2402,124 @@ def module_4_form(request: HttpRequest) -> HttpResponse:
             "form": form,
             "session": session,
             "module": session.module,
-            "module_4_summary": MODULE_4_SUMMARY,
+            "module_4_summary": get_module_metadata("MODULE_4").get("summary", ""),
             "accepting_responses": accepting,
+            "is_editing": is_editing,
+        },
+    )
+
+
+@never_cache
+def module_4_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_4", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_4_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_4_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_4")
+
+    form = Module4SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_4")
+
+    if request.method == "POST":
+        full_name = form.cleaned_data["full_name"]
+        class_level = form.cleaned_data["class_level"]
+        group_name = form.cleaned_data["group_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_module4_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Module4Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Module4Submission.DoesNotExist:
+                pass
+
+        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        if student and Module4Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            if not student:
+                student = Student.objects.create(
+                    full_name=full_name,
+                    class_level=class_level,
+                    group_name=group_name,
+                )
+            elif student.group_name != group_name:
+                student.group_name = group_name
+                student.save(update_fields=["group_name"])
+
+            submission_data = {
+                key: value
+                for key, value in form.cleaned_data.items()
+                if key not in {"full_name", "class_level", "group_name"}
+            }
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Module4Submission.objects.create(
+                        student=student,
+                        session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_4_preview_data", None)
+                request.session["last_module4_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_4", session)
+                return redirect("surveys:module_4_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_4",
         },
     )
 
 
 @never_cache
 def module_4_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module4_submission_id") != submission_id:
+    sess_key = "last_module4_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_4")
     submission = get_object_or_404(
         Module4Submission.objects.select_related("session", "student"), pk=submission_id
     )
-    return render(request, "surveys/module_4_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_4")
+    return render(request, "surveys/module_4_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60], "max_score": meta.get("max_score", 7)})
 
 
 @never_cache
@@ -1812,7 +2591,6 @@ def export_module_4_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -1856,7 +2634,6 @@ def export_module_4_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -1911,6 +2688,7 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_7_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
 
     if request.method == "POST":
         if not accepting:
@@ -1922,57 +2700,77 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
                     "form": form,
                     "session": session,
                     "module": session.module,
-                    "module_7_summary": MODULE_7_SUMMARY,
+                    "module_7_summary": get_module_metadata("MODULE_7").get("summary", ""),
                     "accepting_responses": False,
                     "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
                 },
                 status=403,
             )
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student:
+                ex_sub = Module7Submission.objects.filter(session=session, student=student).first()
+                if ex_sub:
+                    sub_id_in_session = request.session.get("last_module7_submission_id")
+                    if sub_id_in_session != ex_sub.pk:
+                        has_duplicate = True
+
+        if has_duplicate:
+            form = Module7SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 7})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_7_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_7_summary": get_module_metadata("MODULE_7").get("summary", ""),
+                    "accepting_responses": True,
+                },
+            )
+
         form = Module7SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module7Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
-            else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
-                submission_data = {
-                    key: value
-                    for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
-                }
-                try:
-                    submission = Module7Submission.objects.create(
-                        student=student,
-                        session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
-                else:
-                    request.session["last_module7_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_7", session)
-                    return redirect("surveys:module_7_success", submission_id=submission.pk)
+            request.session["module_7_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_7_preview")
     else:
-        form = Module7SubmissionForm()
+        preview_data = request.session.get("module_7_preview_data")
+        sub_id_in_session = request.session.get("last_module7_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module7_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Module7Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 7)
+            except Module7Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            initial_data.update(preview_data)
+
+        form = Module7SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(
         request,
@@ -1981,20 +2779,124 @@ def module_7_form(request: HttpRequest) -> HttpResponse:
             "form": form,
             "session": session,
             "module": session.module,
-            "module_7_summary": MODULE_7_SUMMARY,
+            "module_7_summary": get_module_metadata("MODULE_7").get("summary", ""),
             "accepting_responses": accepting,
+            "is_editing": is_editing,
+        },
+    )
+
+
+@never_cache
+def module_7_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_7", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_7_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_7_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_7")
+
+    form = Module7SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_7")
+
+    if request.method == "POST":
+        full_name = form.cleaned_data["full_name"]
+        class_level = form.cleaned_data["class_level"]
+        group_name = form.cleaned_data["group_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_module7_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Module7Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Module7Submission.DoesNotExist:
+                pass
+
+        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        if student and Module7Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            if not student:
+                student = Student.objects.create(
+                    full_name=full_name,
+                    class_level=class_level,
+                    group_name=group_name,
+                )
+            elif student.group_name != group_name:
+                student.group_name = group_name
+                student.save(update_fields=["group_name"])
+
+            submission_data = {
+                key: value
+                for key, value in form.cleaned_data.items()
+                if key not in {"full_name", "class_level", "group_name"}
+            }
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Module7Submission.objects.create(
+                        student=student,
+                        session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_7_preview_data", None)
+                request.session["last_module7_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_7", session)
+                return redirect("surveys:module_7_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_7",
         },
     )
 
 
 @never_cache
 def module_7_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module7_submission_id") != submission_id:
+    sess_key = "last_module7_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_7")
     submission = get_object_or_404(
         Module7Submission.objects.select_related("session", "student"), pk=submission_id
     )
-    return render(request, "surveys/module_7_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_7")
+    return render(request, "surveys/module_7_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60], "max_score": meta.get("max_score", 7)})
 
 
 @never_cache
@@ -2058,7 +2960,6 @@ def export_module_7_csv(request: HttpRequest) -> HttpResponse:
         [
             "timestamp",
             "session_code",
-            "school_id_number",
             "full_name",
             "class_level",
             "group_name",
@@ -2097,7 +2998,6 @@ def export_module_7_csv(request: HttpRequest) -> HttpResponse:
             [
                 submission.created_at.isoformat(),
                 submission.session.session_code,
-                submission.school_id_number_snapshot,
                 sanitize_csv_cell(submission.student.full_name),
                 submission.student.get_class_level_display(),
                 sanitize_csv_cell(submission.student.group_name),
@@ -2149,6 +3049,7 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
         return render(request, "surveys/module_8_unavailable.html", status=503)
 
     accepting = session.accepting_responses
+    is_editing = False
 
     if request.method == "POST":
         if not accepting:
@@ -2160,57 +3061,77 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
                     "form": form,
                     "session": session,
                     "module": session.module,
-                    "module_8_summary": MODULE_8_SUMMARY,
+                    "module_8_summary": get_module_metadata("MODULE_8").get("summary", ""),
                     "accepting_responses": False,
                     "closed_error": "Les réponses sont fermées pour ce module. Tu peux consulter les questions, mais tu ne peux pas envoyer de réponse.",
                 },
                 status=403,
             )
+        full_name = request.POST.get("full_name", "").strip()
+        class_level = request.POST.get("class_level", "").strip()
+
+        # Check duplicate before full form validation
+        has_duplicate = False
+        if full_name:
+            student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+            if student:
+                ex_sub = Module8Submission.objects.filter(session=session, student=student).first()
+                if ex_sub:
+                    sub_id_in_session = request.session.get("last_module8_submission_id")
+                    if sub_id_in_session != ex_sub.pk:
+                        has_duplicate = True
+
+        if has_duplicate:
+            form = Module8SubmissionForm(request.POST)
+            from django.utils.safestring import mark_safe
+            from django.urls import reverse
+            request_url = reverse("surveys:request_edit", kwargs={"module_number": 8})
+            btn_html = f'''
+            <div class="edit-request-box" style="margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--accent-light, #3b82f6); border-radius: 8px; background-color: #f0f9ff; color: #075985; text-align: left;">
+                <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Une réponse existe déjà pour ce nom pendant cette séance.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.95rem;">Si tu as cliqué sur enregistré par erreur ou si tu souhaites corriger tes réponses, tu peux envoyer une demande de modification au formateur.</p>
+                <button type="submit" formaction="{request_url}" class="secondary-button" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--accent-light, #3b82f6); color: var(--accent-light, #3b82f6); border-radius: 6px; padding: 0 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; background: white;">
+                    Demander une modification au formateur
+                </button>
+            </div>
+            '''
+            form.add_error(None, mark_safe(btn_html))
+            return render(
+                request,
+                "surveys/module_8_form.html",
+                {
+                    "form": form,
+                    "session": session,
+                    "module": session.module,
+                    "module_8_summary": get_module_metadata("MODULE_8").get("summary", ""),
+                    "accepting_responses": True,
+                },
+            )
+
         form = Module8SubmissionForm(request.POST)
         if form.is_valid():
-            school_id_number = form.cleaned_data["school_id_number"]
-            duplicate_exists = Module8Submission.objects.filter(
-                session=session,
-                school_id_number_snapshot=school_id_number,
-            ).exists()
-            if duplicate_exists:
-                form.add_error(
-                    "school_id_number",
-                    "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                    "Demande au formateur si tu dois modifier ta réponse.",
-                )
-            else:
-                student = Student.objects.create(
-                    school_id_number=school_id_number,
-                    full_name=form.cleaned_data["full_name"],
-                    class_level=form.cleaned_data["class_level"],
-                    group_name=form.cleaned_data["group_name"],
-                )
-                submission_data = {
-                    key: value
-                    for key, value in form.cleaned_data.items()
-                    if key not in {"school_id_number", "full_name", "class_level", "group_name"}
-                }
-                try:
-                    submission = Module8Submission.objects.create(
-                        student=student,
-                        session=session,
-                        school_id_number_snapshot=school_id_number,
-                        **submission_data,
-                    )
-                except IntegrityError:
-                    student.delete()
-                    form.add_error(
-                        "school_id_number",
-                        "Une réponse existe déjà pour ce numéro pendant cette séance. "
-                        "Demande au formateur si tu dois modifier ta réponse.",
-                    )
-                else:
-                    request.session["last_module8_submission_id"] = submission.pk
-                    _mark_presence_submitted(request, "MODULE_8", session)
-                    return redirect("surveys:module_8_success", submission_id=submission.pk)
+            request.session["module_8_preview_data"] = form.cleaned_data
+            return redirect("surveys:module_8_preview")
     else:
-        form = Module8SubmissionForm()
+        preview_data = request.session.get("module_8_preview_data")
+        sub_id_in_session = request.session.get("last_module8_submission_id")
+        if sub_id_in_session and not request.session.get("active_edit_request_id"):
+            request.session.pop("last_module8_submission_id", None)
+            sub_id_in_session = None
+
+        initial_data = {}
+        if sub_id_in_session:
+            try:
+                ex_sub = Module8Submission.objects.get(pk=sub_id_in_session)
+                is_editing = True
+                initial_data = _get_submission_initial_data(ex_sub, 8)
+            except Module8Submission.DoesNotExist:
+                pass
+
+        if preview_data:
+            initial_data.update(preview_data)
+
+        form = Module8SubmissionForm(initial=initial_data if initial_data else None)
 
     return render(
         request,
@@ -2219,20 +3140,124 @@ def module_8_form(request: HttpRequest) -> HttpResponse:
             "form": form,
             "session": session,
             "module": session.module,
-            "module_8_summary": MODULE_8_SUMMARY,
+            "module_8_summary": get_module_metadata("MODULE_8").get("summary", ""),
             "accepting_responses": accepting,
+            "is_editing": is_editing,
+        },
+    )
+
+
+@never_cache
+def module_8_preview(request: HttpRequest) -> HttpResponse:
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code="MODULE_8", is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, "surveys/module_8_unavailable.html", status=503)
+
+    preview_data = request.session.get("module_8_preview_data")
+    if not preview_data:
+        return redirect("surveys:module_8")
+
+    form = Module8SubmissionForm(preview_data)
+    if not form.is_valid():
+        return redirect("surveys:module_8")
+
+    if request.method == "POST":
+        full_name = form.cleaned_data["full_name"]
+        class_level = form.cleaned_data["class_level"]
+        group_name = form.cleaned_data["group_name"]
+
+        # Check duplicate
+        has_duplicate = False
+        sub_id_in_session = request.session.get("last_module8_submission_id")
+        submission = None
+        if sub_id_in_session:
+            try:
+                submission = Module8Submission.objects.get(pk=sub_id_in_session, session=session)
+            except Module8Submission.DoesNotExist:
+                pass
+
+        student = Student.objects.filter(full_name=full_name, class_level=class_level).first()
+        if student and Module8Submission.objects.filter(session=session, student=student).exists():
+            if not submission or submission.student != student:
+                has_duplicate = True
+
+        if has_duplicate:
+            form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+        else:
+            if not student:
+                student = Student.objects.create(
+                    full_name=full_name,
+                    class_level=class_level,
+                    group_name=group_name,
+                )
+            elif student.group_name != group_name:
+                student.group_name = group_name
+                student.save(update_fields=["group_name"])
+
+            submission_data = {
+                key: value
+                for key, value in form.cleaned_data.items()
+                if key not in {"full_name", "class_level", "group_name"}
+            }
+            try:
+                if submission:
+                    submission.student = student
+                    for k, v in submission_data.items():
+                        setattr(submission, k, v)
+                    submission.save()
+                else:
+                    submission = Module8Submission.objects.create(
+                        student=student,
+                        session=session,
+                        **submission_data,
+                    )
+            except IntegrityError:
+                form.add_error("full_name", "Une réponse existe déjà pour ce nom pendant cette séance. Demande au formateur si tu dois modifier ta réponse.")
+            else:
+                active_req_id = request.session.pop("active_edit_request_id", None)
+                if active_req_id:
+                    try:
+                        req = EditRequest.objects.get(pk=active_req_id)
+                        req.status = EditRequest.STATUS_COMPLETED
+                        req.one_time_token = None
+                        req.save()
+                    except EditRequest.DoesNotExist:
+                        pass
+
+                request.session.pop("module_8_preview_data", None)
+                request.session["last_module8_submission_id"] = submission.pk
+                _mark_presence_submitted(request, "MODULE_8", session)
+                return redirect("surveys:module_8_success", submission_id=submission.pk)
+
+    preview_items = _build_preview_items(form)
+    return render(
+        request,
+        "surveys/module_preview.html",
+        {
+            "form": form,
+            "session": session,
+            "module": session.module,
+            "preview_items": preview_items,
+            "edit_url_name": "surveys:module_8",
         },
     )
 
 
 @never_cache
 def module_8_success(request: HttpRequest, submission_id: int) -> HttpResponse:
-    if request.session.get("last_module8_submission_id") != submission_id:
+    sess_key = "last_module8_submission_id"
+    if request.session.get(sess_key) != submission_id and request.session.get("successful_submission_id") != submission_id:
         return redirect("surveys:module_8")
     submission = get_object_or_404(
         Module8Submission.objects.select_related("session", "student"), pk=submission_id
     )
-    return render(request, "surveys/module_8_success.html", {"submission": submission})
+    meta = get_module_metadata("MODULE_8")
+    return render(request, "surveys/module_8_success.html", {"submission": submission, "module_title": meta.get("summary", "")[:60], "max_score": meta.get("max_score", 7)})
 
 
 @never_cache
@@ -2319,7 +3344,6 @@ def export_module_8_csv(request: HttpRequest) -> HttpResponse:
         writer.writerow([
             submission.created_at.strftime("%Y-%m-%d %H:%M"),
             submission.session.session_code,
-            submission.school_id_number_snapshot,
             sanitize_csv_cell(submission.student.full_name),
             submission.student.class_level,
             submission.student.group_name,
@@ -2368,6 +3392,8 @@ def network_access_dashboard(request: HttpRequest) -> HttpResponse:
     from .network import get_network_access_context
 
     ctx = get_network_access_context(request)
+    ctx["wifi_shared_checked"] = request.session.get("wifi_shared_checked", False)
+    ctx["phone_test_checked"] = request.session.get("phone_test_checked", False)
     return render(request, "surveys/dashboard_network.html", ctx)
 
 
@@ -2390,7 +3416,6 @@ def presence_heartbeat(request: HttpRequest) -> JsonResponse:
     )
     if not session:
         return JsonResponse({"error": "no active session"}, status=404)
-    school_id_number = data.get("school_id_number", "").strip() or None
     class_level = data.get("class_level", "").strip() or None
     current_path = data.get("current_path", "").strip() or ""
     cutoff = timezone.now() - timedelta(seconds=60)
@@ -2409,7 +3434,6 @@ def presence_heartbeat(request: HttpRequest) -> JsonResponse:
         defaults={
             "status": FormPresence.STATUS_ACTIVE,
             "current_path": current_path,
-            "school_id_number": school_id_number,
             "class_level": class_level,
             "last_seen_at": now,
         },
@@ -2468,9 +3492,6 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
     from .network import get_network_access_context
     from .settings_config import apply_setting, get_filtered_settings
 
-    if request.method == "GET":
-        return redirect("surveys:dashboard_network")
-
     saved = None
     error = None
     if request.method == "POST":
@@ -2482,6 +3503,9 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
                 saved = msg
             else:
                 error = msg
+        if request.POST.get("next") == "network":
+            return redirect("surveys:dashboard_network")
+
     net_ctx = get_network_access_context(request)
     settings = get_filtered_settings()
     context = {
@@ -2499,7 +3523,7 @@ def dashboard_settings(request: HttpRequest) -> HttpResponse:
         "helper_url": "http://127.0.0.1:8019",
         "is_localhost": net_ctx["current_request_host"] in ("localhost", "127.0.0.1", "[::1]"),
     }
-    return redirect("surveys:dashboard_network")
+    return render(request, "surveys/dashboard_settings.html", context)
 
 
 @staff_member_required
@@ -2564,13 +3588,204 @@ def network_control(request: HttpRequest) -> HttpResponse:
     is_localhost = current_host in ("localhost", "127.0.0.1", "[::1]")
     helper_port = 8019
     helper_url = f"http://127.0.0.1:{helper_port}"
+    configured_port = net_ctx.get("configured_port") or "8010"
+    lan_port = net_ctx.get("recommended_lan_port") or "8011"
 
     context = {
         "net_ctx": net_ctx,
         "is_localhost": is_localhost,
         "helper_url": helper_url,
         "helper_port": helper_port,
-        "lan_port": 8011,
-        "docker_port": 8010,
+        "lan_port": lan_port,
+        "docker_port": configured_port,
     }
     return render(request, "surveys/dashboard_network_control.html", context)
+
+
+@never_cache
+@login_required
+@staff_member_required
+@require_POST
+def network_checklist(request: HttpRequest) -> JsonResponse:
+    key = request.POST.get("key", "").strip()
+    checked = request.POST.get("checked", "false").lower() == "true"
+    if key in {"wifi_shared_checked", "phone_test_checked"}:
+        request.session[key] = checked
+        return JsonResponse({"ok": True, "key": key, "checked": checked})
+    return JsonResponse({"ok": False, "error": "Clé inconnue"}, status=400)
+
+
+@never_cache
+def request_edit(request: HttpRequest, module_number: int) -> HttpResponse:
+    if request.method != "POST":
+        return redirect("surveys:home")
+
+    full_name = (request.POST.get("full_name") or request.POST.get("paper_full_name") or "").strip()
+    class_level_raw = (request.POST.get("class_level") or request.POST.get("paper_class_level") or "").strip().casefold()
+
+    if not full_name:
+        return HttpResponse("Nom manquant", status=400)
+
+    module_code = f"MODULE_{module_number}"
+    session = (
+        TrainingSession.objects.select_related("module")
+        .filter(module__code=module_code, is_active=True)
+        .order_by("-date", "session_code")
+        .first()
+    )
+    if session is None:
+        return render(request, f"surveys/module_{module_number}_unavailable.html", status=503)
+
+    if "seconde" in class_level_raw:
+        student_class_level = Student.CLASS_LEVEL_SECONDE
+    elif "première" in class_level_raw or "premiere" in class_level_raw:
+        student_class_level = Student.CLASS_LEVEL_PREMIERE
+    else:
+        student_class_level = Student.CLASS_LEVEL_AUTRE
+
+    student = Student.objects.filter(
+        full_name=full_name,
+        class_level=student_class_level,
+    ).first()
+
+    if not student:
+        return HttpResponse("Élève non trouvé", status=400)
+
+    from django.apps import apps
+    if module_code == "MODULE_2":
+        submission_model = apps.get_model("surveys", "Submission")
+    else:
+        submission_model = apps.get_model("surveys", f"Module{module_number}Submission")
+
+    submission_exists = submission_model.objects.filter(student=student, session=session).exists()
+    if not submission_exists:
+        return HttpResponse("Aucune réponse enregistrée trouvée pour cet élève", status=400)
+
+    edit_req = EditRequest.objects.filter(
+        student=student,
+        session=session,
+        module_code=module_code,
+        status__in=[EditRequest.STATUS_PENDING, EditRequest.STATUS_APPROVED]
+    ).first()
+
+    if not edit_req:
+        edit_req = EditRequest.objects.create(
+            student=student,
+            session=session,
+            module_code=module_code,
+            status=EditRequest.STATUS_PENDING
+        )
+
+    return render(request, "surveys/edit_request_submitted.html", {
+        "edit_request": edit_req,
+        "session": session,
+        "module": session.module,
+    })
+
+
+@never_cache
+def activate_edit_request(request: HttpRequest, module_number: int, token: str) -> HttpResponse:
+    module_code = f"MODULE_{module_number}"
+    edit_req = get_object_or_404(
+        EditRequest,
+        module_code=module_code,
+        one_time_token=token,
+        status=EditRequest.STATUS_APPROVED
+    )
+
+    if edit_req.expires_at and timezone.now() > edit_req.expires_at:
+        edit_req.status = EditRequest.STATUS_EXPIRED
+        edit_req.one_time_token = None
+        edit_req.save()
+        return render(request, "surveys/edit_request_expired.html", status=410)
+
+    from django.apps import apps
+    if module_code == "MODULE_2":
+        submission_model = apps.get_model("surveys", "Submission")
+    else:
+        submission_model = apps.get_model("surveys", f"Module{module_number}Submission")
+
+    submission = get_object_or_404(submission_model, student=edit_req.student, session=edit_req.session)
+
+    session_key = "last_submission_id" if module_number == 2 else f"last_module{module_number}_submission_id"
+    request.session[session_key] = submission.pk
+    request.session["active_edit_request_id"] = edit_req.pk
+
+    return redirect(f"surveys:module_{module_number}")
+
+
+@never_cache
+@login_required
+@staff_member_required
+def dashboard_edit_requests(request: HttpRequest) -> HttpResponse:
+    # Auto-expire approved requests that have passed their expiration time
+    EditRequest.objects.filter(
+        status=EditRequest.STATUS_APPROVED,
+        expires_at__lt=timezone.now()
+    ).update(status=EditRequest.STATUS_EXPIRED, one_time_token=None)
+
+    requests = EditRequest.objects.select_related("student", "session", "session__module").all()
+
+    from django.urls import reverse
+    req_data = []
+    for r in requests:
+        link = ""
+        if r.status == EditRequest.STATUS_APPROVED and r.one_time_token:
+            try:
+                mod_num = int(r.module_code.split("_")[1])
+            except (IndexError, ValueError):
+                mod_num = 2
+            link = request.build_absolute_uri(
+                reverse("surveys:activate_edit_request", kwargs={"module_number": mod_num, "token": r.one_time_token})
+            )
+        req_data.append({
+            "request": r,
+            "link": link
+        })
+
+    return render(request, "surveys/dashboard_edit_requests.html", {
+        "edit_requests_data": req_data,
+    })
+
+
+@never_cache
+@login_required
+@staff_member_required
+@require_POST
+def approve_edit_request(request: HttpRequest, pk: int) -> HttpResponse:
+    import secrets
+    edit_req = get_object_or_404(EditRequest, pk=pk)
+    if edit_req.status == EditRequest.STATUS_PENDING:
+        edit_req.status = EditRequest.STATUS_APPROVED
+        edit_req.one_time_token = secrets.token_urlsafe(32)
+        edit_req.expires_at = timezone.now() + timedelta(minutes=15)
+        edit_req.save()
+        messages.success(request, f"La demande de modification pour {edit_req.student.full_name} a été approuvée.")
+    return redirect("surveys:dashboard_edit_requests")
+
+
+@never_cache
+@login_required
+@staff_member_required
+@require_POST
+def reject_edit_request(request: HttpRequest, pk: int) -> HttpResponse:
+    edit_req = get_object_or_404(EditRequest, pk=pk)
+    if edit_req.status == EditRequest.STATUS_PENDING:
+        edit_req.status = EditRequest.STATUS_REJECTED
+        edit_req.save()
+        messages.success(request, f"La demande de modification pour {edit_req.student.full_name} a été rejetée.")
+    return redirect("surveys:dashboard_edit_requests")
+
+
+@never_cache
+@login_required
+@staff_member_required
+@require_POST
+def revoke_edit_request(request: HttpRequest, pk: int) -> HttpResponse:
+    edit_req = get_object_or_404(EditRequest, pk=pk)
+    if edit_req.status == EditRequest.STATUS_APPROVED:
+        edit_req.status = EditRequest.STATUS_CANCELLED
+        edit_req.one_time_token = None
+        edit_req.save()
+        messages.success(request, f"Le lien de modification pour {edit_req.student.full_name} a été révoqué.")
+    return redirect("surveys:dashboard_edit_requests")
