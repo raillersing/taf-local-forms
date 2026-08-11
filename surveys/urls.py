@@ -141,6 +141,7 @@ urlpatterns = [
     path("dashboard/settings/", dashboard_settings, name="dashboard_settings"),
     path("dashboard/settings/use-current-address/", dashboard_use_current_address, name="dashboard_use_current_address"),
     path("dashboard/presence.json", dashboard_presence_json, name="dashboard_presence_json"),
+    path("dashboard/network/checklist/", views.network_checklist, name="network_checklist"),
     path("dashboard/modules/<str:module_code>/toggle-responses/", toggle_module_responses, name="toggle_module_responses"),
     path("presence/heartbeat/", presence_heartbeat, name="presence_heartbeat"),
 

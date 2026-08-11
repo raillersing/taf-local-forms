@@ -59,9 +59,28 @@
 
     <section class="trainer-metrics" aria-label="Indicateurs de la séance">
         <article><span>Réponses reçues</span><strong>{{ total_submissions }}</strong><small>{{ total_students }} élève{{ total_students|pluralize }} enregistré{{ total_students|pluralize }}</small></article>
-        <article><span>Présences live</span><strong>—</strong><small>Détail disponible dans Modules</small></article>
-        <article><span>Participation</span><strong>{{ average_score|floatformat:0 }}%</strong><small>Moyenne consolidée des modules</small></article>
-        <article><span>LAN</span><strong class="trainer-metric-network">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong><small>Port élèves 8011</small></article>
+        <article><span>Présences live</span><strong id="home-presence-total">—</strong><small>Élèves connectés maintenant</small></article>
+        <article><span>Participation</span><strong>{{ average_score|floatformat:0 }}%</strong><small>Moyenne globale pondérée des réponses</small></article>
+        <article><span>LAN</span><strong class="trainer-metric-network">{% if network.recommended_lan_host %}{{ network.recommended_lan_host }}{% else %}—{% endif %}</strong><small>Port élèves {% if network.recommended_lan_port %}{{ network.recommended_lan_port }}{% else %}8011{% endif %}</small></article>
+    </section>
+
+    <section class="trainer-module-cards" aria-labelledby="module-cards-heading">
+        <header>
+            <span class="section-kicker">Vue par module</span>
+            <h2 id="module-cards-heading">Réponses et scores en temps réel</h2>
+        </header>
+        <div class="trainer-module-cards-grid">
+            {% for item in module_list %}
+            <article class="trainer-mini-card{% if item.accepting_responses %} is-open{% endif %}">
+                <span class="trainer-mini-number">0{{ item.module_number }}</span>
+                <h3>{{ item.display_title }}</h3>
+                <div class="trainer-mini-stats">
+                    <span><strong>{{ item.submission_count }}</strong> réponse{{ item.submission_count|pluralize }}</span>
+                    <span><strong>{{ item.average_score|floatformat:0 }}%</strong> de {{ item.max_score }}</span>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
     </section>
 
     <section class="trainer-runbook" aria-labelledby="runbook-heading">
@@ -89,4 +108,27 @@
     </section>
 
 </main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var totalEl = document.getElementById('home-presence-total');
+    if (!totalEl) return;
+    function poll() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '{% url "surveys:dashboard_presence_json" %}');
+        xhr.onload = function() {
+            if (xhr.status !== 200) return;
+            try {
+                var data = JSON.parse(xhr.responseText);
+                totalEl.textContent = data.total;
+            } catch (error) {}
+        };
+        xhr.send();
+    }
+    poll();
+    setInterval(poll, 15000);
+})();
+</script>
 {% endblock %}

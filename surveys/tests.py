@@ -1319,7 +1319,8 @@ class DashboardSettingsTests(TestCase):
     def test_renders_for_staff(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Configuration")
 
     def test_settings_page_does_not_expose_secret_key(self):
         self.client.login(username="test", password="test")
@@ -1334,27 +1335,32 @@ class DashboardSettingsTests(TestCase):
     def test_shows_taf_host_port(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TAF_HOST_PORT")
 
     def test_shows_taf_lan_host(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TAF_LAN_HOST")
 
     def test_shows_allowed_hosts(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ALLOWED_HOSTS")
 
     def test_shows_csrf_trusted_origins(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CSRF_TRUSTED_ORIGINS")
 
     def test_shows_timezone_field(self):
         self.client.login(username="test", password="test")
         response = self.client.get(self.url)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TIME_ZONE")
 
     def test_does_not_show_gpg_key(self):
         self.client.login(username="test", password="test")
@@ -1369,12 +1375,14 @@ class DashboardSettingsTests(TestCase):
     def test_save_taf_lan_host(self):
         self.client.login(username="test", password="test")
         response = self.client.post(self.url, {"key": "TAF_LAN_HOST", "value": "192.168.1.42"}, follow=True)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Valeur enregistrée")
 
     def test_save_taf_host_port(self):
         self.client.login(username="test", password="test")
         response = self.client.post(self.url, {"key": "TAF_HOST_PORT", "value": "9010"}, follow=True)
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Valeur enregistrée")
 
     def test_denies_allowed_hosts_star(self):
         self.client.login(username="test", password="test")
@@ -2433,8 +2441,10 @@ class F023NetworkIPDetectionTests(TestCase):
         rf = RequestFactory()
         request = rf.get("/", HTTP_HOST="localhost:8010")
         ctx = get_network_access_context(request)
-        for key in ("student_form_url", "module_2_url", "module_3_url", "module_4_url", "cockpit_url"):
-            self.assertNotIn("<IP_DU_LAPTOP>", ctx[key], f"{key} contains <IP_DU_LAPTOP>")
+        self.assertNotIn("<IP_DU_LAPTOP>", ctx["student_form_url"], "student_form_url contains <IP_DU_LAPTOP>")
+        self.assertNotIn("<IP_DU_LAPTOP>", ctx["cockpit_url"], "cockpit_url contains <IP_DU_LAPTOP>")
+        for item in ctx.get("module_url_list", []):
+            self.assertNotIn("<IP_DU_LAPTOP>", item["url"], f"module_url_list {item.get('code')} contains <IP_DU_LAPTOP>")
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_warning_contains_stale_message(self):
@@ -2540,15 +2550,18 @@ class F023DashboardSettingsTests(TestCase):
 
     def test_settings_page_shows_use_current_address_when_lan(self):
         response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="192.168.0.101:8011")
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Utiliser l'adresse actuelle")
 
     def test_settings_page_hides_button_on_localhost(self):
-        response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010", follow=True)
-        self.assertContains(response, "Paramètres")
-
-    def test_settings_page_redirects_to_network_on_localhost(self):
         response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010")
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Utiliser l'adresse actuelle")
+
+    def test_settings_page_renders_on_localhost(self):
+        response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Configuration")
 
     def test_use_detected_address_updates_settings_from_localhost(self):
         response = self.client.post(
@@ -2562,7 +2575,8 @@ class F023DashboardSettingsTests(TestCase):
     def test_settings_identifies_postgresql_without_exposing_sqlite_as_active(self):
         with patch.dict(os.environ, {"DB_HOST": "db", "DB_NAME": "taf_local_forms"}, clear=False):
             response = self.client.get(reverse("surveys:dashboard_settings"), HTTP_HOST="localhost:8010")
-        self.assertRedirects(response, reverse("surveys:dashboard_network"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "PostgreSQL")
 
     def test_use_current_address_updates_settings(self):
         response = self.client.post(

@@ -10,7 +10,7 @@
         {% else %}
         <span class="badge badge-warning">Lecture seule</span>
         {% endif %}
-        <span class="questionnaire-time">Environ 10 minutes</span>
+        <span class="questionnaire-time">Environ {{ estimated_duration|default:10 }} minutes</span>
     </div>
     <div class="questionnaire-reminder">
         <div class="alert alert-warning questionnaire-warning">
