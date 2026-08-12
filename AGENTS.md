@@ -117,7 +117,8 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 
 - `taf-local-django-app` — building/reviewing/testing the Django app.
 - `taf-field-ops` — classroom field operations, network access, WSL/Docker caveats.
-- `taf-ui-ux-review` — UI quality, responsiveness, French readability for lycée.
+- `taf-premium-product-ui` — conception UI premium, hiérarchie, responsive et accessibilité.
+- `taf-product-ui-review` — audit UI/UX en lecture seule avec preuves et verdict.
 - `taf-security-privacy-review` — auth, secret safety, CSV injection, data minimisation.
 - `taf-graphify` — read-only architecture visualisation with Graphviz DOT diagrams.
 
@@ -139,7 +140,8 @@ Recommended order:
 2. `taf-agent-orchestration-graphify-ponytail`
 3. the task-specific skill:
    - Django: `taf-django-local-app`
-   - UI/prototype: `taf-ui-ux-prototype-6`
+   - UI premium: `taf-premium-product-ui`
+   - UI review: `taf-product-ui-review`
    - data/backup: `taf-data-safety-backup`
    - LAN: `taf-lan-field-operations`
    - media: `taf-media-library`

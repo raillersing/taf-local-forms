@@ -5,7 +5,7 @@
 Les skills locaux TAf servent a guider Codex, OpenCode et les agents
 compatibles sur ce projet sans ajouter de dependances runtime ni de logique
 applicative. Ils encadrent le scope, la securite, la protection des donnees,
-la lecture des specs, l'usage du Prototype 6 et la qualite avant PR.
+la lecture des specs, la conception UI premium TAf et la qualite avant PR.
 
 ## 2. Pourquoi ne pas installer tous les skills publics
 
@@ -38,7 +38,8 @@ la lecture des specs, l'usage du Prototype 6 et la qualite avant PR.
 - `taf-project-governance`
 - `taf-django-local-app`
 - `taf-data-safety-backup`
-- `taf-ui-ux-prototype-6`
+- `taf-premium-product-ui`
+- `taf-product-ui-review`
 - `taf-lan-field-operations`
 - `taf-media-library`
 - `taf-testing-release-quality`
@@ -54,8 +55,10 @@ la lecture des specs, l'usage du Prototype 6 et la qualite avant PR.
   et le rendu serveur Django.
 - `taf-data-safety-backup` : avant toute operation qui touche migrations,
   stockage, Docker, backup, supports ou donnees eleves.
-- `taf-ui-ux-prototype-6` : pour traduire Prototype 6 vers le design system,
-  les templates et l'experience eleve/formateur.
+- `taf-premium-product-ui` : pour concevoir ou implémenter une interface TAf
+  premium, locale, lisible et orientée tâche dans Django et CSS local.
+- `taf-product-ui-review` : pour auditer une interface ou un parcours en
+  lecture seule avec preuves, sévérité et critères terrain.
 - `taf-lan-field-operations` : pour reseau local, dashboard reseau, QR local,
   projection et procedure de seance.
 - `taf-media-library` : pour les futures phases mediatheque, documents, videos
@@ -82,11 +85,11 @@ la lecture des specs, l'usage du Prototype 6 et la qualite avant PR.
 
 - `F034A` : `taf-project-governance`, `taf-docs-spec-traceability`,
   `taf-agent-orchestration-graphify-ponytail`, `taf-data-safety-backup`
-- `F035` : `taf-project-governance`, `taf-ui-ux-prototype-6`,
+- `F035` : `taf-project-governance`, `taf-premium-product-ui`,
   `taf-django-local-app`, `taf-accessibility-mobile-classroom`
-- `F036` : `taf-project-governance`, `taf-ui-ux-prototype-6`,
+- `F036` : `taf-project-governance`, `taf-premium-product-ui`,
   `taf-django-local-app`, `taf-lan-field-operations`
-- `F037` : `taf-project-governance`, `taf-ui-ux-prototype-6`,
+- `F037` : `taf-project-governance`, `taf-premium-product-ui`,
   `taf-lan-field-operations`, `taf-accessibility-mobile-classroom`
 - `F038` : `taf-project-governance`, `taf-data-safety-backup`,
   `taf-media-library`, `taf-testing-release-quality`

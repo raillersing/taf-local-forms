@@ -1,0 +1,4 @@
+interface:
+  display_name: "TAf Premium Product UI"
+  short_description: "Concevoir des interfaces TAf premium et lisibles"
+  default_prompt: "Utilise $taf-premium-product-ui pour concevoir ou implémenter une interface TAf distinctive, accessible, locale et orientée tâche."
