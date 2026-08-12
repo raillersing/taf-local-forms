@@ -4333,7 +4333,7 @@ class F030NetworkControlTests(TestCase):
     def test_helper_script_has_allowed_endpoints(self):
         helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
         content = helper_path.read_text(encoding="utf-8", errors="replace")
-        for endpoint in ("/status", "/sync", "/restart-app", "/test", "/disable"):
+        for endpoint in ("/status", "/sync", "/restart-app", "/test", "/disable", "/open-folder"):
             self.assertIn(endpoint, content, f"Endpoint manquant : {endpoint}")
 
     def test_helper_sync_verifies_student_url_before_success(self):

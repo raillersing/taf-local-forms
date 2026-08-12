@@ -247,7 +247,7 @@
     var lastStatusData = null;
     var activeController = null;
 
-    var BUTTON_IDS = ['btn-check-status', 'btn-sync', 'btn-restart', 'btn-test', 'btn-copy-url', 'btn-disable'];
+    var BUTTON_IDS = ['btn-check-status', 'btn-sync', 'btn-restart', 'btn-test', 'btn-copy-url', 'btn-disable', 'btn-open-helper-folder'];
 
     function showError(msg) {
         var el = document.getElementById('helper-message');
@@ -473,6 +473,10 @@
         var folderUri = button.dataset.folderUri;
         var folderPath = button.dataset.folderPath;
         var feedback = document.getElementById('helper-folder-feedback');
+        if (helperToken && isLocalhost) {
+            callHelper('open-folder', 'POST', 'Ouvrir', 'btn-open-helper-folder');
+            return;
+        }
         if (folderUri) {
             var opened = window.open(folderUri, '_blank');
             if (opened) {

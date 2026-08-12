@@ -398,6 +398,15 @@ function Invoke-RestartApp {
     }
 }
 
+function Invoke-OpenHelperFolder {
+    try {
+        Start-Process -FilePath "explorer.exe" -ArgumentList @($scriptDir) -ErrorAction Stop
+        return @{ success = $true; message = "Le dossier des commandes Windows a ete ouvert."; folder = $scriptDir }
+    } catch {
+        return @{ success = $false; message = "Impossible d'ouvrir le dossier Windows : $($_.Exception.Message)" }
+    }
+}
+
 function Add-CorsHeaders {
     param($Response, $Origin)
     $allowedOrigins = @("http://localhost:8010", "http://127.0.0.1:8010")
@@ -438,7 +447,7 @@ try {
     $listener.Start()
     Write-Log "INFO" "Helper demarre sur $prefix"
     Write-Log "INFO" "  Version: $helperVersion"
-    Write-Log "INFO" "  Endpoints: GET /status, POST /sync, POST /restart-app, POST /test, POST /disable"
+    Write-Log "INFO" "  Endpoints: GET /status, POST /sync, POST /restart-app, POST /test, POST /disable, POST /open-folder"
 
     try {
         while ($listener.IsListening) {
@@ -495,6 +504,10 @@ try {
                         $data = Invoke-RestartApp
                         Send-JsonResponse $res $data
                         Write-Log "INFO" "200 POST /restart-app"
+                    } elseif ($path -eq "/open-folder" -and $method -eq "POST") {
+                        $data = Invoke-OpenHelperFolder
+                        Send-JsonResponse $res $data
+                        Write-Log "INFO" "200 POST /open-folder"
                     } elseif ($path -eq "/test" -and $method -eq "POST") {
                         $data = Invoke-Test
                         Send-JsonResponse $res $data
