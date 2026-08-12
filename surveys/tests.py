@@ -1574,7 +1574,20 @@ class DashboardSettingsTests(TestCase):
         self.client.login(username="test", password="test")
         response = self.client.post(self.url, {"key": "TAF_HOST_PORT", "value": "9010"}, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Valeur enregistrée")
+        self.assertContains(response, "Ce champ")
+        self.assertContains(response, "pas modifiable")
+
+    def test_lan_sync_keeps_trainer_port_and_registers_student_port(self):
+        from surveys.settings_config import apply_lan_settings, get_filtered_settings
+        with patch.dict(
+            os.environ,
+            {"TAF_HOST_PORT": "8010", "ALLOWED_HOSTS": "localhost,127.0.0.1"},
+            clear=False,
+        ):
+            ok, message = apply_lan_settings("192.168.0.101", "8011")
+            self.assertTrue(ok, message)
+            self.assertIn("8010", message)
+            self.assertEqual(get_filtered_settings()["readonly"]["TAF_STUDENT_PORT"], "8011")
 
     def test_denies_allowed_hosts_star(self):
         self.client.login(username="test", password="test")
@@ -4257,7 +4270,7 @@ class F030NetworkControlTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Contrôle réseau local")
         self.assertContains(response, "127.0.0.1:8019")
-        self.assertContains(response, "Configurer et rendre accessible")
+        self.assertContains(response, "Préparer la séance")
         self.assertContains(response, "Redémarrer l'application")
         self.assertContains(response, "Tester l'URL")
         self.assertContains(response, "Copier l'URL")
@@ -4295,6 +4308,23 @@ class F030NetworkControlTests(TestCase):
         content = helper_path.read_text(encoding="utf-8", errors="replace")
         self.assertIn("127.0.0.1", content)
 
+    def test_helper_script_accepts_all_private_ipv4_ranges(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("Test-PrivateIPv4", content)
+        self.assertIn("$bytes[0] -eq 10", content)
+        self.assertIn("$bytes[0] -eq 192 -and $bytes[1] -eq 168", content)
+        self.assertIn("$bytes[0] -eq 172", content)
+        self.assertIn("$bytes[1] -le 31", content)
+
+    def test_helper_status_exposes_interface_and_gateway(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("lan_interface", content)
+        self.assertIn("lan_gateway", content)
+        self.assertIn("InterfaceAlias", content)
+        self.assertIn("Gateway", content)
+
     def test_helper_script_does_not_listen_on_0_0_0_0(self):
         helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
         content = helper_path.read_text(encoding="utf-8", errors="replace")
@@ -4305,6 +4335,25 @@ class F030NetworkControlTests(TestCase):
         content = helper_path.read_text(encoding="utf-8", errors="replace")
         for endpoint in ("/status", "/sync", "/restart-app", "/test", "/disable"):
             self.assertIn(endpoint, content, f"Endpoint manquant : {endpoint}")
+
+    def test_helper_sync_verifies_student_url_before_success(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("$verification = Get-Status", content)
+        self.assertIn("$verification.student_url_ok", content)
+        self.assertIn("Acces LAN configure et verifie", content)
+
+    def test_helper_disable_reports_partial_failures(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("$proxyOk = $true", content)
+        self.assertIn("$firewallOk = $true", content)
+        self.assertIn("Desactivation incomplete", content)
+
+    def test_helper_test_checks_django_host(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("$djangoOk = if ($lanIp) { Test-DjangoHost -Ip $lanIp }", content)
 
     def test_helper_scripts_no_secrets(self):
         scripts_dir = Path(__file__).resolve().parent.parent / "scripts" / "windows"
@@ -4404,6 +4453,14 @@ class F030NetworkControlTests(TestCase):
         self.assertContains(response, 'id="status-django"', html=False)
         self.assertContains(response, "setStatus('status-django'", html=False)
 
+    def test_page_has_status_slots_for_interface_and_gateway(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'id="status-lan-interface"', html=False)
+        self.assertContains(response, 'id="status-lan-gateway"', html=False)
+        self.assertContains(response, "setStatus('status-lan-interface'", html=False)
+        self.assertContains(response, "setStatus('status-lan-gateway'", html=False)
+
     def test_page_uses_get_element_by_id_for_student_url_step(self):
         self.client.login(username="ctrlstaff", password="secret")
         response = self.client.get(self.url)
@@ -4421,6 +4478,13 @@ class F030NetworkControlTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, "confirm(")
         self.assertContains(response, "Desactiver")
+
+    def test_page_prepare_session_label_and_restart_confirm(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "Préparer la séance")
+        self.assertContains(response, "Redémarrer l’application")
+        self.assertContains(response, "Redémarrer l’application locale maintenant ?")
 
     def test_advanced_diagnostics_are_grouped_in_details(self):
         self.client.login(username="ctrlstaff", password="secret")

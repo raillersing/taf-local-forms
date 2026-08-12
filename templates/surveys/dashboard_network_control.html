@@ -102,6 +102,12 @@
                 <dt class="muted setting-label">IP Wi-Fi detectee</dt>
                 <dd id="status-lan-ip"><span class="muted">En attente...</span></dd>
 
+                <dt class="muted setting-label">Interface réseau</dt>
+                <dd id="status-lan-interface"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">Passerelle</dt>
+                <dd id="status-lan-gateway"><span class="muted">En attente...</span></dd>
+
                 <dt class="muted setting-label">Portproxy ({{ lan_port }} &rarr; {{ docker_port }})</dt>
                 <dd id="status-portproxy"><span class="muted">En attente...</span></dd>
 
@@ -129,8 +135,8 @@
             <div class="tools-grid network-tools-grid">
 
             <button id="btn-sync" class="tool-card" type="button">
-                <strong>Configurer et rendre accessible</strong>
-                <span class="muted">Portproxy + pare-feu + synchronisation</span>
+                <strong>Préparer la séance</strong>
+                <span class="muted">Vérifier, configurer et tester l’accès élèves</span>
             </button>
 
             <button id="btn-check-status" class="tool-card" type="button">
@@ -228,12 +234,14 @@
 
     function showError(msg) {
         var el = document.getElementById('helper-message');
-        el.innerHTML = '<div class="alert"><strong>Erreur :</strong> ' + msg + '</div>';
+        el.textContent = 'Erreur : ' + msg;
+        el.className = 'messages-container alert';
     }
 
     function showSuccess(msg) {
-        document.getElementById('helper-message').innerHTML =
-            '<div class="alert alert-success">' + msg + '</div>';
+        var el = document.getElementById('helper-message');
+        el.textContent = msg;
+        el.className = 'messages-container alert alert-success';
     }
 
     function showOperationResult(data) {
@@ -245,7 +253,9 @@
     }
 
     function clearMessage() {
-        document.getElementById('helper-message').innerHTML = '';
+        var el = document.getElementById('helper-message');
+        el.textContent = '';
+        el.className = 'messages-container';
     }
 
     function showRawResult(data) {
@@ -359,7 +369,7 @@
     function setStatus(id, ok, html) {
         var el = document.getElementById(id);
         if (!el) return;
-        el.innerHTML = html;
+        el.textContent = html;
         el.className = ok ? 'status-ok' : 'status-warn';
     }
 
@@ -385,13 +395,15 @@
             studentUrlStep.dataset.studentUrl = status.student_url;
         }
 
-        setStatus('status-local-app', !!localAppOk, localAppOk ? '<strong>OK</strong>' : '<span class="muted">Indisponible</span>');
-        setStatus('status-lan-ip', !!status.lan_ip, status.lan_ip ? '<code>' + status.lan_ip + '</code>' : '<span class="muted">Non détectée</span>');
-        setStatus('status-portproxy', !!portproxyOk, portproxyOk ? '<strong>Configuré</strong>' : '<span class="muted">Absent</span>');
-        setStatus('status-firewall', !!firewallOk, firewallOk ? '<strong>Ouvert</strong>' : '<span class="muted">À vérifier</span>');
-        setStatus('status-django', !!djangoAllowsIp, djangoAllowsIp ? '<strong>OK</strong>' : '<span class="muted">À mettre à jour</span>');
-        setStatus('status-student-url', !!studentUrlOk && !!status.student_url, studentUrlOk && status.student_url ? '<code>' + status.student_url + '</code>' : '<span class="muted">Non disponible</span>');
-        setStatus('status-lan-test', !!studentUrlOk, studentUrlOk ? '<strong>Accessible</strong>' : '<span class="muted">Échec du test</span>');
+        setStatus('status-local-app', !!localAppOk, localAppOk ? 'OK' : 'Indisponible');
+        setStatus('status-lan-ip', !!status.lan_ip, status.lan_ip || 'Non détectée');
+        setStatus('status-lan-interface', !!status.lan_interface, status.lan_interface || 'Non détectée');
+        setStatus('status-lan-gateway', !!status.lan_gateway, status.lan_gateway || 'Non détectée');
+        setStatus('status-portproxy', !!portproxyOk, portproxyOk ? 'Configuré' : 'Absent');
+        setStatus('status-firewall', !!firewallOk, firewallOk ? 'Ouvert' : 'À vérifier');
+        setStatus('status-django', !!djangoAllowsIp, djangoAllowsIp ? 'OK' : 'À mettre à jour');
+        setStatus('status-student-url', !!studentUrlOk && !!status.student_url, studentUrlOk && status.student_url ? status.student_url : 'Non disponible');
+        setStatus('status-lan-test', !!studentUrlOk, studentUrlOk ? 'Accessible' : 'Échec du test');
 
         document.getElementById('helper-status-content').innerHTML = helperOk
             ? '<div class="alert alert-success"><strong>Helper joignable.</strong> Le statut réseau vient d’être actualisé.</div>'
@@ -418,6 +430,9 @@
         callHelper('disable', 'POST', 'Desactiver', 'btn-disable');
     });
     document.getElementById('btn-restart').addEventListener('click', function() {
+        if (!confirm('Redémarrer l’application locale maintenant ?')) {
+            return;
+        }
         callHelper('restart-app', 'POST', 'Redémarrer', 'btn-restart');
     });
     document.getElementById('btn-copy-url').addEventListener('click', function() {

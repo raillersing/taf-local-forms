@@ -59,14 +59,27 @@ try {
 }
 
 # --------------------------------------------------
-# Helper functions (unchanged from F030)
+# Network detection helpers
 # --------------------------------------------------
-function Get-ActiveLanIp {
-    $candidates = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+function Test-PrivateIPv4 {
+    param([string]$IpAddress)
+    $address = $null
+    if (-not [System.Net.IPAddress]::TryParse($IpAddress, [ref]$address)) { return $false }
+    if ($address.AddressFamily -ne [System.Net.Sockets.AddressFamily]::InterNetwork) { return $false }
+    $bytes = $address.GetAddressBytes()
+    return (
+        $bytes[0] -eq 10 -or
+        ($bytes[0] -eq 192 -and $bytes[1] -eq 168) -or
+        ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31)
+    )
+}
+
+function Get-ActiveLanDetails {
+    $candidates = @(Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+        (Test-PrivateIPv4 $_.IPAddress) -and
         $_.IPAddress -notlike "127.*" -and
         $_.IPAddress -notlike "169.254.*" -and
-        $_.InterfaceAlias -notlike "*vEthernet*" -and
-        $_.IPAddress -notlike "172.*"
+        $_.InterfaceAlias -notmatch "(?i)vEthernet|Docker|WSL|Hyper-V|Default Switch"
     } | ForEach-Object {
         $ip = $_
         $hasGateway = Get-NetRoute -DestinationPrefix "0.0.0.0/0" |
@@ -74,10 +87,13 @@ function Get-ActiveLanIp {
         $prio = if ($hasGateway) { 0 } else { 1 }
         [PSCustomObject]@{
             IPAddress      = $ip.IPAddress
+            InterfaceAlias = $ip.InterfaceAlias
+            InterfaceIndex = $ip.InterfaceIndex
+            Gateway        = if ($hasGateway) { ($hasGateway | Select-Object -First 1).NextHop } else { $null }
             Priority       = $prio
             HasGateway     = [bool]$hasGateway
         }
-    } | Sort-Object Priority
+    } | Sort-Object Priority)
 
     $withGateway = $candidates | Where-Object { $_.HasGateway }
     if ($withGateway) { $candidates = $withGateway }
@@ -85,10 +101,17 @@ function Get-ActiveLanIp {
     return $null
 }
 
+function Get-ActiveLanIp {
+    $details = Get-ActiveLanDetails
+    if ($details) { return $details.IPAddress }
+    return $null
+}
+
 function Get-PortproxyStatus {
     try {
         $output = netsh interface portproxy show all
-        $hasRule = $output -match "8011"
+        $rulePattern = "0\.0\.0\.0\s+$LanPort\s+127\.0\.0\.1\s+$DockerPort"
+        $hasRule = $output -match $rulePattern
         return @{ exists = $hasRule; details = $output }
     } catch {
         return @{ exists = $false; details = ($_.Exception.Message) }
@@ -140,7 +163,8 @@ function Test-DjangoHost {
 }
 
 function Get-Status {
-    $lanIp = Get-ActiveLanIp
+    $lan = Get-ActiveLanDetails
+    $lanIp = if ($lan) { $lan.IPAddress } else { $null }
     $localOk = Test-LocalApp
     $portproxy = Get-PortproxyStatus
     $firewall = Get-FirewallStatus
@@ -156,6 +180,8 @@ function Get-Status {
         timestamp   = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
         version     = $helperVersion
         lan_ip      = $lanIp
+        lan_interface = if ($lan) { $lan.InterfaceAlias } else { $null }
+        lan_gateway = if ($lan) { $lan.Gateway } else { $null }
         student_url = $studentUrl
         local_ok    = $localOk
         portproxy   = $portproxy.exists
@@ -183,7 +209,7 @@ function Invoke-Sync {
 
     # Portproxy
     try {
-        $existing = netsh interface portproxy show all | Select-String "0.0.0.0.*8011"
+        $existing = netsh interface portproxy show all | Select-String "0.0.0.0.*$LanPort"
         if ($existing) {
             netsh interface portproxy delete v4tov4 listenport=$LanPort listenaddress=0.0.0.0 | Out-Null
         }
@@ -222,33 +248,37 @@ function Invoke-Sync {
     }
 
     $studentUrl = "http://${lanIp}:${LanPort}/"
-    $ok = $proxyOk -and $fwOk -and $wslOk
+    $verification = Get-Status
+    $ok = $proxyOk -and $fwOk -and $wslOk -and $verification.student_url_ok
 
     return @{
         success     = $ok
-        message     = if ($ok) { "Acces LAN configure avec succes sur ${lanIp}:${LanPort}." } else { "Erreur lors de la configuration." }
+        message     = if ($ok) { "Acces LAN configure et verifie sur ${lanIp}:${LanPort}." } else { "Configuration incomplete : verifiez le portproxy, le pare-feu, Django et l'URL eleves." }
         lan_ip      = $lanIp
         student_url = $studentUrl
         diagnostics = @{
             portproxy = $proxyOk
             firewall  = $fwOk
             wsl_sync  = $wslOk
+            verification = $verification.student_url_ok
         }
-        local_app_ok = (Test-LocalApp)
-        portproxy_ok = $proxyOk
-        firewall_ok = $fwOk
-        django_allows_ip = $wslOk
-        student_url_ok = $false
+        local_app_ok = $verification.local_app_ok
+        portproxy_ok = $verification.portproxy_ok
+        firewall_ok = $verification.firewall_ok
+        django_allows_ip = $verification.django_allows_ip
+        student_url_ok = $verification.student_url_ok
     }
 }
 
 function Invoke-Disable {
+    $proxyOk = $true
+    $firewallOk = $true
     try {
-        $existing = netsh interface portproxy show all | Select-String "0.0.0.0.*8011"
+        $existing = netsh interface portproxy show all | Select-String "0.0.0.0.*$LanPort"
         if ($existing) {
             netsh interface portproxy delete v4tov4 listenport=$LanPort listenaddress=0.0.0.0 | Out-Null
         }
-    } catch { }
+    } catch { $proxyOk = $false }
 
     try {
         $ruleName = "TAf Local Forms - Port 8011"
@@ -256,15 +286,21 @@ function Invoke-Disable {
         if ($existingRule) {
             Remove-NetFirewallRule -DisplayName $ruleName
         }
-    } catch { }
+    } catch { $firewallOk = $false }
 
-    return @{ success = $true; message = "Acces LAN desactive. Portproxy et regle pare-feu supprimes." }
+    $ok = $proxyOk -and $firewallOk
+    return @{
+        success = $ok
+        message = if ($ok) { "Acces LAN desactive. Portproxy et regle pare-feu supprimes." } else { "Desactivation incomplete : verifiez les droits administrateur." }
+        diagnostics = @{ portproxy_removed = $proxyOk; firewall_removed = $firewallOk }
+    }
 }
 
 function Invoke-Test {
     $lanIp = Get-ActiveLanIp
     $localOk = Test-LocalApp
     $lanOk = if ($lanIp) { Test-LanUrl -Ip $lanIp } else { $false }
+    $djangoOk = if ($lanIp) { Test-DjangoHost -Ip $lanIp } else { $false }
 
     $studentUrl = if ($lanIp) { "http://$lanIp`:$LanPort/" } else { $null }
 
@@ -274,7 +310,7 @@ function Invoke-Test {
         lan_ip      = $lanIp
         student_url = $studentUrl
         local_app_ok = $localOk
-        django_allows_ip = $false
+        django_allows_ip = $djangoOk
         student_url_ok = $lanOk
         diagnostics = @{
             local_accessible = $localOk
