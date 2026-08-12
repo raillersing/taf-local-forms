@@ -52,7 +52,7 @@
 | F040 | Dédoublonner les outils et créer le parcours Préparer l’accès élèves | done |
 | F041 | Standardiser les états et libellés métier du parcours formateur | done |
 | F042 | Sécuriser les actions sensibles et ajouter historique/accès rapides | done |
-| F043 | Validation terrain UX complète de la refonte formateur | in_progress |
+| F043 | Validation terrain UX complète de la refonte formateur | pending |
 
 ## Managing the queue
 

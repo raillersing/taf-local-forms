@@ -50,3 +50,17 @@ de secrets dans le diagnostic téléchargé.
 F043 est déclarable terminé après exécution de la matrice terrain sur le poste
 formateur et un téléphone réel. Les tests automatisés seuls ne remplacent
 pas cette vérification réseau.
+
+## Résultats de cette passe
+
+- `manage.py check` : OK.
+- `manage.py test surveys.tests` : 559 tests OK.
+- `makemigrations --check --dry-run` : aucune migration en attente.
+- `docker compose config` : OK.
+- `scripts/dev/taf-field-smoke-check http://127.0.0.1:8010` : 13 PASS,
+  0 FAIL, 5 SKIP.
+- Routes publiques et protections dashboard vérifiées par HTTP : OK.
+- Port LAN `8011` non disponible dans cet environnement : les tests LAN et
+  téléphone restent à exécuter sur le poste Windows de terrain.
+- Validation visuelle réelle à 360 px, zoom 200 % et clavier : à effectuer
+  avec un navigateur humain avant de marquer F043 `done`.
