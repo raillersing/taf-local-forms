@@ -6209,6 +6209,19 @@ class ModuleQuestionInsightsTests(TestCase):
         self.assertContains(response, "Voir le formulaire élève", count=8)
         self.assertGreaterEqual(response.content.decode().count("csrfmiddlewaretoken"), 8)
 
+    def test_module_management_prioritises_the_active_module(self):
+        response = self.client.get(reverse("surveys:dashboard_modules"))
+        self.assertContains(response, "trainer-module-focus")
+        self.assertContains(response, "À piloter maintenant")
+        self.assertContains(response, "Ouvrir le suivi")
+        self.assertContains(response, "trainer-module-priority")
+
+    def test_module_management_explains_when_no_session_is_active(self):
+        TrainingSession.objects.update(is_active=False)
+        response = self.client.get(reverse("surveys:dashboard_modules"))
+        self.assertContains(response, "Aucun module actif")
+        self.assertContains(response, "Préparer une séance")
+
 
 class ModulePreviewWorkflowTests(TestCase):
     @classmethod

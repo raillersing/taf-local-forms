@@ -12,11 +12,34 @@
     </div>
 </section>
 
+<section class="trainer-module-focus" aria-labelledby="module-focus-heading">
+    {% if active_module %}
+        <div class="trainer-module-focus-copy">
+            <span class="section-kicker">À piloter maintenant</span>
+            <h2 id="module-focus-heading">{{ active_module.display_title }}</h2>
+            <p>{% if active_module.accepting_responses %}Les réponses sont ouvertes.{% else %}Les réponses sont fermées.{% endif %} {{ active_module.submission_count }} réponse{{ active_module.submission_count|pluralize }} reçue{{ active_module.submission_count|pluralize }} dans la séance active.</p>
+        </div>
+        <div class="trainer-module-focus-status">
+            <span class="trainer-module-focus-status-label">{{ active_module.session_status }}</span>
+            <strong>{{ active_module.active_student_count }}</strong>
+            <small>élève{{ active_module.active_student_count|pluralize }} unique{{ active_module.active_student_count|pluralize }}</small>
+        </div>
+        <a class="btn btn-primary p6-button" href="{{ active_module.dashboard_url }}">Ouvrir le suivi <span aria-hidden="true">→</span></a>
+    {% else %}
+        <div class="trainer-module-focus-copy">
+            <span class="section-kicker">À préparer</span>
+            <h2 id="module-focus-heading">Aucun module actif</h2>
+            <p>Aucune séance n’est ouverte pour le moment. Préparez une session dans l’administration avant de lancer la classe.</p>
+        </div>
+        <a class="btn btn-secondary p6-button" href="{% url 'surveys:dashboard_advanced' %}">Préparer une séance <span aria-hidden="true">→</span></a>
+    {% endif %}
+</section>
+
 <section id="modules" class="trainer-module-ledger" aria-labelledby="modules-heading">
     <div class="trainer-ledger-heading">
         <div>
             <span class="section-kicker">Pilotage des parcours</span>
-            <h2 id="modules-heading">Gestion des modules</h2>
+            <h2 id="modules-heading">Tous les modules</h2>
             <p>Repérez l’état de chaque parcours, ouvrez les réponses et consultez son analyse pédagogique.</p>
         </div>
         <span>Session · Réponses · Actions</span>
@@ -25,9 +48,10 @@
         {% for item in module_list %}
         {% with num=item.module.code|slice:"7:" %}
         {% with dashboard_url='surveys:dashboard_module_'|add:num module_url='surveys:module_'|add:num %}
-        <article class="trainer-module-management-card{% if item.accepting_responses %} is-open{% endif %}">
+        <article class="trainer-module-management-card{% if item.accepting_responses %} is-open{% endif %}{% if active_module and item.module.code == active_module.module.code %} is-priority{% endif %}">
             <div class="trainer-module-card-topline">
                 <span class="trainer-module-number">0{{ num }}</span>
+                {% if active_module and item.module.code == active_module.module.code %}<span class="trainer-module-priority">Prioritaire</span>{% endif %}
                 {% if item.has_active_session %}
                     {% if item.accepting_responses %}<span class="badge badge-success p6-badge">Réponses ouvertes</span>{% else %}<span class="badge badge-warning p6-badge">Réponses fermées</span>{% endif %}
                 {% else %}<span class="badge badge-neutral p6-badge">Session à préparer</span>{% endif %}

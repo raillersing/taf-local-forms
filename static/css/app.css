@@ -4488,6 +4488,17 @@ table th {
 .trainer-presence-strip .presence-count { min-height: 40px; padding: 10px; border: 1px solid #c5d6ec; border-radius: 9px; background: rgba(255,255,255,.72); color: #23466f; font-size: .73rem; font-weight: 850; text-align: center; }
 .trainer-presence-strip .presence-count-total { background: #071a42; color: #fff; }
 
+.trainer-module-focus { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 28px; margin-top: 32px; padding: 28px 30px; border: 1px solid #9bbce4; border-radius: 18px; background: linear-gradient(105deg, #071a42 0%, #123a73 100%); color: #fff; }
+.trainer-module-focus-copy { min-width: 0; }
+.trainer-module-focus-copy .section-kicker { color: #8ec5ff; }
+.trainer-module-focus-copy h2 { margin: 6px 0 0; color: #fff; font-size: clamp(1.35rem, 2.5vw, 2.1rem); letter-spacing: -.045em; }
+.trainer-module-focus-copy p { max-width: 680px; margin: 9px 0 0; color: #c7d8f2; line-height: 1.5; }
+.trainer-module-focus-status { display: grid; min-width: 140px; padding-left: 24px; border-left: 1px solid rgba(255,255,255,.2); }
+.trainer-module-focus-status-label { color: #c7d8f2; font-size: .7rem; font-weight: 850; line-height: 1.3; }
+.trainer-module-focus-status strong { margin-top: 5px; color: #ffbe25; font-size: 2rem; letter-spacing: -.05em; line-height: 1; }
+.trainer-module-focus-status small { color: #c7d8f2; font-size: .76rem; }
+.trainer-module-focus .btn { white-space: nowrap; }
+
 .trainer-module-ledger { padding: clamp(34px, 5vw, 64px) 0; }
 .trainer-ledger-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .trainer-ledger-heading h2 { margin: 0; color: #071a42; font-size: clamp(2rem, 4vw, 4rem); letter-spacing: -.055em; }
@@ -4507,6 +4518,9 @@ table th {
   .trainer-modules-hero { grid-template-columns: auto minmax(0, 1fr); }
   .trainer-modules-open { grid-column: 2; justify-items: start; }
   .trainer-presence-strip { grid-template-columns: 1fr; }
+  .trainer-module-focus { grid-template-columns: minmax(0, 1fr) auto; }
+  .trainer-module-focus-status { grid-column: 2; grid-row: 1; }
+  .trainer-module-focus .btn { grid-column: 1 / -1; justify-self: start; }
 }
 
 @media (max-width: 720px) {
@@ -4516,6 +4530,9 @@ table th {
   .trainer-presence-strip { padding: 22px 18px; }
   .trainer-presence-strip .presence-grid-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .trainer-ledger-heading { display: grid; }
+  .trainer-module-focus { grid-template-columns: 1fr; gap: 18px; padding: 24px 20px; }
+  .trainer-module-focus-status { grid-column: auto; grid-row: auto; padding: 16px 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; }
+  .trainer-module-focus .btn { grid-column: auto; width: 100%; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5050,9 +5067,11 @@ table th {
 .trainer-module-management-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .trainer-module-management-card { display: grid; grid-template-rows: auto 1fr auto auto; gap: 22px; min-height: 330px; padding: 28px; border: 1px solid #cad6e8; border-radius: 20px; background: #fff; }
 .trainer-module-management-card.is-open { border-color: #8eb7ee; background: linear-gradient(150deg, #fff 0%, #edf5ff 100%); }
+.trainer-module-management-card.is-priority { outline: 3px solid rgba(37, 117, 215, .18); outline-offset: 2px; }
 .trainer-module-card-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .trainer-module-number { color: #d2e3f8; font-size: 3.5rem; font-weight: 950; letter-spacing: -.08em; line-height: .8; }
 .trainer-module-management-card.is-open .trainer-module-number { color: #1766d2; }
+.trainer-module-priority { color: #1766d2; font-size: .66rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .trainer-module-card-copy h3 { max-width: 430px; margin: 0; color: #071a42; font-size: 1.3rem; line-height: 1.12; }
 .trainer-module-card-copy p { margin: 14px 0 0; color: #61728b; }
 .trainer-module-card-copy p strong { color: #071a42; font-size: 1.35rem; }
