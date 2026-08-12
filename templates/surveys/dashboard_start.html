@@ -22,6 +22,26 @@
         <div class="trainer-operation-signal" aria-label="Résumé du démarrage"><strong>5</strong><span>étapes</span><small>Environ 2 minutes</small></div>
     </section>
 
+    <section class="start-components-grid" aria-labelledby="components-heading">
+        <article class="card p6-card start-component-card">
+            <div class="card-body">
+                <span class="section-kicker">Composant 1 · Dans Docker</span>
+                <h2 id="components-heading">L’application web</h2>
+                <p>Django, les questionnaires, le cockpit et la base de données tournent dans les conteneurs Docker.</p>
+                <p><strong>Adresse formateur :</strong> <code>http://localhost:8010/</code></p>
+            </div>
+        </article>
+        <article class="card p6-card start-component-card start-component-windows">
+            <div class="card-body">
+                <span class="section-kicker">Composant 2 · Hors Docker</span>
+                <h2>Le helper Windows</h2>
+                <p>Le script PowerShell est fourni dans le dépôt, mais il doit être exécuté directement par Windows pour gérer le pare-feu et le portproxy.</p>
+                <p><strong>Adresse locale :</strong> <code>127.0.0.1:8019</code></p>
+                <p class="muted">Il ne faut pas chercher le helper dans l’interface Docker : il est lancé séparément, une fois par session Windows.</p>
+            </div>
+        </article>
+    </section>
+
     <section class="card p6-card" aria-labelledby="before-heading">
         <div class="card-body">
             <h2 id="before-heading">Avant de commencer</h2>
@@ -51,9 +71,9 @@
 
         <article class="card p6-card card-compact"><div class="card-body">
             <span class="trainer-mini-number">03</span><h2>Démarrer le helper Windows</h2>
-            <p>Cette étape permet de vérifier l’IP, le portproxy et le pare-feu Windows.</p>
+            <p>Le helper est dans le dépôt, mais il s’exécute hors de Docker. Il permet de vérifier l’IP, le portproxy et le pare-feu Windows.</p>
             <div class="start-command-block"><code id="start-command-helper">.\scripts\windows\taf-lan-helper-start.ps1</code><button type="button" class="btn btn-secondary start-copy-button" data-copy-target="start-command-helper">Copier</button></div>
-            <ol><li>Ouvre PowerShell <strong>en administrateur</strong>.</li><li>Place-toi dans le dépôt.</li><li>Exécute la commande.</li></ol>
+            <ol><li>Ouvre PowerShell <strong>en administrateur</strong> — nécessaire pour le pare-feu et le portproxy.</li><li>Place-toi dans le dépôt.</li><li>Exécute la commande.</li></ol>
             <span class="start-success">✓ Le helper écoute sur <code>127.0.0.1:8019</code>.</span>
         </div></article>
 

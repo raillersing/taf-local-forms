@@ -4453,6 +4453,9 @@ table th {
 .trainer-operation-signal small { margin-top: 8px; color: #9fb6d8; font-weight: 700; }
 
 .dashboard-start-page { gap: 24px; }
+.start-components-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.start-component-card { border-top: 4px solid #2c73d2; }
+.start-component-windows { border-top-color: #ffbe25; }
 .dashboard-start-page .trainer-operation-hero { margin-bottom: 0; }
 .start-command-block { display: flex; align-items: center; gap: 10px; margin: 18px 0; padding: 12px; border: 1px solid #c8d7ea; border-radius: 10px; background: #f5f9ff; }
 .start-command-block code { flex: 1; overflow-wrap: anywhere; color: #071a42; font-weight: 700; }
@@ -4462,6 +4465,7 @@ table th {
 .start-url-example { display: inline-block; padding: 14px 18px; border-radius: 10px; background: #071a42; color: #fff; font-size: 1.05rem; }
 .start-url-example code { color: inherit; }
 @media (max-width: 640px) {
+  .start-components-grid { grid-template-columns: 1fr; }
   .start-command-block { align-items: stretch; flex-direction: column; }
   .start-copy-button { width: 100%; }
   .start-url-example { max-width: 100%; overflow-wrap: anywhere; }

@@ -115,6 +115,13 @@ scripts/dev/taf-field-smoke-check
 
 Ouvrir ensuite `http://localhost:8010/` et vérifier la connexion formateur.
 
+### Comprendre les deux composants
+
+- **Application web** : Django, les questionnaires, le cockpit et la base de données tournent dans Docker sur le port formateur `8010`.
+- **Helper Windows** : les scripts `scripts\windows\taf-lan-helper*.ps1` sont livrés dans le dépôt, mais s’exécutent directement dans Windows, hors du conteneur Docker. Le helper écoute sur `127.0.0.1:8019` et nécessite PowerShell administrateur pour gérer le pare-feu et le portproxy.
+
+Le dashboard ne peut pas lancer lui-même un processus Windows administrateur. Il faut donc démarrer le helper une fois avant d’utiliser les actions de contrôle LAN.
+
 ## 8. Configurer l'accès des téléphones
 
 ### Contexte WSL

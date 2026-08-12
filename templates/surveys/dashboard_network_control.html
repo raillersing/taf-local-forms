@@ -69,6 +69,7 @@
         <section id="helper-status" class="card p6-card card-compact">
             <div class="card-body">
                 <h2>Statut du helper LAN</h2>
+                <p class="muted">Le helper est un script Windows du dépôt, exécuté à côté de Docker. Il écoute uniquement sur <code>127.0.0.1:8019</code>.</p>
                 <div id="helper-status-content">
                     <p class="muted">Vérification en cours...</p>
                 </div>
@@ -81,7 +82,7 @@
         <section class="card p6-card card-compact network-helper-start">
             <div class="card-body">
                 <h2>Démarrage rapide</h2>
-                <p class="muted">Le helper n'est pas embarqué dans Django. Il doit tourner localement sur Windows pour que les actions LAN fonctionnent.</p>
+                <p class="muted">L’application web tourne dans Docker. Le helper, lui, est un script du dépôt exécuté directement par Windows avec les droits administrateur nécessaires au pare-feu et au portproxy.</p>
                 <ol class="network-helper-list">
                     <li>Ouvre PowerShell en administrateur.</li>
                     <li>Place-toi dans le dépôt du projet.</li>
