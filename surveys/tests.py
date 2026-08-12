@@ -4365,6 +4365,15 @@ class F030NetworkControlTests(TestCase):
         self.assertContains(response, "Aucun jeton helper, secret")
 
     @override_settings(ALLOWED_HOSTS=["*"])
+    @patch.dict("os.environ", {"TAF_WINDOWS_PROJECT_PATH": r"C:\TAfHSSiM"}, clear=False)
+    def test_network_control_exposes_configured_windows_helper_folder(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, r"C:\TAfHSSiM\scripts\windows")
+        self.assertContains(response, "file:///C:/TAfHSSiM/scripts/windows/")
+        self.assertContains(response, "Ouvrir le dossier des commandes")
+
+    @override_settings(ALLOWED_HOSTS=["*"])
     def test_phone_check_is_recorded_without_device_identity(self):
         self.client.login(username="ctrlstaff", password="secret")
         response = self.client.post(

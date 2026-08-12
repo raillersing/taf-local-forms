@@ -88,6 +88,13 @@
                     <li>Lance <code>.\scripts\windows\taf-lan-helper-start.ps1</code>.</li>
                     <li>Reviens ici puis clique sur <strong>Actualiser l'état</strong>.</li>
                 </ol>
+                <div class="network-helper-folder-help">
+                    <p><strong>Dossier des commandes Windows</strong></p>
+                    <p class="muted">Configure <code>TAF_WINDOWS_PROJECT_PATH</code> avec le chemin Windows du projet pour permettre l’ouverture directe du dossier.</p>
+                    <code id="helper-folder-path">{{ windows_helper_folder_path }}</code>
+                    <button id="btn-open-helper-folder" class="btn btn-secondary" type="button" data-folder-uri="{{ windows_helper_folder_uri|escape }}" data-folder-path="{{ windows_helper_folder_path|escape }}">Ouvrir le dossier des commandes</button>
+                    <p id="helper-folder-feedback" class="muted" aria-live="polite"></p>
+                </div>
             </div>
         </section>
     </section>
@@ -460,6 +467,28 @@
             return;
         }
         callHelper('restart-app', 'POST', 'Redémarrer', 'btn-restart');
+    });
+    document.getElementById('btn-open-helper-folder').addEventListener('click', function() {
+        var button = this;
+        var folderUri = button.dataset.folderUri;
+        var folderPath = button.dataset.folderPath;
+        var feedback = document.getElementById('helper-folder-feedback');
+        if (folderUri) {
+            var opened = window.open(folderUri, '_blank');
+            if (opened) {
+                feedback.textContent = 'Dossier ouvert dans l’Explorateur Windows.';
+                return;
+            }
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(folderPath).then(function() {
+                feedback.textContent = 'Le chemin a été copié. Colle-le dans la barre de l’Explorateur Windows.';
+            }).catch(function() {
+                feedback.textContent = 'Ouvre manuellement ce dossier : ' + folderPath;
+            });
+        } else {
+            feedback.textContent = 'Ouvre manuellement ce dossier : ' + folderPath;
+        }
     });
     document.getElementById('btn-download-diagnostic').addEventListener('click', function() {
         if (!lastStatusData) {

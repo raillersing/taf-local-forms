@@ -1,6 +1,8 @@
 import csv
 import json
 import mimetypes
+import os
+from urllib.parse import quote
 from collections import Counter
 from datetime import datetime, timedelta
 
@@ -3655,6 +3657,16 @@ def network_control(request: HttpRequest) -> HttpResponse:
     helper_url = f"http://127.0.0.1:{helper_port}"
     configured_port = net_ctx.get("configured_port") or "8010"
     lan_port = net_ctx.get("recommended_lan_port") or "8011"
+    windows_project_path = os.environ.get("TAF_WINDOWS_PROJECT_PATH", "").strip().rstrip("\\/")
+    windows_helper_folder_path = (
+        f"{windows_project_path}\\scripts\\windows" if windows_project_path else r"scripts\windows"
+    )
+    windows_helper_folder_uri = ""
+    if windows_project_path:
+        windows_helper_folder_uri = "file:///" + quote(
+            f"{windows_project_path.replace(chr(92), '/')}/scripts/windows/",
+            safe=":/",
+        )
 
     context = {
         "net_ctx": net_ctx,
@@ -3663,6 +3675,8 @@ def network_control(request: HttpRequest) -> HttpResponse:
         "helper_port": helper_port,
         "lan_port": lan_port,
         "docker_port": configured_port,
+        "windows_helper_folder_path": windows_helper_folder_path,
+        "windows_helper_folder_uri": windows_helper_folder_uri,
     }
     return render(request, "surveys/dashboard_network_control.html", context)
 
