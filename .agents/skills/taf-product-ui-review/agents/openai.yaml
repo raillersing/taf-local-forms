@@ -1,0 +1,4 @@
+interface:
+  display_name: "TAf Product UI Review"
+  short_description: "Auditer les interfaces TAf avec preuves terrain"
+  default_prompt: "Utilise $taf-product-ui-review pour auditer une interface TAf et produire un verdict UI/UX vérifiable."

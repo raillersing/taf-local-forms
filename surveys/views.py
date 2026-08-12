@@ -14,6 +14,7 @@ from django.db.models import Avg, Count, Sum
 from django.db import IntegrityError, connection
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -336,6 +337,8 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
                 if active_session
                 else "Aucune séance active"
             ),
+            "dashboard_url": reverse(f"surveys:dashboard_module_{module_number}"),
+            "export_url": reverse(f"surveys:export_module_{module_number}_csv"),
         }
         module_list.append(module_item)
         if active_module is None and active_session is not None:
@@ -346,6 +349,43 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
     student_access_url = ""
     if net_ctx.get("recommended_lan_host"):
         student_access_url = net_ctx.get("student_form_url", "")
+
+    if active_module is None:
+        cockpit_action = {
+            "kind": "empty",
+            "eyebrow": "Prochaine étape",
+            "title": "Aucune séance active",
+            "description": "Ouvrez le pilotage des modules pour préparer la prochaine séance.",
+            "label": "Ouvrir le pilotage des modules",
+            "url": reverse("surveys:dashboard_modules"),
+        }
+    elif not student_access_url:
+        cockpit_action = {
+            "kind": "attention",
+            "eyebrow": "Accès à vérifier",
+            "title": "Le réseau élèves n’est pas prêt",
+            "description": "Vérifiez l’adresse locale avant de lancer les réponses de la classe.",
+            "label": "Vérifier le réseau",
+            "url": reverse("surveys:dashboard_network"),
+        }
+    elif active_module["accepting_responses"]:
+        cockpit_action = {
+            "kind": "active",
+            "eyebrow": "Séance en cours",
+            "title": active_module["display_title"],
+            "description": "Les réponses sont ouvertes. Suivez la participation et les résultats de ce module.",
+            "label": "Ouvrir le suivi du module",
+            "url": active_module["dashboard_url"],
+        }
+    else:
+        cockpit_action = {
+            "kind": "paused",
+            "eyebrow": "Séance en pause",
+            "title": active_module["display_title"],
+            "description": "La séance existe, mais les réponses sont fermées. Consultez son état ou choisissez un autre module.",
+            "label": "Voir les modules",
+            "url": reverse("surveys:dashboard_modules"),
+        }
 
     return {
         "total_submissions": active_totals.submissions,
@@ -365,6 +405,8 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         "published_resources_count": published_resources_count,
         "total_resources_count": total_resources_count,
         "metrics_updated_at": timezone.now(),
+        "cockpit_action": cockpit_action,
+        "edit_requests_url": reverse("surveys:dashboard_edit_requests"),
     }
 
 
@@ -1336,7 +1378,14 @@ def _select_dashboard_session(request: HttpRequest, module_code: str):
 
 def _dashboard_session_context(request: HttpRequest, module_code: str) -> dict:
     selected_session, sessions = _select_dashboard_session(request, module_code)
+    module_number = module_code.removeprefix("MODULE_")
+    module = TrainingModule.objects.filter(code=module_code).first()
     return {
+        "module_code": module_code,
+        "module_number": module_number,
+        "module_title": _prototype_module_title(module) if module else f"Module {module_number}",
+        "module_form_url": reverse(f"surveys:module_{module_number}"),
+        "module_export_url": reverse(f"surveys:export_module_{module_number}_csv"),
         "selected_session": selected_session,
         "available_sessions": sessions,
         "selected_session_id": selected_session.pk if selected_session else "",

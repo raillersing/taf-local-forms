@@ -22,7 +22,6 @@
 | F007 | Release candidate review + Graphify integration | done |
 | F008 | Push / PR / merge workflow (push branch, open PR, merge, cleanup) | done |
 | F009 | Module 3 + 4 questionnaires (combined PR #5) | done |
-| F009 | Tag v0.1.1 | pending |
 | F010 | Safe cleanup workflow | done |
 | F011 | Module 3 + 4 field deployment | done |
 | F012 | Update field user manual for Modules 2, 3, 4 | done |
@@ -44,6 +43,16 @@
 | F020 | Landing page with Student/Formateur split, /modules/ student space, pedagogical module presentations | done |
 | F021 | Integrated PowerPoint pedagogy content into student space (Modules 2, 3, 4 actual content, new CSS classes, 10 new pedagogy tests) | done |
 | F033 | Refonte UI/UX globale (design system local, layout unifié, cockpit, assistant LAN, page sauvegarde, accessibilité) | done |
+| F034 | Skills UI v2 (cadre premium TAf et revue UI/UX indépendante) | done |
+| F035 | Navigation formateur premium et parcours de séance | done |
+| F036 | Cockpit formateur contextualisé selon l’état réel de la séance | done |
+| F037 | Pilotage Modules : module prioritaire et états de séance lisibles | done |
+| F038 | Harmoniser les prochaines actions Réseau et Supports | done |
+| F039 | Harmoniser les en-têtes des dashboards détaillés des modules | done |
+| F040 | Dédoublonner les outils et créer le parcours Préparer l’accès élèves | done |
+| F041 | Standardiser les états et libellés métier du parcours formateur | done |
+| F042 | Sécuriser les actions sensibles et ajouter historique/accès rapides | done |
+| F043 | Validation terrain UX complète de la refonte formateur | pending |
 
 ## Managing the queue
 

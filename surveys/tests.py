@@ -486,7 +486,7 @@ class DashboardAccessTests(TestCase):
         self.assertContains(response, reverse("surveys:dashboard_modules"))
         self.assertNotContains(response, "Gestion des modules")
         self.assertNotContains(response, "Fonctions complémentaires")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
         self.assertContains(response, "Projection")
         self.assertNotContains(response, "https://cdnjs.cloudflare.com")
 
@@ -1729,7 +1729,7 @@ class NavigationTests(TestCase):
     def test_dashboard_shows_tools(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_shows_module_status_columns(self):
         response = self.client.get(reverse("surveys:dashboard_modules"))
@@ -2009,13 +2009,13 @@ class F019NavigationUXTests(TestCase):
     def test_dashboard_shows_full_nav(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Préparer l’accès élèves")
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_shows_structured_trainer_navigation(self):
         response = self.client.get(reverse("surveys:dashboard_modules"))
-        for link in ["Cockpit terrain", "Pendant la séance", "Préparer l’accès", "Après la séance", "Cockpit", "Projection", "Modules", "Supports", "Exports"]:
+        for link in ["Cockpit terrain", "Navigation principale", "Accès des élèves", "Gérer les données", "Administration", "Cockpit", "Projection", "Modules", "Supports", "Exports"]:
             self.assertContains(response, link)
         self.assertContains(response, "Local · hors ligne")
         self.assertNotContains(response, "prototype-page-tabs")
@@ -2046,7 +2046,7 @@ class F019NavigationUXTests(TestCase):
     def test_dashboard_shows_advanced_section(self):
         response = self.client.get(reverse("surveys:dashboard_modules"))
         self.assertContains(response, "Présence en direct")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_links_have_target_blank(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2452,9 +2452,9 @@ class F022RNavigationRewireTests(TestCase):
         self.client.login(username="f022ruser", password="secret")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Préparer l’accès élèves")
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_toggle_staff_only(self):
         self.client.logout()
@@ -4271,10 +4271,10 @@ class F030NetworkControlTests(TestCase):
         self.assertContains(response, "Contrôle réseau local")
         self.assertContains(response, "127.0.0.1:8019")
         self.assertContains(response, "Préparer la séance")
-        self.assertContains(response, "Redémarrer l'application")
+        self.assertContains(response, "Redémarrer l’application")
         self.assertContains(response, "Tester l'URL")
         self.assertContains(response, "Copier l'URL")
-        self.assertContains(response, "Désactiver l'accès LAN")
+        self.assertContains(response, "Désactiver l’accès élèves")
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_shows_helper_not_found_when_not_localhost(self):
@@ -5163,9 +5163,9 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
         self.assertContains(response, "Exports")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Préparer l’accès élèves")
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
         self.assertContains(response, "Sortir")
         self.assertNotContains(response, "Cockpit protégé")
 
@@ -5174,6 +5174,10 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_start"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Démarrer l’application sans stress")
+        self.assertContains(response, "L’application web")
+        self.assertContains(response, "Le helper Windows")
+        self.assertContains(response, "hors de Docker")
+        self.assertContains(response, "127.0.0.1:8019")
         self.assertContains(response, "docker compose up -d")
         self.assertContains(response, r".\scripts\windows\taf-lan-helper-start.ps1")
         self.assertContains(response, "Ouvre PowerShell <strong>en administrateur</strong>", html=False)
@@ -5276,16 +5280,19 @@ class RedesignUITests(TestCase):
         steps = [
             "Helper local",
             "Application locale",
-            "IP Wi-Fi",
+            "Adresse LAN détectée",
             "Portproxy",
             "Pare-feu",
-            "Django autorise l'IP",
+            "Adresse autorisée par l’application",
             "URL élèves accessible",
         ]
         for step in steps:
             with self.subTest(step=step):
                 self.assertContains(response, step)
         self.assertContains(response, "Préparer la séance")
+        self.assertContains(response, "Actions avancées")
+        self.assertContains(response, "Actions récentes")
+        self.assertContains(response, "confirmation est toujours demandée")
 
     def test_dashboard_results_page_exists(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5334,6 +5341,15 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Répertoire des adresses")
         self.assertContains(response, "Diagnostic technique avancé")
         self.assertNotContains(response, '<details class="diagnostics" open>')
+        self.assertContains(response, "Lire le guide de démarrage")
+        self.assertContains(response, reverse("surveys:dashboard_settings"))
+
+    def test_network_dashboard_exposes_the_next_action(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertContains(response, "trainer-next-action-network")
+        self.assertContains(response, "Prochaine action")
+        self.assertContains(response, "network-checklist-heading")
 
     def test_network_control_refreshes_status_automatically(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5360,18 +5376,40 @@ class RedesignUITests(TestCase):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Pilotez la séance")
+        self.assertContains(response, "trainer-cockpit-state")
         self.assertContains(response, "Passer en mode projection")
         self.assertContains(response, "Module actif")
         self.assertContains(response, reverse("surveys:dashboard_modules"))
+        self.assertContains(response, "Accès rapides")
+        self.assertContains(response, reverse("surveys:dashboard_edit_requests"))
         self.assertNotContains(response, "dashboard-module-table")
         self.assertNotContains(response, "Fonctions complémentaires")
 
     def test_active_module_cta_opens_the_module_list(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
+        with patch("surveys.network.get_network_access_context", return_value={
+            "recommended_lan_host": "192.168.0.10",
+            "student_form_url": "http://192.168.0.10:8011/",
+        }):
+            response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Ouvrir le suivi du module")
+        self.assertContains(response, "Séance en cours")
+
+    def test_cockpit_action_points_to_network_when_student_access_is_missing(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        with patch("surveys.network.get_network_access_context", return_value={"recommended_lan_host": "", "student_form_url": ""}):
+            response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Accès à vérifier")
+        self.assertContains(response, "Le réseau élèves n’est pas prêt")
+        self.assertContains(response, reverse("surveys:dashboard_network"))
+
+    def test_cockpit_action_explains_when_no_session_is_active(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        TrainingSession.objects.update(is_active=False)
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Gérer les modules")
+        self.assertContains(response, "Aucune séance active")
+        self.assertContains(response, "Ouvrir le pilotage des modules")
         self.assertContains(response, reverse("surveys:dashboard_modules"))
-        self.assertNotContains(response, 'href="/dashboard/module-2/">Voir dashboard')
 
     def test_dashboard_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5540,7 +5578,7 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, reverse("surveys:dashboard_modules"))
         self.assertContains(response, "Admin")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Préparer l’accès élèves")
 
     def test_dashboard_home_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5731,6 +5769,8 @@ class LearningResourceViewTests(TestCase):
         self.assertContains(response, "Brouillon")
         self.assertContains(response, "Mathématiques")
         self.assertContains(response, "Géométrie")
+        self.assertContains(response, "trainer-next-action-supports")
+        self.assertContains(response, "Finaliser les brouillons")
 
     def test_student_navigation_contains_supports_without_dashboard_links(self):
         response = self.client.get(reverse("surveys:support_list"))
@@ -6083,15 +6123,38 @@ class NavigationShellTests(TestCase):
         self.assertContains(response, 'Exports')
         self.assertContains(response, 'Modules')
         self.assertContains(response, 'Supports')
-        self.assertContains(response, 'Réseau')
+        self.assertContains(response, 'Préparer l’accès élèves')
+        self.assertNotContains(response, 'Guide de démarrage')
+        self.assertNotContains(response, 'Paramètres réseau')
         self.assertNotContains(response, 'Config')
         self.assertContains(response, 'Sauvegarde')
-        self.assertContains(response, 'Admin avancé')
+        self.assertContains(response, 'Administration avancée')
         self.assertContains(response, 'Projection')
         self.assertContains(response, 'Outils')
-        self.assertContains(response, reverse('surveys:dashboard_settings'))
+        self.assertNotContains(response, reverse('surveys:dashboard_settings'))
         self.assertContains(response, reverse('surveys:dashboard_exports'))
         self.assertContains(response, reverse('surveys:dashboard_backup'))
+
+    def test_trainer_navigation_has_compact_primary_sections(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse('surveys:dashboard_home'))
+        self.assertContains(response, 'trainer-premium-primary-list')
+        self.assertContains(response, 'class="shell-tools-menu trainer-premium-tools"')
+        self.assertContains(response, 'Accès des élèves')
+        self.assertContains(response, 'Gérer les données')
+        self.assertContains(response, 'Administration')
+        self.assertNotContains(response, 'Pendant la séance')
+        self.assertNotContains(response, 'Après la séance')
+
+    def test_trainer_tools_open_and_active_on_secondary_page(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse('surveys:dashboard_network_control'))
+        self.assertContains(response, 'class="shell-tools-menu trainer-premium-tools" open')
+        self.assertContains(response, 'href="/dashboard/network-control/" aria-current="page"')
+
+    def test_student_pages_do_not_render_trainer_premium_navigation(self):
+        response = self.client.get(reverse('surveys:student_modules'))
+        self.assertNotContains(response, 'trainer-premium-nav')
 
     def test_breadcrumbs_present(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -6106,7 +6169,7 @@ class NavigationShellTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'tool-card')
         self.assertContains(response, 'Préparer la séance')
-        self.assertContains(response, 'Redémarrer l\'application')
+        self.assertContains(response, 'Redémarrer l’application')
         self.assertContains(response, 'local_app_ok')
         self.assertContains(response, 'student_url_ok')
         self.assertContains(response, 'data.success === false')
@@ -6148,6 +6211,15 @@ class ModuleQuestionInsightsTests(TestCase):
                 self.assertContains(response, "Résumé de toutes les réponses")
                 self.assertContains(response, "Question par question")
 
+    def test_all_module_dashboards_share_the_same_module_header(self):
+        for module_number in range(1, 9):
+            with self.subTest(module=module_number):
+                response = self.client.get(reverse(f"surveys:dashboard_module_{module_number}"))
+                self.assertContains(response, "trainer-module-header")
+                self.assertContains(response, f"Suivi du module {module_number}")
+                self.assertContains(response, "Voir le formulaire élève")
+                self.assertContains(response, "Exporter")
+
     def test_module_8_dashboard_uses_shared_kpis_and_filters(self):
         response = self.client.get(reverse("surveys:dashboard_module_8"))
         self.assertEqual(response.status_code, 200)
@@ -6163,6 +6235,19 @@ class ModuleQuestionInsightsTests(TestCase):
         self.assertContains(response, "Ouvrir le dashboard", count=8)
         self.assertContains(response, "Voir le formulaire élève", count=8)
         self.assertGreaterEqual(response.content.decode().count("csrfmiddlewaretoken"), 8)
+
+    def test_module_management_prioritises_the_active_module(self):
+        response = self.client.get(reverse("surveys:dashboard_modules"))
+        self.assertContains(response, "trainer-module-focus")
+        self.assertContains(response, "À piloter maintenant")
+        self.assertContains(response, "Ouvrir le suivi")
+        self.assertContains(response, "trainer-module-priority")
+
+    def test_module_management_explains_when_no_session_is_active(self):
+        TrainingSession.objects.update(is_active=False)
+        response = self.client.get(reverse("surveys:dashboard_modules"))
+        self.assertContains(response, "Aucun module actif")
+        self.assertContains(response, "Préparer une séance")
 
 
 class ModulePreviewWorkflowTests(TestCase):
@@ -6322,7 +6407,7 @@ class ModuleEditRequestWorkflowTests(TestCase):
         response = self.client.get(dashboard_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Rasoanaivo")
-        self.assertContains(response, '<span class="badge" style="background-color: #ef4444; color: white; padding: 0.1rem 0.4rem; border-radius: 9999px; font-size: 0.75rem; margin-left: 0.25rem;">1</span>')
+        self.assertContains(response, '<span class="trainer-nav-badge">1</span>')
 
         # Check that warning banner is displayed on Cockpit Home page
         response = self.client.get(reverse("surveys:dashboard_home"))

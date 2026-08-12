@@ -117,7 +117,8 @@ curl -I http://127.0.0.1:8010/dashboard/network/  # 200 after login
 
 - `taf-local-django-app` — building/reviewing/testing the Django app.
 - `taf-field-ops` — classroom field operations, network access, WSL/Docker caveats.
-- `taf-ui-ux-review` — UI quality, responsiveness, French readability for lycée.
+- `taf-premium-product-ui` — conception UI premium, hiérarchie, responsive et accessibilité.
+- `taf-product-ui-review` — audit UI/UX en lecture seule avec preuves et verdict.
 - `taf-security-privacy-review` — auth, secret safety, CSV injection, data minimisation.
 - `taf-graphify` — read-only architecture visualisation with Graphviz DOT diagrams.
 
@@ -139,7 +140,8 @@ Recommended order:
 2. `taf-agent-orchestration-graphify-ponytail`
 3. the task-specific skill:
    - Django: `taf-django-local-app`
-   - UI/prototype: `taf-ui-ux-prototype-6`
+   - UI premium: `taf-premium-product-ui`
+   - UI review: `taf-product-ui-review`
    - data/backup: `taf-data-safety-backup`
    - LAN: `taf-lan-field-operations`
    - media: `taf-media-library`
@@ -162,12 +164,19 @@ Do not use `npx skills add --all`.
 | F006 | Agent workflow and skills framework | done |
 | F007 | Release candidate review + Graphify integration | done |
 | F008 | Push / PR / merge workflow | done |
-| F009 | Module 3 search questionnaire | pending -->
-| F010 | Safe cleanup workflow | in_progress |
+| F009 | Module 3 search questionnaire | done |
+| F010 | Safe cleanup workflow | done |
 | F011 | Logo integration (official file) | pending |
-| F012 | Dashboard UX polish after field feedback | pending |
+| F012 | Dashboard UX polish after field feedback | done |
 | F022R | Navigation rewire (student/trainer context separation) | done |
 | F023 | Auto-sync LAN IP and network links | done |
+| F033 | Refonte UI/UX globale | done |
+| F034 | Skills UI v2 | done |
+| F035 | Navigation formateur premium et parcours de séance | done |
+| F036 | Cockpit formateur contextualisé | done |
+| F037 | Pilotage Modules | done |
+| F038 | Prochaines actions Réseau et Supports | done |
+| F039 | En-têtes des dashboards modules | done |
 
 ## Prompt contracts
 

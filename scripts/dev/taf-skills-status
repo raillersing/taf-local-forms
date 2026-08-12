@@ -7,7 +7,8 @@ required_skills=(
   taf-project-governance
   taf-django-local-app
   taf-data-safety-backup
-  taf-ui-ux-prototype-6
+  taf-premium-product-ui
+  taf-product-ui-review
   taf-lan-field-operations
   taf-media-library
   taf-testing-release-quality

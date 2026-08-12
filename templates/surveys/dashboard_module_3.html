@@ -14,6 +14,7 @@
     {% url 'surveys:dashboard_home' as dashboard_home_url %}
     {% url 'surveys:dashboard_modules' as dashboard_modules_url %}
     {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url crumb_2_label="Modules" crumb_2_url=dashboard_modules_url current_label="Module 3" %}
+    {% include "surveys/partials/trainer_module_header.html" %}
     {% include "surveys/partials/trainer_module_tabs.html" %}
 
     <section id="overview" class="card stats-grid dashboard-module-summary">

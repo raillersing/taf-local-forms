@@ -45,6 +45,25 @@
         </div>
     </section>
 
+    <section class="trainer-next-action trainer-next-action-network" aria-labelledby="network-next-action-heading">
+        <div>
+            <span class="section-kicker">Prochaine action</span>
+            {% if not recommended_lan_host or lan_host_stale %}
+            <h2 id="network-next-action-heading">Configurer l’accès élèves</h2>
+            <p>L’adresse à partager n’est pas encore fiable. Lance le contrôle LAN pour la détecter et la confirmer.</p>
+            <a class="btn btn-primary" href="{% url 'surveys:dashboard_network_control' %}#helper-actions">Ouvrir le contrôle LAN <span aria-hidden="true">→</span></a>
+            {% elif not phone_test_checked %}
+            <h2 id="network-next-action-heading">Tester l’accès depuis un téléphone</h2>
+            <p>L’adresse est disponible. Vérifie maintenant qu’un téléphone connecté au même réseau peut ouvrir l’accueil élèves.</p>
+            <a class="btn btn-primary" href="#network-checklist-heading">Faire le test téléphone <span aria-hidden="true">→</span></a>
+            {% else %}
+            <h2 id="network-next-action-heading">Accès élèves confirmé</h2>
+            <p>Le réseau a été testé. Affiche maintenant le QR code pour lancer la séance avec la classe.</p>
+            <a class="btn btn-primary" href="#student-access">Afficher l’accès élèves <span aria-hidden="true">→</span></a>
+            {% endif %}
+        </div>
+    </section>
+
     <section class="network-helper-launch p6-card" id="helper-start" aria-labelledby="helper-start-heading">
         <div class="network-helper-launch-copy">
             <span class="section-kicker">Préparation Windows</span>
@@ -62,6 +81,18 @@
             <button type="button" class="btn btn-primary" data-copy-helper-command>Copier la commande</button>
             <a class="btn btn-secondary" href="{% url 'surveys:dashboard_network_control' %}#helper-actions">Actualiser l’état</a>
             <p class="student-access-feedback" data-helper-copy-feedback aria-live="polite"></p>
+        </div>
+    </section>
+
+    <section class="network-secondary-links" aria-labelledby="network-secondary-heading">
+        <div>
+            <span class="section-kicker">Aide et configuration avancée</span>
+            <h2 id="network-secondary-heading">Besoin d’une consigne détaillée ?</h2>
+            <p class="text-secondary">Les instructions complètes et les paramètres restent disponibles ici, sans multiplier les entrées du menu principal.</p>
+        </div>
+        <div class="hero-actions">
+            <a class="btn btn-secondary" href="{% url 'surveys:dashboard_start' %}">Lire le guide de démarrage</a>
+            <a class="btn btn-secondary" href="{% url 'surveys:dashboard_settings' %}">Ouvrir la configuration avancée</a>
         </div>
     </section>
 
@@ -101,11 +132,11 @@
             {% if recommended_lan_host %}
             <p class="network-url-box">{{ recommended_student_base_url }}/</p>
             <p class="text-secondary">
-                Source :
-                {% if lan_host_source == "request" %}Adresse détectée depuis cette connexion.
-                {% elif lan_host_source == "settings" %}Adresse configurée.
-                {% elif lan_host_source == "candidate" %}Adresse détectée automatiquement.
-                {% else %}non configurée.{% endif %}
+                Source et preuve :
+                {% if lan_host_source == "request" %}Adresse détectée depuis cette connexion · à confirmer par un test téléphone.
+                {% elif lan_host_source == "settings" %}Adresse configurée · non confirmée par un test téléphone.
+                {% elif lan_host_source == "candidate" %}Adresse détectée automatiquement · à confirmer.
+                {% else %}Adresse non confirmée.{% endif %}
             </p>
             {% else %}
             <p class="network-url-box alert-warning">IP locale non configurée</p>
@@ -133,7 +164,7 @@
             </div>
             <div class="steps">
                 <div class="step"><strong>Requête courante</strong><span class="text-secondary"><code>{{ current_host }}{% if current_port %}:{{ current_port }}{% endif %}</code>{% if current_request_is_lan %} · LAN{% endif %}</span></div>
-                <div class="step"><strong>IP configurée</strong><span class="text-secondary">{% if configured_host %}<code>{{ configured_host }}</code>{% else %}Non définie{% endif %}</span></div>
+                <div class="step"><strong>Adresse configurée</strong><span class="text-secondary">{% if configured_host %}<code>{{ configured_host }}</code> · non confirmée{% else %}Non confirmée{% endif %}</span></div>
                 <div class="step"><strong>Port élèves</strong><span class="text-secondary"><code>{% if student_port %}{{ student_port }}{% else %}8011{% endif %}</code> via portproxy → localhost:{% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</span></div>
                 <div class="step"><strong>Port application</strong><span class="text-secondary"><code>{% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</code></span></div>
             </div>
@@ -158,7 +189,7 @@
         </article>
     </section>
 
-    <section class="card p6-card network-qr-stage" data-student-access data-student-url="{% if recommended_student_base_url %}{{ recommended_student_base_url }}/{% endif %}">
+    <section id="student-access" class="card p6-card network-qr-stage" data-student-access data-student-url="{% if recommended_student_base_url %}{{ recommended_student_base_url }}/{% endif %}">
         <div class="card-header network-qr-stage-head">
             <div>
                 <h2>URL pour les élèves</h2>
