@@ -50,9 +50,9 @@
 | F038 | Harmoniser les prochaines actions Réseau et Supports | done |
 | F039 | Harmoniser les en-têtes des dashboards détaillés des modules | done |
 | F040 | Dédoublonner les outils et créer le parcours Préparer l’accès élèves | done |
-| F041 | Standardiser les états et libellés métier du parcours formateur | pending |
-| F042 | Sécuriser les actions sensibles et ajouter historique/accès rapides | pending |
-| F043 | Validation terrain UX complète de la refonte formateur | pending |
+| F041 | Standardiser les états et libellés métier du parcours formateur | done |
+| F042 | Sécuriser les actions sensibles et ajouter historique/accès rapides | done |
+| F043 | Validation terrain UX complète de la refonte formateur | in_progress |
 
 ## Managing the queue
 

@@ -338,6 +338,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
                 else "Aucune séance active"
             ),
             "dashboard_url": reverse(f"surveys:dashboard_module_{module_number}"),
+            "export_url": reverse(f"surveys:export_module_{module_number}_csv"),
         }
         module_list.append(module_item)
         if active_module is None and active_session is not None:
@@ -405,6 +406,7 @@ def _build_cockpit_context(request: HttpRequest) -> dict:
         "total_resources_count": total_resources_count,
         "metrics_updated_at": timezone.now(),
         "cockpit_action": cockpit_action,
+        "edit_requests_url": reverse("surveys:dashboard_edit_requests"),
     }
 
 

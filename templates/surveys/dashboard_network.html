@@ -132,11 +132,11 @@
             {% if recommended_lan_host %}
             <p class="network-url-box">{{ recommended_student_base_url }}/</p>
             <p class="text-secondary">
-                Source :
-                {% if lan_host_source == "request" %}Adresse détectée depuis cette connexion.
-                {% elif lan_host_source == "settings" %}Adresse configurée.
-                {% elif lan_host_source == "candidate" %}Adresse détectée automatiquement.
-                {% else %}non configurée.{% endif %}
+                Source et preuve :
+                {% if lan_host_source == "request" %}Adresse détectée depuis cette connexion · à confirmer par un test téléphone.
+                {% elif lan_host_source == "settings" %}Adresse configurée · non confirmée par un test téléphone.
+                {% elif lan_host_source == "candidate" %}Adresse détectée automatiquement · à confirmer.
+                {% else %}Adresse non confirmée.{% endif %}
             </p>
             {% else %}
             <p class="network-url-box alert-warning">IP locale non configurée</p>
@@ -164,7 +164,7 @@
             </div>
             <div class="steps">
                 <div class="step"><strong>Requête courante</strong><span class="text-secondary"><code>{{ current_host }}{% if current_port %}:{{ current_port }}{% endif %}</code>{% if current_request_is_lan %} · LAN{% endif %}</span></div>
-                <div class="step"><strong>IP configurée</strong><span class="text-secondary">{% if configured_host %}<code>{{ configured_host }}</code>{% else %}Non définie{% endif %}</span></div>
+                <div class="step"><strong>Adresse configurée</strong><span class="text-secondary">{% if configured_host %}<code>{{ configured_host }}</code> · non confirmée{% else %}Non confirmée{% endif %}</span></div>
                 <div class="step"><strong>Port élèves</strong><span class="text-secondary"><code>{% if student_port %}{{ student_port }}{% else %}8011{% endif %}</code> via portproxy → localhost:{% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</span></div>
                 <div class="step"><strong>Port application</strong><span class="text-secondary"><code>{% if configured_port %}{{ configured_port }}{% else %}8010{% endif %}</code></span></div>
             </div>

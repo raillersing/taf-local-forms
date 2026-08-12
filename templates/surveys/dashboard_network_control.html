@@ -57,10 +57,10 @@
         <div class="steps network-steps-grid" aria-label="Étapes de configuration LAN">
             <div id="step-helper" class="step">1. Helper local</div>
             <div id="step-local-app" class="step">2. Application locale</div>
-            <div id="step-lan-ip" class="step">3. IP Wi-Fi</div>
+            <div id="step-lan-ip" class="step">3. Adresse LAN détectée</div>
             <div id="step-portproxy" class="step">4. Portproxy</div>
             <div id="step-firewall" class="step">5. Pare-feu</div>
-            <div id="step-django" class="step">6. Django autorise l'IP</div>
+            <div id="step-django" class="step">6. Adresse autorisée</div>
             <div id="step-student-url" class="step">7. URL élèves accessible</div>
         </div>
     </section>
@@ -107,7 +107,7 @@
                 <dt class="muted setting-label">Application locale (port {{ docker_port }})</dt>
                 <dd id="status-local-app"><span class="muted">En attente...</span></dd>
 
-                <dt class="muted setting-label">IP Wi-Fi detectee</dt>
+                <dt class="muted setting-label">Adresse LAN détectée</dt>
                 <dd id="status-lan-ip"><span class="muted">En attente...</span></dd>
 
                 <dt class="muted setting-label">Interface réseau</dt>
@@ -116,19 +116,19 @@
                 <dt class="muted setting-label">Passerelle</dt>
                 <dd id="status-lan-gateway"><span class="muted">En attente...</span></dd>
 
-                <dt class="muted setting-label">Portproxy ({{ lan_port }} &rarr; {{ docker_port }})</dt>
+                <dt class="muted setting-label">Accès élèves ({{ lan_port }} &rarr; {{ docker_port }})</dt>
                 <dd id="status-portproxy"><span class="muted">En attente...</span></dd>
 
                 <dt class="muted setting-label">Pare-feu (port {{ lan_port }})</dt>
                 <dd id="status-firewall"><span class="muted">En attente...</span></dd>
 
-                <dt class="muted setting-label">Django autorise l'IP</dt>
+                <dt class="muted setting-label">Adresse autorisée par l’application</dt>
                 <dd id="status-django"><span class="muted">En attente...</span></dd>
 
-                <dt class="muted setting-label">URL eleves</dt>
+                <dt class="muted setting-label">Adresse élèves</dt>
                 <dd id="status-student-url"><span class="muted">En attente...</span></dd>
 
-                <dt class="muted setting-label">Test URL eleves</dt>
+                <dt class="muted setting-label">Test de l’adresse élèves</dt>
                 <dd id="status-lan-test"><span class="muted">En attente...</span></dd>
 
                 <dt class="muted setting-label">État de préparation</dt>
@@ -139,7 +139,7 @@
 
     <section id="helper-actions" class="card p6-card card-compact trainer-network-actions">
         <div class="card-body">
-            <h2>Actions</h2>
+            <h2>Préparer et vérifier</h2>
             <p class="muted">
                 Les actions suivantes communiquent avec le helper LAN sur <code>{{ helper_url }}</code>. Si le helper est absent, la page doit afficher une consigne exploitable, pas un message technique brut.
             </p>
@@ -165,28 +165,45 @@
                 <span class="muted">Copier dans le presse-papiers</span>
             </button>
 
-            <button id="btn-disable" class="tool-card" type="button">
-                <strong>Désactiver l'accès LAN</strong>
-                <span class="muted">Supprimer portproxy + règle pare-feu</span>
-            </button>
-
-            <button id="btn-restart" class="tool-card" type="button">
-                <strong>Redémarrer l'application</strong>
-                <span class="muted">docker compose restart web</span>
-            </button>
-
-            <button id="btn-download-diagnostic" class="tool-card" type="button">
-                <strong>Télécharger le diagnostic</strong>
-                <span class="muted">Exporter uniquement l’état réseau utile</span>
-            </button>
-
             </div>
 
             <div id="helper-message" class="messages-container"></div>
         </div>
     </section>
 
-    <details id="helper-diagnostics" class="diagnostics">
+            <details id="helper-advanced-actions" class="diagnostics">
+                <summary>Actions avancées</summary>
+                <div class="pedagogy-content">
+                    <p class="muted">Ces actions peuvent interrompre l’accès des élèves ou l’application. Leur confirmation est toujours demandée.</p>
+                    <div class="tools-grid network-tools-grid">
+                        <button id="btn-disable" class="tool-card" type="button" data-danger="true">
+                            <strong>Désactiver l’accès élèves</strong>
+                            <span class="muted">Supprimer l’accès LAN et la règle pare-feu</span>
+                        </button>
+                        <button id="btn-restart" class="tool-card" type="button">
+                            <strong>Redémarrer l’application</strong>
+                            <span class="muted">Relancer le service local Docker</span>
+                        </button>
+                        <button id="btn-download-diagnostic" class="tool-card" type="button">
+                            <strong>Télécharger le diagnostic</strong>
+                            <span class="muted">Exporter uniquement l’état réseau utile</span>
+                        </button>
+                    </div>
+                </div>
+            </details>
+
+            <section class="network-action-history" aria-labelledby="network-action-history-heading">
+                <div>
+                    <span class="section-kicker">Traçabilité locale</span>
+                    <h2 id="network-action-history-heading">Actions récentes</h2>
+                    <p class="muted">Historique conservé dans ce navigateur uniquement. Aucun élève ni secret n’y est enregistré.</p>
+                </div>
+                <ol id="network-action-history-list" class="network-action-history-list">
+                    <li class="muted">Aucune action enregistrée sur cet appareil.</li>
+                </ol>
+            </section>
+
+            <details id="helper-diagnostics" class="diagnostics">
         <summary>Diagnostics avances</summary>
         <div class="pedagogy-content">
             <section id="helper-not-found" class="card p6-card" hidden>
@@ -247,6 +264,7 @@
     var helperToken = '';
     var lastStatusData = null;
     var activeController = null;
+    var historyStorageKey = 'taf.network-control.actions.v1';
 
     var BUTTON_IDS = ['btn-check-status', 'btn-sync', 'btn-restart', 'btn-test', 'btn-copy-url', 'btn-disable', 'btn-open-helper-folder'];
 
@@ -260,6 +278,37 @@
         var el = document.getElementById('helper-message');
         el.textContent = msg;
         el.className = 'messages-container alert alert-success';
+    }
+
+    function recordAction(label, outcome) {
+        var entries = [];
+        try { entries = JSON.parse(localStorage.getItem(historyStorageKey) || '[]'); } catch (error) { entries = []; }
+        entries.unshift({label: label, outcome: outcome, at: new Date().toISOString()});
+        try { localStorage.setItem(historyStorageKey, JSON.stringify(entries.slice(0, 5))); } catch (error) {}
+        renderActionHistory(entries.slice(0, 5));
+    }
+
+    function renderActionHistory(entries) {
+        var list = document.getElementById('network-action-history-list');
+        if (!list) return;
+        list.textContent = '';
+        if (!entries.length) {
+            var empty = document.createElement('li');
+            empty.className = 'muted';
+            empty.textContent = 'Aucune action enregistrée sur cet appareil.';
+            list.appendChild(empty);
+            return;
+        }
+        entries.forEach(function(entry) {
+            var item = document.createElement('li');
+            var label = document.createElement('strong');
+            label.textContent = entry.label;
+            var detail = document.createElement('span');
+            detail.textContent = ' · ' + entry.outcome + ' · ' + new Date(entry.at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            item.appendChild(label);
+            item.appendChild(detail);
+            list.appendChild(item);
+        });
     }
 
     function showOperationResult(data) {
@@ -345,6 +394,7 @@
                             showRawResult(errData);
                             showError(errData.message || 'Erreur ' + r.status);
                         }
+                        recordAction(label, 'Échec');
                         if (btnId) setButtonLoading(btnId, false);
                         return null;
                     });
@@ -363,6 +413,7 @@
                     showRawResult(displayData);
                 }
                 if (!silent) showOperationResult(data);
+                if (!silent) recordAction(label, data.success === false ? 'Échec' : 'Terminé');
                 if (endpoint === 'status' || endpoint === 'sync' || endpoint === 'test') {
                     updateStatusDisplay(data);
                 }
@@ -381,6 +432,7 @@
                 document.getElementById('helper-not-found').hidden = false;
                 document.getElementById('helper-status-content').textContent =
                     'Helper non contacte. Lance taf-lan-helper-start.ps1 en tant qu’administrateur.';
+                if (!silent) recordAction(label, 'Non confirmé');
                 if (btnId) setButtonLoading(btnId, false);
                 activeController = null;
             });
@@ -417,24 +469,24 @@
 
         setStepState('step-helper', helperOk ? 'ok' : 'warn', '1. Helper local');
         setStepState('step-local-app', localAppOk ? 'ok' : 'warn', '2. Application locale');
-        setStepState('step-lan-ip', status.lan_ip ? 'ok' : 'warn', '3. IP Wi-Fi');
+        setStepState('step-lan-ip', status.lan_ip ? 'ok' : 'warn', '3. Adresse LAN détectée');
         setStepState('step-portproxy', portproxyConflict ? 'danger' : (portproxyOk ? 'ok' : 'warn'), '4. Portproxy');
         setStepState('step-firewall', firewallConflict ? 'danger' : (firewallOk ? 'ok' : 'warn'), '5. Pare-feu');
-        setStepState('step-django', djangoAllowsIp ? 'ok' : 'warn', '6. Django autorise l\'IP');
+        setStepState('step-django', djangoAllowsIp ? 'ok' : 'warn', '6. Adresse autorisée');
         setStepState('step-student-url', studentUrlOk ? 'ok' : 'warn', '7. URL élèves accessible');
         if (studentUrlStep && status.student_url) {
             studentUrlStep.dataset.studentUrl = status.student_url;
         }
 
-        setStatus('status-local-app', !!localAppOk, localAppOk ? 'OK' : 'Indisponible');
-        setStatus('status-lan-ip', !!status.lan_ip, status.lan_ip || 'Non détectée');
-        setStatus('status-lan-interface', !!status.lan_interface, status.lan_interface || 'Non détectée');
-        setStatus('status-lan-gateway', !!status.lan_gateway, status.lan_gateway || 'Non détectée');
-        setStatus('status-portproxy', !!portproxyOk && !portproxyConflict, portproxyConflict ? 'Conflit détecté' : (portproxyOk ? 'Configuré' : 'Absent'));
-        setStatus('status-firewall', !!firewallOk && !firewallConflict, firewallConflict ? 'Conflit détecté' : (firewallOk ? 'Ouvert' : 'À vérifier'));
-        setStatus('status-django', !!djangoAllowsIp, djangoAllowsIp ? 'OK' : 'À mettre à jour');
-        setStatus('status-student-url', !!studentUrlOk && !!status.student_url, studentUrlOk && status.student_url ? status.student_url : 'Non disponible');
-        setStatus('status-lan-test', !!studentUrlOk, studentUrlOk ? 'Accessible' : 'Échec du test');
+        setStatus('status-local-app', !!localAppOk, localAppOk ? 'Prêt' : 'Erreur');
+        setStatus('status-lan-ip', !!status.lan_ip, status.lan_ip ? status.lan_ip + ' · Détectée' : 'Non confirmé');
+        setStatus('status-lan-interface', !!status.lan_interface, status.lan_interface || 'Non confirmé');
+        setStatus('status-lan-gateway', !!status.lan_gateway, status.lan_gateway || 'Non confirmé');
+        setStatus('status-portproxy', !!portproxyOk && !portproxyConflict, portproxyConflict ? 'Erreur · Conflit détecté' : (portproxyOk ? 'Prêt · configuré' : 'À vérifier'));
+        setStatus('status-firewall', !!firewallOk && !firewallConflict, firewallConflict ? 'Erreur · Conflit détecté' : (firewallOk ? 'Prêt · configuré' : 'À vérifier'));
+        setStatus('status-django', !!djangoAllowsIp, djangoAllowsIp ? 'Confirmé' : 'À vérifier');
+        setStatus('status-student-url', !!studentUrlOk && !!status.student_url, studentUrlOk && status.student_url ? 'Confirmé · accessible' : 'Non confirmé');
+        setStatus('status-lan-test', !!studentUrlOk, studentUrlOk ? 'Confirmé' : 'À vérifier');
         var ready = !!localAppOk && !!status.lan_ip && !!portproxyOk && !!firewallOk && !!djangoAllowsIp && !!studentUrlOk && !hasConflict;
         setStatus('status-readiness', ready, hasConflict ? 'Bloquée : conflit réseau' : (ready ? 'Prête pour confirmation téléphone' : 'À compléter'));
 
@@ -453,6 +505,7 @@
         callHelper('status', 'GET', 'Actualiser', 'btn-check-status');
     });
     document.getElementById('btn-sync').addEventListener('click', function() {
+        if (!confirm('Préparer la séance peut modifier le portproxy, le pare-feu et les paramètres d’accès. Continuer ?')) return;
         callHelper('sync', 'POST', 'Configurer', 'btn-sync');
     });
     document.getElementById('btn-test').addEventListener('click', function() {
@@ -480,6 +533,7 @@
             callHelper('status', 'GET', 'Actualiser', null, true, openFolder);
         }
     });
+    try { renderActionHistory(JSON.parse(localStorage.getItem(historyStorageKey) || '[]')); } catch (error) { renderActionHistory([]); }
     document.getElementById('btn-download-diagnostic').addEventListener('click', function() {
         if (!lastStatusData) {
             showError('Actualise d’abord l’état du helper pour préparer le diagnostic.');

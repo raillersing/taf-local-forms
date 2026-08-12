@@ -129,6 +129,43 @@
         </div>
     </section>
 
+    <section class="trainer-quick-actions" aria-labelledby="quick-actions-heading">
+        <header>
+            <span class="section-kicker">Accès rapides</span>
+            <h2 id="quick-actions-heading">Reprendre au bon endroit.</h2>
+            <p class="trainer-section-note">Ces raccourcis suivent la séance affichée et évitent de rechercher une action dans les outils.</p>
+        </header>
+        <div class="trainer-quick-actions-grid">
+            {% if active_module %}
+            <a class="trainer-quick-action" href="{{ active_module.dashboard_url }}">
+                <span class="trainer-runbook-step">Pendant</span>
+                <strong>Suivre {{ active_module.display_title }}</strong>
+                <small>Ouvrir les réponses et la participation du module actif.</small>
+                <span aria-hidden="true">→</span>
+            </a>
+            <a class="trainer-quick-action" href="{{ active_module.export_url }}">
+                <span class="trainer-runbook-step">Données</span>
+                <strong>Exporter {{ active_module.display_title }}</strong>
+                <small>Télécharger les réponses du module actuellement affiché.</small>
+                <span aria-hidden="true">↓</span>
+            </a>
+            {% else %}
+            <a class="trainer-quick-action" href="{% url 'surveys:dashboard_modules' %}">
+                <span class="trainer-runbook-step">Pendant</span>
+                <strong>Choisir un module</strong>
+                <small>Aucune séance active à suivre pour le moment.</small>
+                <span aria-hidden="true">→</span>
+            </a>
+            {% endif %}
+            <a class="trainer-quick-action" href="{{ edit_requests_url }}">
+                <span class="trainer-runbook-step">À traiter</span>
+                <strong>Demandes des élèves</strong>
+                <small>Examiner les demandes de modification en attente.</small>
+                <span aria-hidden="true">→</span>
+            </a>
+        </div>
+    </section>
+
 </main>
 {% endblock %}
 

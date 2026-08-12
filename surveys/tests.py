@@ -4271,10 +4271,10 @@ class F030NetworkControlTests(TestCase):
         self.assertContains(response, "Contrôle réseau local")
         self.assertContains(response, "127.0.0.1:8019")
         self.assertContains(response, "Préparer la séance")
-        self.assertContains(response, "Redémarrer l'application")
+        self.assertContains(response, "Redémarrer l’application")
         self.assertContains(response, "Tester l'URL")
         self.assertContains(response, "Copier l'URL")
-        self.assertContains(response, "Désactiver l'accès LAN")
+        self.assertContains(response, "Désactiver l’accès élèves")
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_shows_helper_not_found_when_not_localhost(self):
@@ -5280,16 +5280,19 @@ class RedesignUITests(TestCase):
         steps = [
             "Helper local",
             "Application locale",
-            "IP Wi-Fi",
+            "Adresse LAN détectée",
             "Portproxy",
             "Pare-feu",
-            "Django autorise l'IP",
+            "Adresse autorisée par l’application",
             "URL élèves accessible",
         ]
         for step in steps:
             with self.subTest(step=step):
                 self.assertContains(response, step)
         self.assertContains(response, "Préparer la séance")
+        self.assertContains(response, "Actions avancées")
+        self.assertContains(response, "Actions récentes")
+        self.assertContains(response, "confirmation est toujours demandée")
 
     def test_dashboard_results_page_exists(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5377,6 +5380,8 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Passer en mode projection")
         self.assertContains(response, "Module actif")
         self.assertContains(response, reverse("surveys:dashboard_modules"))
+        self.assertContains(response, "Accès rapides")
+        self.assertContains(response, reverse("surveys:dashboard_edit_requests"))
         self.assertNotContains(response, "dashboard-module-table")
         self.assertNotContains(response, "Fonctions complémentaires")
 
@@ -6164,7 +6169,7 @@ class NavigationShellTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'tool-card')
         self.assertContains(response, 'Préparer la séance')
-        self.assertContains(response, 'Redémarrer l\'application')
+        self.assertContains(response, 'Redémarrer l’application')
         self.assertContains(response, 'local_app_ok')
         self.assertContains(response, 'student_url_ok')
         self.assertContains(response, 'data.success === false')

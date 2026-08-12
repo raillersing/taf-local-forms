@@ -38,7 +38,7 @@ Critères d’acceptation : une seule entrée principale pour préparer l’acc�
 aucune action réseau essentielle présentée sous plusieurs libellés concurrents,
 routes protégées et parcours LAN existants conservés.
 
-### F041 — États et libellés métier communs
+### F041 — États et libellés métier communs — done
 
 Standardiser les messages et les libellés visibles par le formateur.
 
@@ -51,7 +51,7 @@ Standardiser les messages et les libellés visibles par le formateur.
 Critères d’acceptation : un même état utilise le même libellé sur toutes les
 pages et aucune donnée non vérifiée n’est présentée comme confirmée.
 
-### F042 — Actions sensibles, historique et accès rapides
+### F042 — Actions sensibles, historique et accès rapides — done
 
 Rendre les opérations techniques et les raccourcis plus sûrs et plus lisibles.
 
@@ -66,7 +66,7 @@ Rendre les opérations techniques et les raccourcis plus sûrs et plus lisibles.
 Critères d’acceptation : aucune action sensible ne s’exécute sans intention
 explicite, et chaque raccourci conserve le contexte module/session.
 
-### F043 — Validation terrain UX complète
+### F043 — Validation terrain UX complète — in_progress
 
 Valider la refonte sur les scénarios réels avant déclaration de fin.
 
