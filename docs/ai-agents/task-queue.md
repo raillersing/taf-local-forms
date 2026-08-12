@@ -49,6 +49,10 @@
 | F037 | Pilotage Modules : module prioritaire et états de séance lisibles | done |
 | F038 | Harmoniser les prochaines actions Réseau et Supports | done |
 | F039 | Harmoniser les en-têtes des dashboards détaillés des modules | done |
+| F040 | Dédoublonner les outils et créer le parcours Préparer l’accès élèves | pending |
+| F041 | Standardiser les états et libellés métier du parcours formateur | pending |
+| F042 | Sécuriser les actions sensibles et ajouter historique/accès rapides | pending |
+| F043 | Validation terrain UX complète de la refonte formateur | pending |
 
 ## Managing the queue
 
