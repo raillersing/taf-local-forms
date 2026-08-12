@@ -4379,6 +4379,13 @@ class F030NetworkControlTests(TestCase):
         self.assertContains(response, "file:///C:/TAfHSSiM/scripts/windows/")
         self.assertContains(response, "Ouvrir le dépôt du projet")
 
+    def test_folder_button_uses_helper_and_has_no_wrong_folder_fallback(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "callHelper('open-folder', 'POST'")
+        self.assertContains(response, "callHelper('status', 'GET', 'Actualiser', null, true, openFolder)")
+        self.assertNotContains(response, "window.open(folderUri", html=False)
+
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_phone_check_is_recorded_without_device_identity(self):
         self.client.login(username="ctrlstaff", password="secret")

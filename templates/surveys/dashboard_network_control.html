@@ -301,7 +301,7 @@
         BUTTON_IDS.forEach(function(id) { setButtonLoading(id, false); });
     }
 
-    function callHelper(endpoint, method, label, btnId, silent) {
+    function callHelper(endpoint, method, label, btnId, silent, afterSuccess) {
         if (!silent) clearMessage();
         if (!isLocalhost) {
             showError('Le helper n\'est accessible que depuis localhost:8010.');
@@ -368,6 +368,7 @@
                 if (btnId) setButtonLoading(btnId, false);
                 if (data.student_url) lastStudentUrl = data.student_url;
                 activeController = null;
+                if (afterSuccess) afterSuccess(data);
             })
             .catch(function(err) {
                 clearTimeout(timer);
@@ -469,29 +470,13 @@
         callHelper('restart-app', 'POST', 'Redémarrer', 'btn-restart');
     });
     document.getElementById('btn-open-helper-folder').addEventListener('click', function() {
-        var button = this;
-        var folderUri = button.dataset.folderUri;
-        var folderPath = button.dataset.folderPath;
-        var feedback = document.getElementById('helper-folder-feedback');
-        if (helperToken && isLocalhost) {
+        var openFolder = function() {
             callHelper('open-folder', 'POST', 'Ouvrir', 'btn-open-helper-folder');
-            return;
-        }
-        if (folderUri) {
-            var opened = window.open(folderUri, '_blank');
-            if (opened) {
-                feedback.textContent = 'Dossier ouvert dans l’Explorateur Windows.';
-                return;
-            }
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(folderPath).then(function() {
-                feedback.textContent = 'Le chemin a été copié. Colle-le dans la barre de l’Explorateur Windows.';
-            }).catch(function() {
-                feedback.textContent = 'Ouvre manuellement ce dossier : ' + folderPath;
-            });
+        };
+        if (helperToken) {
+            openFolder();
         } else {
-            feedback.textContent = 'Ouvre manuellement ce dossier : ' + folderPath;
+            callHelper('status', 'GET', 'Actualiser', null, true, openFolder);
         }
     });
     document.getElementById('btn-download-diagnostic').addEventListener('click', function() {
