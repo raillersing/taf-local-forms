@@ -228,6 +228,7 @@
     var helperUrl = '{{ helper_url|escapejs }}';
     var isLocalhost = {{ is_localhost|lower }};
     var lastStudentUrl = '';
+    var helperToken = '';
     var activeController = null;
 
     var BUTTON_IDS = ['btn-check-status', 'btn-sync', 'btn-restart', 'btn-test', 'btn-copy-url', 'btn-disable'];
@@ -307,6 +308,7 @@
         };
         if (method === 'POST') {
             opts.headers['Content-Type'] = 'application/json';
+            opts.headers['X-TAF-Helper-Token'] = helperToken;
             opts.body = '{}';
         }
 
@@ -334,7 +336,12 @@
             })
             .then(function(data) {
                 if (!data) return;
-                if (!silent) showRawResult(data);
+                if (data.control_token) helperToken = data.control_token;
+                if (!silent) {
+                    var displayData = Object.assign({}, data);
+                    delete displayData.control_token;
+                    showRawResult(displayData);
+                }
                 if (!silent) showOperationResult(data);
                 if (endpoint === 'status' || endpoint === 'sync' || endpoint === 'test') {
                     updateStatusDisplay(data);
@@ -351,8 +358,8 @@
                     if (!silent) showError('Impossible de contacter le helper (' + helperUrl + '). Verifie qu\'il est lance (voir ci-dessous).');
                 }
                 document.getElementById('helper-not-found').hidden = false;
-                document.getElementById('helper-status-content').innerHTML =
-                    '<div class="alert"><strong>Helper non contacte.</strong> Lance taf-lan-helper-start.ps1 en tant qu\'administrateur.</div>';
+                document.getElementById('helper-status-content').textContent =
+                    'Helper non contacte. Lance taf-lan-helper-start.ps1 en tant qu’administrateur.';
                 if (btnId) setButtonLoading(btnId, false);
                 activeController = null;
             });

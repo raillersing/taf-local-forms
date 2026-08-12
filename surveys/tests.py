@@ -4371,7 +4371,16 @@ class F030NetworkControlTests(TestCase):
         self.assertIn("Access-Control-Allow-Origin", content)
         self.assertIn("Access-Control-Allow-Methods", content)
         self.assertIn("Access-Control-Allow-Headers", content)
+        self.assertIn("X-TAF-Helper-Token", content)
         self.assertIn("Add-CorsHeaders", content)
+
+    def test_helper_requires_rotating_token_for_post(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("RandomNumberGenerator", content)
+        self.assertIn("controlToken", content)
+        self.assertIn("X-TAF-Helper-Token", content)
+        self.assertIn("Jeton helper absent ou invalide", content)
 
     def test_helper_script_has_options_handler(self):
         """Helper doit gerer les requetes OPTIONS avec un 204."""

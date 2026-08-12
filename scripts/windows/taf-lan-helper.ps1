@@ -39,6 +39,9 @@ if (-not (Test-Path $logDir)) {
 $logFile = Join-Path $logDir "taf-lan-helper.log"
 $pidFile = Join-Path $logDir "taf-lan-helper.pid"
 $helperVersion = "1.1.0"
+$tokenBytes = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($tokenBytes)
+$controlToken = [Convert]::ToBase64String($tokenBytes)
 
 function Write-Log {
     param($Level, $Message)
@@ -179,6 +182,7 @@ function Get-Status {
         helper_pid  = $pid
         timestamp   = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
         version     = $helperVersion
+        control_token = $controlToken
         lan_ip      = $lanIp
         lan_interface = if ($lan) { $lan.InterfaceAlias } else { $null }
         lan_gateway = if ($lan) { $lan.Gateway } else { $null }
@@ -340,7 +344,7 @@ function Add-CorsHeaders {
         $Response.Headers.Add("Vary", "Origin")
     }
     $Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    $Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")
+    $Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, X-TAF-Helper-Token")
 }
 
 function Send-JsonResponse {
@@ -405,6 +409,13 @@ try {
                     Send-Error $res 403 "Origine non autorisee: $origin"
                     $res.Close()
                     Write-Log "WARN" "403 → $method $path (Origin: $origin)"
+                    continue
+                }
+
+                if ($method -eq "POST" -and $req.Headers["X-TAF-Helper-Token"] -ne $controlToken) {
+                    Send-Error $res 403 "Jeton helper absent ou invalide."
+                    $res.Close()
+                    Write-Log "WARN" "403 → $method $path (jeton invalide)"
                     continue
                 }
 
