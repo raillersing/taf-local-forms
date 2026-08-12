@@ -3342,6 +3342,237 @@ table th {
   }
 }
 
+/* Premium trainer navigation: compact first level, grouped secondary tools. */
+.trainer-app-shell .trainer-premium-nav {
+  background: #102a2a;
+}
+
+.trainer-app-shell .trainer-premium-nav-inner {
+  display: block;
+  padding: 24px 14px;
+}
+
+.trainer-app-shell .trainer-premium-primary-list {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+}
+
+.trainer-app-shell .trainer-premium-primary-list .nav-item a {
+  display: grid;
+  gap: 3px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: #d9e8f8;
+  text-decoration: none;
+}
+
+.trainer-app-shell .trainer-premium-primary-list .nav-item a b,
+.trainer-app-shell .trainer-premium-tools .shell-tools-link b {
+  font-size: .88rem;
+  line-height: 1.15;
+}
+
+.trainer-app-shell .trainer-premium-primary-list .nav-item a small,
+.trainer-app-shell .trainer-premium-tools .shell-tools-link small {
+  color: #88a7ca;
+  font-size: .67rem;
+  line-height: 1.25;
+}
+
+.trainer-app-shell .trainer-premium-primary-list .nav-item a:hover,
+.trainer-app-shell .trainer-premium-primary-list .nav-item a:focus-visible,
+.trainer-app-shell .trainer-premium-primary-list .nav-item.active a {
+  border-color: rgba(184, 215, 251, .55);
+  background: rgba(121, 183, 255, .12);
+}
+
+.trainer-app-shell .trainer-premium-primary-list .nav-item.active a {
+  background: #eef7ff;
+  color: #071a42;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .13);
+}
+
+.trainer-app-shell .trainer-premium-primary-list .nav-item.active a small {
+  color: #54708f;
+}
+
+.trainer-app-shell .trainer-premium-tools {
+  margin-top: 22px;
+  border-top: 1px solid rgba(177, 215, 255, .18);
+  padding-top: 16px;
+}
+
+.trainer-app-shell .trainer-premium-tools > .shell-tools-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: #fff;
+  cursor: pointer;
+  list-style: none;
+  text-transform: none;
+}
+
+.trainer-app-shell .trainer-premium-tools > .shell-tools-summary::-webkit-details-marker {
+  display: none;
+}
+
+.trainer-app-shell .trainer-premium-tools > .shell-tools-summary > span:first-child {
+  font-size: .88rem;
+  font-weight: 900;
+}
+
+.trainer-app-shell .trainer-premium-tools > .shell-tools-summary small {
+  grid-column: 1;
+  color: #88a7ca;
+  font-size: .67rem;
+  line-height: 1.25;
+}
+
+.trainer-app-shell .trainer-premium-tools > .shell-tools-summary .tools-chevron {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #ffbe25;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: transform .16s ease;
+}
+
+.trainer-app-shell .trainer-premium-tools[open] > .shell-tools-summary .tools-chevron {
+  transform: rotate(180deg);
+}
+
+.trainer-app-shell .trainer-premium-tools > .shell-tools-summary:hover,
+.trainer-app-shell .trainer-premium-tools > .shell-tools-summary:focus-visible {
+  border-color: rgba(121, 183, 255, .35);
+  background: rgba(121, 183, 255, .1);
+}
+
+.trainer-app-shell .trainer-premium-tools-panel {
+  display: grid;
+  gap: 18px;
+  margin-top: 10px;
+  padding: 2px 4px 0;
+}
+
+.trainer-app-shell .trainer-tools-group {
+  display: grid;
+  gap: 3px;
+}
+
+.trainer-app-shell .trainer-tools-group + .trainer-tools-group {
+  border-top: 1px solid rgba(177, 215, 255, .13);
+  padding-top: 14px;
+}
+
+.trainer-app-shell .trainer-tools-group h2 {
+  margin: 0 7px 4px;
+  color: #91b4dc;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.trainer-app-shell .trainer-premium-tools .shell-tools-link {
+  display: grid;
+  gap: 3px;
+  min-height: 46px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #d9e8f8;
+  text-decoration: none;
+}
+
+.trainer-app-shell .trainer-premium-tools .shell-tools-link:hover,
+.trainer-app-shell .trainer-premium-tools .shell-tools-link:focus-visible {
+  border-color: rgba(121, 183, 255, .25);
+  background: rgba(121, 183, 255, .1);
+}
+
+.trainer-app-shell .trainer-premium-tools .shell-tools-link.active {
+  border-color: #b8d7fb;
+  background: #eef7ff;
+  color: #071a42;
+}
+
+.trainer-app-shell .trainer-premium-tools .shell-tools-link.active small {
+  color: #54708f;
+}
+
+.trainer-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  min-height: 22px;
+  margin-left: 7px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: .68rem;
+  line-height: 1;
+}
+
+@media (max-width: 980px) {
+  .trainer-app-shell .trainer-premium-nav {
+    position: sticky;
+    top: var(--header-height);
+    width: auto;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid rgba(177, 215, 255, .18);
+  }
+
+  .trainer-app-shell .trainer-premium-nav-inner {
+    padding: 12px 16px 14px;
+  }
+
+  .trainer-app-shell .trainer-premium-primary-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trainer-app-shell .trainer-premium-primary-list .nav-item a {
+    min-height: 58px;
+  }
+
+  .trainer-app-shell .trainer-premium-tools {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .trainer-app-shell .trainer-premium-tools-panel {
+    max-height: min(62vh, 480px);
+    overflow-y: auto;
+    padding-bottom: 4px;
+  }
+}
+
+@media (max-width: 420px) {
+  .trainer-app-shell .trainer-premium-primary-list .nav-item a {
+    padding-inline: 10px;
+  }
+
+  .trainer-app-shell .trainer-premium-primary-list .nav-item a b {
+    font-size: .82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trainer-app-shell .trainer-premium-tools > .shell-tools-summary .tools-chevron {
+    transition: none;
+  }
+}
+
 /* 2026 editorial learning direction — Awwwards-inspired, classroom-first */
 .p6-home-page { max-width: var(--max-width); gap: clamp(44px, 7vw, 88px); }
 

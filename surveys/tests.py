@@ -486,7 +486,7 @@ class DashboardAccessTests(TestCase):
         self.assertContains(response, reverse("surveys:dashboard_modules"))
         self.assertNotContains(response, "Gestion des modules")
         self.assertNotContains(response, "Fonctions complémentaires")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
         self.assertContains(response, "Projection")
         self.assertNotContains(response, "https://cdnjs.cloudflare.com")
 
@@ -1729,7 +1729,7 @@ class NavigationTests(TestCase):
     def test_dashboard_shows_tools(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_shows_module_status_columns(self):
         response = self.client.get(reverse("surveys:dashboard_modules"))
@@ -2009,13 +2009,13 @@ class F019NavigationUXTests(TestCase):
     def test_dashboard_shows_full_nav(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Réseau élèves")
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_shows_structured_trainer_navigation(self):
         response = self.client.get(reverse("surveys:dashboard_modules"))
-        for link in ["Cockpit terrain", "Pendant la séance", "Préparer l’accès", "Après la séance", "Cockpit", "Projection", "Modules", "Supports", "Exports"]:
+        for link in ["Cockpit terrain", "Navigation principale", "Accès des élèves", "Gérer les données", "Administration", "Cockpit", "Projection", "Modules", "Supports", "Exports"]:
             self.assertContains(response, link)
         self.assertContains(response, "Local · hors ligne")
         self.assertNotContains(response, "prototype-page-tabs")
@@ -2046,7 +2046,7 @@ class F019NavigationUXTests(TestCase):
     def test_dashboard_shows_advanced_section(self):
         response = self.client.get(reverse("surveys:dashboard_modules"))
         self.assertContains(response, "Présence en direct")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_links_have_target_blank(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
@@ -2452,9 +2452,9 @@ class F022RNavigationRewireTests(TestCase):
         self.client.login(username="f022ruser", password="secret")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Réseau élèves")
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
 
     def test_dashboard_toggle_staff_only(self):
         self.client.logout()
@@ -5163,9 +5163,9 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
         self.assertContains(response, "Exports")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Réseau élèves")
         self.assertNotContains(response, "Config")
-        self.assertContains(response, "Admin avancé")
+        self.assertContains(response, "Administration avancée")
         self.assertContains(response, "Sortir")
         self.assertNotContains(response, "Cockpit protégé")
 
@@ -6087,15 +6087,36 @@ class NavigationShellTests(TestCase):
         self.assertContains(response, 'Exports')
         self.assertContains(response, 'Modules')
         self.assertContains(response, 'Supports')
-        self.assertContains(response, 'Réseau')
+        self.assertContains(response, 'Réseau élèves')
         self.assertNotContains(response, 'Config')
         self.assertContains(response, 'Sauvegarde')
-        self.assertContains(response, 'Admin avancé')
+        self.assertContains(response, 'Administration avancée')
         self.assertContains(response, 'Projection')
         self.assertContains(response, 'Outils')
         self.assertContains(response, reverse('surveys:dashboard_settings'))
         self.assertContains(response, reverse('surveys:dashboard_exports'))
         self.assertContains(response, reverse('surveys:dashboard_backup'))
+
+    def test_trainer_navigation_has_compact_primary_sections(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse('surveys:dashboard_home'))
+        self.assertContains(response, 'trainer-premium-primary-list')
+        self.assertContains(response, 'class="shell-tools-menu trainer-premium-tools"')
+        self.assertContains(response, 'Accès des élèves')
+        self.assertContains(response, 'Gérer les données')
+        self.assertContains(response, 'Administration')
+        self.assertNotContains(response, 'Pendant la séance')
+        self.assertNotContains(response, 'Après la séance')
+
+    def test_trainer_tools_open_and_active_on_secondary_page(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse('surveys:dashboard_network_control'))
+        self.assertContains(response, 'class="shell-tools-menu trainer-premium-tools" open')
+        self.assertContains(response, 'href="/dashboard/network-control/" aria-current="page"')
+
+    def test_student_pages_do_not_render_trainer_premium_navigation(self):
+        response = self.client.get(reverse('surveys:student_modules'))
+        self.assertNotContains(response, 'trainer-premium-nav')
 
     def test_breadcrumbs_present(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -6326,7 +6347,7 @@ class ModuleEditRequestWorkflowTests(TestCase):
         response = self.client.get(dashboard_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Rasoanaivo")
-        self.assertContains(response, '<span class="badge" style="background-color: #ef4444; color: white; padding: 0.1rem 0.4rem; border-radius: 9999px; font-size: 0.75rem; margin-left: 0.25rem;">1</span>')
+        self.assertContains(response, '<span class="trainer-nav-badge">1</span>')
 
         # Check that warning banner is displayed on Cockpit Home page
         response = self.client.get(reverse("surveys:dashboard_home"))
