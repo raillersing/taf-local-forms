@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Démarrer l’application — Cockpit formateur{% endblock %}
+{% block page_header %}{% endblock %}
+{% block main_nav %}{% include "surveys/partials/nav_trainer.html" %}{% endblock %}
+
+{% block content %}
+<main id="content" class="content-grid dashboard-start-page">
+    {% url 'surveys:dashboard_home' as dashboard_home_url %}
+    {% include "surveys/partials/breadcrumbs.html" with crumb_1_label="Cockpit" crumb_1_url=dashboard_home_url current_label="Démarrer l’application" %}
+
+    <section class="trainer-operation-hero trainer-app-shell p6-card" aria-labelledby="start-heading">
+        <div class="trainer-operation-copy">
+            <span class="trainer-command-kicker">Guide formateur · Avant la séance</span>
+            <h1 id="start-heading">Démarrer l’application sans stress.</h1>
+            <p>Fais les étapes dans l’ordre. Quand tu vois « OK », passe à l’étape suivante. Les élèves utilisent ensuite l’adresse de l’IP du laptop avec le port <strong>8011</strong>.</p>
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="{% url 'surveys:dashboard_network_control' %}">Contrôler le réseau</a>
+                <a class="btn btn-secondary" href="{% url 'surveys:dashboard_home' %}">Retour au cockpit</a>
+            </div>
+        </div>
+        <div class="trainer-operation-signal" aria-label="Résumé du démarrage"><strong>5</strong><span>étapes</span><small>Environ 2 minutes</small></div>
+    </section>
+
+    <section class="card p6-card" aria-labelledby="before-heading">
+        <div class="card-body">
+            <h2 id="before-heading">Avant de commencer</h2>
+            <ul>
+                <li>Le laptop est connecté au Wi-Fi ou au hotspot de la classe.</li>
+                <li>Docker Desktop est démarré et l’intégration WSL est active.</li>
+                <li>Les téléphones des élèves pourront rejoindre le même réseau local.</li>
+            </ul>
+            <div class="alert alert-info"><strong>Important :</strong> ne partage jamais <code>localhost</code> avec les élèves. Cette adresse fonctionne uniquement sur le laptop formateur.</div>
+        </div>
+    </section>
+
+    <section class="grid cols-2 p6-grid" aria-label="Étapes de démarrage">
+        <article class="card p6-card card-compact"><div class="card-body">
+            <span class="trainer-mini-number">01</span><h2>Démarrer Docker</h2>
+            <p>Dans Ubuntu/WSL, place-toi dans le dépôt du projet et démarre l’application.</p>
+            <div class="start-command-block"><code id="start-command-docker">docker compose up -d</code><button type="button" class="btn btn-secondary start-copy-button" data-copy-target="start-command-docker">Copier</button></div>
+            <p class="muted">Puis ouvre <a href="http://localhost:8010/">http://localhost:8010/</a>.</p>
+            <span class="start-success">✓ La page d’accueil doit s’afficher.</span>
+        </div></article>
+
+        <article class="card p6-card card-compact"><div class="card-body">
+            <span class="trainer-mini-number">02</span><h2>Ouvrir le cockpit</h2>
+            <p>Connecte-toi avec ton compte formateur. Le cockpit est réservé au formateur.</p>
+            <a class="btn btn-primary" href="{% url 'surveys:dashboard_home' %}">Ouvrir le cockpit</a>
+        </div></article>
+
+        <article class="card p6-card card-compact"><div class="card-body">
+            <span class="trainer-mini-number">03</span><h2>Démarrer le helper Windows</h2>
+            <p>Cette étape permet de vérifier l’IP, le portproxy et le pare-feu Windows.</p>
+            <div class="start-command-block"><code id="start-command-helper">.\scripts\windows\taf-lan-helper-start.ps1</code><button type="button" class="btn btn-secondary start-copy-button" data-copy-target="start-command-helper">Copier</button></div>
+            <ol><li>Ouvre PowerShell <strong>en administrateur</strong>.</li><li>Place-toi dans le dépôt.</li><li>Exécute la commande.</li></ol>
+            <span class="start-success">✓ Le helper écoute sur <code>127.0.0.1:8019</code>.</span>
+        </div></article>
+
+        <article class="card p6-card card-compact"><div class="card-body">
+            <span class="trainer-mini-number">04</span><h2>Préparer l’accès élèves</h2>
+            <p>Dans le contrôle LAN, clique sur <strong>Préparer la séance</strong>, puis sur <strong>Tester l’URL élèves</strong>.</p>
+            <a class="btn btn-primary" href="{% url 'surveys:dashboard_network_control' %}">Préparer la séance</a>
+            <p class="muted">Vérifie l’IP réelle, le portproxy, le pare-feu et l’URL élèves.</p>
+        </div></article>
+    </section>
+
+    <section class="card p6-card start-final-check" aria-labelledby="final-check-heading"><div class="card-body">
+        <span class="section-kicker">05 · Vérification finale</span><h2 id="final-check-heading">Tester avec un vrai téléphone</h2>
+        <p>Connecte un téléphone au même Wi-Fi ou hotspot que le laptop, puis ouvre l’URL affichée :</p>
+        <p class="start-url-example"><code>http://IP_DU_LAPTOP:8011/</code></p>
+        <ul><li>La page d’accueil s’ouvre.</li><li>Un module s’ouvre correctement.</li><li>Coche ensuite « Test téléphone réel » dans la page Réseau.</li></ul>
+        <div class="hero-actions"><a class="btn btn-primary" href="{% url 'surveys:dashboard_network' %}">Ouvrir la page Réseau</a><a class="btn btn-secondary" href="{% url 'surveys:dashboard_projection' %}">Ouvrir la projection</a></div>
+    </div></section>
+
+    <details class="diagnostics"><summary>Si quelque chose ne marche pas</summary><div class="card p6-card"><div class="card-body">
+        <h2>Diagnostic rapide</h2>
+        <ul><li><strong>Page locale absente :</strong> vérifie Docker avec <code>docker compose ps</code>.</li><li><strong>Helper absent :</strong> relance PowerShell en administrateur.</li><li><strong>Téléphone inaccessible :</strong> vérifie le même Wi-Fi, l’IP, le port <code>8011</code> et le pare-feu.</li><li><strong>IP changée :</strong> clique sur « Préparer la séance » avant de partager une nouvelle URL.</li></ul>
+        <a class="text-link" href="{% url 'surveys:dashboard_network_control' %}">Ouvrir le contrôle LAN →</a>
+    </div></div></details>
+</main>
+{% endblock %}
+
+{% block extra_js %}<script>
+(function() {
+    document.querySelectorAll('.start-copy-button').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var target = document.getElementById(button.dataset.copyTarget), text = target && target.textContent.trim();
+            if (!text) return;
+            var done = function() { var original = button.textContent; button.textContent = 'Copié'; window.setTimeout(function() { button.textContent = original; }, 1400); };
+            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done); return; }
+            var input = document.createElement('textarea'); input.value = text; document.body.appendChild(input); input.select();
+            try { document.execCommand('copy'); done(); } catch (error) {} document.body.removeChild(input);
+        });
+    });
+})();
+</script>{% endblock %}

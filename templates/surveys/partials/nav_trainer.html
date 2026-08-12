@@ -33,6 +33,7 @@
         <section class="trainer-rail-group" aria-labelledby="trainer-prepare-nav">
             <h2 id="trainer-prepare-nav">Préparer l’accès</h2>
             <div class="trainer-rail-links">
+                <a class="shell-tools-link{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_start' %} active{% endif %}" href="{% url 'surveys:dashboard_start' %}"><b>Démarrer</b><small>Guide pas à pas</small></a>
                 <a class="shell-tools-link{% if request.resolver_match and 'dashboard_support' in request.resolver_match.view_name %} active{% endif %}" href="{% url 'surveys:dashboard_supports' %}"><b>Supports</b><small>Médiathèque locale</small></a>
                 <a class="shell-tools-link{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network' %} active{% endif %}" href="{% url 'surveys:dashboard_network' %}"><b>Réseau</b><small>Adresse et QR code</small></a>
                 <a class="shell-tools-link{% if request.resolver_match and request.resolver_match.view_name == 'surveys:dashboard_network_control' %} active{% endif %}" href="{% url 'surveys:dashboard_network_control' %}"><b>Contrôle LAN</b><small>Diagnostic terrain</small></a>

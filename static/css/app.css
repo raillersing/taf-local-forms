@@ -4452,6 +4452,21 @@ table th {
 .trainer-operation-signal span { margin-top: 20px; color: #fff; font-size: .78rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .trainer-operation-signal small { margin-top: 8px; color: #9fb6d8; font-weight: 700; }
 
+.dashboard-start-page { gap: 24px; }
+.dashboard-start-page .trainer-operation-hero { margin-bottom: 0; }
+.start-command-block { display: flex; align-items: center; gap: 10px; margin: 18px 0; padding: 12px; border: 1px solid #c8d7ea; border-radius: 10px; background: #f5f9ff; }
+.start-command-block code { flex: 1; overflow-wrap: anywhere; color: #071a42; font-weight: 700; }
+.start-copy-button { flex: 0 0 auto; padding: 8px 12px; min-height: auto; }
+.start-success { display: block; color: #16734b; font-weight: 700; }
+.start-final-check { border-left: 5px solid #ffbe25; }
+.start-url-example { display: inline-block; padding: 14px 18px; border-radius: 10px; background: #071a42; color: #fff; font-size: 1.05rem; }
+.start-url-example code { color: inherit; }
+@media (max-width: 640px) {
+  .start-command-block { align-items: stretch; flex-direction: column; }
+  .start-copy-button { width: 100%; }
+  .start-url-example { max-width: 100%; overflow-wrap: anywhere; }
+}
+
 .trainer-operation-network {
   display: block;
 }

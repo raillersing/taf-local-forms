@@ -1022,6 +1022,13 @@ def dashboard_home(request: HttpRequest) -> HttpResponse:
 
 @never_cache
 @login_required
+def dashboard_start(request: HttpRequest) -> HttpResponse:
+    """Friendly, trainer-facing startup runbook for the local classroom app."""
+    return render(request, "surveys/dashboard_start.html")
+
+
+@never_cache
+@login_required
 def dashboard_modules(request: HttpRequest) -> HttpResponse:
     return render(request, "surveys/dashboard_modules.html", _build_cockpit_context(request))
 

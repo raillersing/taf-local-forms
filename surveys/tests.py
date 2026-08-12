@@ -5143,6 +5143,7 @@ class RedesignUITests(TestCase):
     def test_dashboard_pages_require_login(self):
         for url_name in [
             "surveys:dashboard_home",
+            "surveys:dashboard_start",
             "surveys:dashboard_network",
             "surveys:dashboard_network_control",
             "surveys:dashboard_settings",
@@ -5167,6 +5168,17 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Admin avancé")
         self.assertContains(response, "Sortir")
         self.assertNotContains(response, "Cockpit protégé")
+
+    def test_start_page_is_user_friendly_and_keeps_runtime_boundaries_clear(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_start"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Démarrer l’application sans stress")
+        self.assertContains(response, "docker compose up -d")
+        self.assertContains(response, r".\scripts\windows\taf-lan-helper-start.ps1")
+        self.assertContains(response, "Ouvre PowerShell <strong>en administrateur</strong>", html=False)
+        self.assertContains(response, "http://IP_DU_LAPTOP:8011/")
+        self.assertContains(response, reverse("surveys:dashboard_network_control"))
 
     def test_module_list_keeps_exports_and_extra_actions_separate(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5273,7 +5285,7 @@ class RedesignUITests(TestCase):
         for step in steps:
             with self.subTest(step=step):
                 self.assertContains(response, step)
-        self.assertContains(response, "Configurer et rendre accessible")
+        self.assertContains(response, "Préparer la séance")
 
     def test_dashboard_results_page_exists(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
