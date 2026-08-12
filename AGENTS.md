@@ -164,12 +164,19 @@ Do not use `npx skills add --all`.
 | F006 | Agent workflow and skills framework | done |
 | F007 | Release candidate review + Graphify integration | done |
 | F008 | Push / PR / merge workflow | done |
-| F009 | Module 3 search questionnaire | pending -->
-| F010 | Safe cleanup workflow | in_progress |
+| F009 | Module 3 search questionnaire | done |
+| F010 | Safe cleanup workflow | done |
 | F011 | Logo integration (official file) | pending |
-| F012 | Dashboard UX polish after field feedback | pending |
+| F012 | Dashboard UX polish after field feedback | done |
 | F022R | Navigation rewire (student/trainer context separation) | done |
 | F023 | Auto-sync LAN IP and network links | done |
+| F033 | Refonte UI/UX globale | done |
+| F034 | Skills UI v2 | done |
+| F035 | Navigation formateur premium et parcours de séance | done |
+| F036 | Cockpit formateur contextualisé | done |
+| F037 | Pilotage Modules | done |
+| F038 | Prochaines actions Réseau et Supports | done |
+| F039 | En-têtes des dashboards modules | done |
 
 ## Prompt contracts
 
