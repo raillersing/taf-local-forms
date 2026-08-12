@@ -122,6 +122,9 @@
 
                 <dt class="muted setting-label">Test URL eleves</dt>
                 <dd id="status-lan-test"><span class="muted">En attente...</span></dd>
+
+                <dt class="muted setting-label">État de préparation</dt>
+                <dd id="status-readiness"><span class="muted">En attente...</span></dd>
             </dl>
         </div>
     </section>
@@ -388,14 +391,17 @@
         var firewallOk = status.firewall_ok !== undefined ? status.firewall_ok : status.firewall;
         var djangoAllowsIp = status.django_allows_ip;
         var studentUrlOk = status.student_url_ok !== undefined ? status.student_url_ok : status.lan_ok;
+        var portproxyConflict = !!status.portproxy_conflict;
+        var firewallConflict = !!status.firewall_conflict;
+        var hasConflict = portproxyConflict || firewallConflict;
         var studentUrlStep = document.getElementById('step-student-url');
         document.getElementById('global-status-text').textContent = helperOk ? 'Helper joignable et état réseau récupéré.' : 'Helper joignable mais LAN incomplet.';
 
         setStepState('step-helper', helperOk ? 'ok' : 'warn', '1. Helper local');
         setStepState('step-local-app', localAppOk ? 'ok' : 'warn', '2. Application locale');
         setStepState('step-lan-ip', status.lan_ip ? 'ok' : 'warn', '3. IP Wi-Fi');
-        setStepState('step-portproxy', portproxyOk ? 'ok' : 'warn', '4. Portproxy');
-        setStepState('step-firewall', firewallOk ? 'ok' : 'warn', '5. Pare-feu');
+        setStepState('step-portproxy', portproxyConflict ? 'danger' : (portproxyOk ? 'ok' : 'warn'), '4. Portproxy');
+        setStepState('step-firewall', firewallConflict ? 'danger' : (firewallOk ? 'ok' : 'warn'), '5. Pare-feu');
         setStepState('step-django', djangoAllowsIp ? 'ok' : 'warn', '6. Django autorise l\'IP');
         setStepState('step-student-url', studentUrlOk ? 'ok' : 'warn', '7. URL élèves accessible');
         if (studentUrlStep && status.student_url) {
@@ -406,15 +412,19 @@
         setStatus('status-lan-ip', !!status.lan_ip, status.lan_ip || 'Non détectée');
         setStatus('status-lan-interface', !!status.lan_interface, status.lan_interface || 'Non détectée');
         setStatus('status-lan-gateway', !!status.lan_gateway, status.lan_gateway || 'Non détectée');
-        setStatus('status-portproxy', !!portproxyOk, portproxyOk ? 'Configuré' : 'Absent');
-        setStatus('status-firewall', !!firewallOk, firewallOk ? 'Ouvert' : 'À vérifier');
+        setStatus('status-portproxy', !!portproxyOk && !portproxyConflict, portproxyConflict ? 'Conflit détecté' : (portproxyOk ? 'Configuré' : 'Absent'));
+        setStatus('status-firewall', !!firewallOk && !firewallConflict, firewallConflict ? 'Conflit détecté' : (firewallOk ? 'Ouvert' : 'À vérifier'));
         setStatus('status-django', !!djangoAllowsIp, djangoAllowsIp ? 'OK' : 'À mettre à jour');
         setStatus('status-student-url', !!studentUrlOk && !!status.student_url, studentUrlOk && status.student_url ? status.student_url : 'Non disponible');
         setStatus('status-lan-test', !!studentUrlOk, studentUrlOk ? 'Accessible' : 'Échec du test');
+        var ready = !!localAppOk && !!status.lan_ip && !!portproxyOk && !!firewallOk && !!djangoAllowsIp && !!studentUrlOk && !hasConflict;
+        setStatus('status-readiness', ready, hasConflict ? 'Bloquée : conflit réseau' : (ready ? 'Prête pour confirmation téléphone' : 'À compléter'));
 
-        document.getElementById('helper-status-content').innerHTML = helperOk
-            ? '<div class="alert alert-success"><strong>Helper joignable.</strong> Le statut réseau vient d’être actualisé.</div>'
-            : '<div class="alert"><strong>Helper joignable mais configuration LAN incomplète.</strong></div>';
+        var helperStatus = document.getElementById('helper-status-content');
+        helperStatus.textContent = helperOk
+            ? (hasConflict ? 'Helper joignable, mais un conflit réseau bloque la préparation.' : 'Helper joignable. Le statut réseau vient d’être actualisé.')
+            : 'Helper joignable mais configuration LAN incomplète.';
+        helperStatus.className = hasConflict ? 'alert' : (helperOk ? 'alert alert-success' : 'alert');
 
         if (status.student_url) {
             lastStudentUrl = status.student_url;

@@ -56,6 +56,7 @@ from .models import (
     Module7Submission,
     Module8Submission,
     EditRequest,
+    NetworkPhoneCheck,
     Student,
     Subject,
     Submission,
@@ -3444,6 +3445,7 @@ def network_access_dashboard(request: HttpRequest) -> HttpResponse:
     ctx = get_network_access_context(request)
     ctx["wifi_shared_checked"] = request.session.get("wifi_shared_checked", False)
     ctx["phone_test_checked"] = request.session.get("phone_test_checked", False)
+    ctx["last_phone_test"] = NetworkPhoneCheck.objects.select_related("checked_by").first()
     return render(request, "surveys/dashboard_network.html", ctx)
 
 
@@ -3608,7 +3610,9 @@ def dashboard_use_current_address(request: HttpRequest) -> HttpResponse:
         messages.error(request, "L'adresse actuelle n'est pas une IP LAN valide.")
         return redirect("surveys:dashboard_settings")
 
-    port = net_ctx["current_port"] or net_ctx.get("configured_port") or "8010"
+    # The request may arrive through the student portproxy (8011). Keep the
+    # trainer/Docker port separate from the student LAN port.
+    port = net_ctx.get("student_port") or "8011"
 
     ok, msg = apply_lan_settings(host, port)
     if ok:
@@ -3672,6 +3676,18 @@ def network_checklist(request: HttpRequest) -> JsonResponse:
     checked = request.POST.get("checked", "false").lower() == "true"
     if key in {"wifi_shared_checked", "phone_test_checked"}:
         request.session[key] = checked
+        if key == "phone_test_checked" and checked:
+            from .network import get_network_access_context
+
+            net_ctx = get_network_access_context(request)
+            student_url = net_ctx.get("student_form_url", "")
+            lan_host = net_ctx.get("recommended_lan_host", "")
+            if student_url and lan_host:
+                NetworkPhoneCheck.objects.create(
+                    checked_by=request.user,
+                    student_url=student_url,
+                    lan_host=lan_host,
+                )
         return JsonResponse({"ok": True, "key": key, "checked": checked})
     return JsonResponse({"ok": False, "error": "Clé inconnue"}, status=400)
 

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -1283,3 +1284,24 @@ class EditRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.student} - {self.module_code} ({self.status})"
+
+
+class NetworkPhoneCheck(models.Model):
+    """Trainer attestation that a real phone reached the student URL."""
+
+    checked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="network_phone_checks",
+    )
+    student_url = models.URLField(max_length=255)
+    lan_host = models.GenericIPAddressField(protocol="IPv4", blank=True, null=True)
+    checked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-checked_at"]
+        verbose_name = "Test téléphone réseau"
+        verbose_name_plural = "Tests téléphone réseau"
+
+    def __str__(self) -> str:
+        return f"{self.student_url} ({self.checked_at:%Y-%m-%d %H:%M})"

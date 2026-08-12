@@ -4343,6 +4343,36 @@ class F030NetworkControlTests(TestCase):
         self.assertIn("$verification.student_url_ok", content)
         self.assertIn("Acces LAN configure et verifie", content)
 
+    def test_helper_does_not_replace_conflicting_portproxy(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("portproxyStatus.conflict", content)
+        self.assertIn("Conflit detecte sur le port LAN", content)
+        self.assertIn("portproxy_conflict", content)
+
+    def test_network_control_displays_readiness_and_conflicts(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'id="status-readiness"', html=False)
+        self.assertContains(response, "Conflit détecté", html=False)
+        self.assertContains(response, "Prête pour confirmation téléphone", html=False)
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_phone_check_is_recorded_without_device_identity(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.post(
+            reverse("surveys:network_checklist"),
+            {"key": "phone_test_checked", "checked": "true"},
+            HTTP_HOST="192.168.0.50:8011",
+        )
+        self.assertEqual(response.status_code, 200)
+        from surveys.models import NetworkPhoneCheck
+
+        check = NetworkPhoneCheck.objects.get()
+        self.assertEqual(check.checked_by.username, "ctrlstaff")
+        self.assertTrue(check.student_url.startswith("http://"))
+        self.assertFalse(hasattr(check, "device_id"))
+
     def test_helper_disable_reports_partial_failures(self):
         helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
         content = helper_path.read_text(encoding="utf-8", errors="replace")

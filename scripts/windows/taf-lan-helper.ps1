@@ -112,24 +112,61 @@ function Get-ActiveLanIp {
 
 function Get-PortproxyStatus {
     try {
-        $output = netsh interface portproxy show all
-        $rulePattern = "0\.0\.0\.0\s+$LanPort\s+127\.0\.0\.1\s+$DockerPort"
-        $hasRule = $output -match $rulePattern
-        return @{ exists = $hasRule; details = $output }
+        $output = @(netsh interface portproxy show all)
+        $rules = @()
+        foreach ($line in $output) {
+            if ($line -match '^\s*(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s*$') {
+                $rules += [PSCustomObject]@{
+                    listen_address  = $Matches[1]
+                    listen_port     = [int]$Matches[2]
+                    connect_address = $Matches[3]
+                    connect_port    = [int]$Matches[4]
+                }
+            }
+        }
+        $matching = @($rules | Where-Object {
+            $_.listen_address -eq "0.0.0.0" -and
+            $_.listen_port -eq $LanPort -and
+            $_.connect_address -eq "127.0.0.1" -and
+            $_.connect_port -eq $DockerPort
+        })
+        $conflicts = @($rules | Where-Object {
+            $_.listen_port -eq $LanPort -and $_ -notin $matching
+        })
+        return @{
+            exists = ($matching.Count -gt 0)
+            conflict = ($conflicts.Count -gt 0)
+            rules = $rules
+            conflicts = $conflicts
+            details = $output
+        }
     } catch {
-        return @{ exists = $false; details = ($_.Exception.Message) }
+        return @{ exists = $false; conflict = $false; rules = @(); conflicts = @(); details = ($_.Exception.Message) }
     }
 }
 
 function Get-FirewallStatus {
     try {
-        $rule = Get-NetFirewallRule -DisplayName "TAf Local Forms - Port 8011" -ErrorAction SilentlyContinue
-        if ($rule) {
-            return @{ exists = $true; enabled = ($rule.Enabled -eq 'True') }
+        $ruleName = "TAf Local Forms - Port 8011"
+        $rules = @(Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue)
+        if ($rules.Count -gt 0) {
+            $validRules = @($rules | Where-Object {
+                $portFilter = $_ | Get-NetFirewallPortFilter -ErrorAction SilentlyContinue
+                $_.Direction -eq 'Inbound' -and
+                $_.Action -eq 'Allow' -and
+                $_.Enabled -eq 'True' -and
+                $portFilter.Protocol -eq 'TCP' -and
+                @($portFilter.LocalPort) -contains [string]$LanPort
+            })
+            return @{
+                exists = $true
+                enabled = ($validRules.Count -gt 0)
+                conflict = ($validRules.Count -eq 0)
+            }
         }
-        return @{ exists = $false; enabled = $false }
+        return @{ exists = $false; enabled = $false; conflict = $false }
     } catch {
-        return @{ exists = $false; enabled = $false }
+        return @{ exists = $false; enabled = $false; conflict = $false }
     }
 }
 
@@ -190,6 +227,8 @@ function Get-Status {
         local_ok    = $localOk
         portproxy   = $portproxy.exists
         firewall    = $firewall.exists
+        portproxy_conflict = $portproxy.conflict
+        firewall_conflict = $firewall.conflict
         lan_ok      = $lanOk
         helper_running = $true
         local_app_ok = $localOk
@@ -201,6 +240,7 @@ function Get-Status {
             local_port  = $DockerPort
             lan_port    = $LanPort
             helper_port = $Port
+            portproxy_conflicts = $portproxy.conflicts
         }
     }
 }
@@ -211,13 +251,23 @@ function Invoke-Sync {
         return @{ success = $false; message = "Aucune adresse LAN detectee." }
     }
 
-    # Portproxy
+    # Portproxy: ne jamais remplacer une regle concurrente.
     try {
-        $existing = netsh interface portproxy show all | Select-String "0.0.0.0.*$LanPort"
-        if ($existing) {
-            netsh interface portproxy delete v4tov4 listenport=$LanPort listenaddress=0.0.0.0 | Out-Null
+        $portproxyStatus = Get-PortproxyStatus
+        if ($portproxyStatus.conflict) {
+            return @{
+                success = $false
+                message = "Conflit detecte sur le port LAN $LanPort : une autre regle portproxy existe."
+                lan_ip = $lanIp
+                portproxy_ok = $false
+                portproxy_conflict = $true
+                diagnostics = @{ portproxy = $false; conflict = $true; conflicts = $portproxyStatus.conflicts }
+            }
         }
-        netsh interface portproxy add v4tov4 listenport=$LanPort listenaddress=0.0.0.0 connectport=$DockerPort connectaddress=127.0.0.1 | Out-Null
+        if (-not $portproxyStatus.exists) {
+            netsh interface portproxy delete v4tov4 listenport=$LanPort listenaddress=0.0.0.0 | Out-Null
+            netsh interface portproxy add v4tov4 listenport=$LanPort listenaddress=0.0.0.0 connectport=$DockerPort connectaddress=127.0.0.1 | Out-Null
+        }
         $proxyOk = $true
     } catch {
         $proxyOk = $false
@@ -227,8 +277,18 @@ function Invoke-Sync {
     # Firewall
     try {
         $ruleName = "TAf Local Forms - Port 8011"
-        $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
-        if (-not $existingRule) {
+        $firewallStatus = Get-FirewallStatus
+        if ($firewallStatus.conflict) {
+            return @{
+                success = $false
+                message = "Conflit detecte dans la regle pare-feu '$ruleName'."
+                lan_ip = $lanIp
+                firewall_ok = $false
+                firewall_conflict = $true
+                diagnostics = @{ portproxy = $proxyOk; firewall = $false; conflict = $true }
+            }
+        }
+        if (-not $firewallStatus.exists) {
             New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort $LanPort -Action Allow | Out-Null
         }
         $fwOk = $true
@@ -278,8 +338,10 @@ function Invoke-Disable {
     $proxyOk = $true
     $firewallOk = $true
     try {
-        $existing = netsh interface portproxy show all | Select-String "0.0.0.0.*$LanPort"
-        if ($existing) {
+        $portproxyStatus = Get-PortproxyStatus
+        if ($portproxyStatus.conflict) {
+            $proxyOk = $false
+        } elseif ($portproxyStatus.exists) {
             netsh interface portproxy delete v4tov4 listenport=$LanPort listenaddress=0.0.0.0 | Out-Null
         }
     } catch { $proxyOk = $false }
@@ -295,8 +357,8 @@ function Invoke-Disable {
     $ok = $proxyOk -and $firewallOk
     return @{
         success = $ok
-        message = if ($ok) { "Acces LAN desactive. Portproxy et regle pare-feu supprimes." } else { "Desactivation incomplete : verifiez les droits administrateur." }
-        diagnostics = @{ portproxy_removed = $proxyOk; firewall_removed = $firewallOk }
+        message = if ($ok) { "Acces LAN desactive. Portproxy et regle pare-feu supprimes." } else { "Desactivation incomplete ou conflit detecte : aucune regle concurrente n'a ete supprimee." }
+        diagnostics = @{ portproxy_removed = $proxyOk; firewall_removed = $firewallOk; portproxy_conflict = ($portproxyStatus.conflict) }
     }
 }
 

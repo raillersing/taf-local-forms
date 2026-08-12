@@ -206,7 +206,10 @@
             <label class="network-check-item"><input type="checkbox" name="wifi_shared_checked" {% if wifi_shared_checked %}checked{% endif %} data-checklist-key="wifi_shared_checked"><span><strong>Wi-Fi partagé</strong><small>Ordinateur et téléphones sur le même réseau.</small></span></label>
             <label class="network-check-item"><input type="checkbox" checked disabled><span><strong>Serveur actif</strong><small>L’application répond (cette page est accessible).</small></span></label>
             <label class="network-check-item"><input type="checkbox" {% if student_port_reachable %}checked{% endif %} disabled><span><strong>Port élèves accessible</strong><small>{% if student_port_reachable %}Adresse locale joignable depuis le réseau.{% else %}Vérifie le portproxy/pare-feu ou lance le helper.{% endif %}</small></span></label>
-            <label class="network-check-item"><input type="checkbox" name="phone_test_checked" {% if phone_test_checked %}checked{% endif %} data-checklist-key="phone_test_checked"><span><strong>Test téléphone réel</strong><small>À confirmer depuis un appareil élève.</small></span></label>
+            <label class="network-check-item"><input type="checkbox" name="phone_test_checked" {% if phone_test_checked %}checked{% endif %} data-checklist-key="phone_test_checked"><span><strong>Test téléphone réel</strong><small>Coche après avoir ouvert l’URL élèves depuis un vrai téléphone connecté au même réseau.</small></span></label>
+            {% if last_phone_test %}
+            <p class="muted">Dernière confirmation : {{ last_phone_test.checked_at|date:"d/m/Y H:i" }} · {{ last_phone_test.student_url }}</p>
+            {% endif %}
         </div>
     </section>
 
