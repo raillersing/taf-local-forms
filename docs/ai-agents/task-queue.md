@@ -48,6 +48,7 @@
 | F035 | Navigation formateur premium et parcours de séance | done |
 | F036 | Cockpit formateur contextualisé selon l’état réel de la séance | done |
 | F037 | Pilotage Modules : module prioritaire et états de séance lisibles | done |
+| F038 | Harmoniser les prochaines actions Réseau et Supports | done |
 
 ## Managing the queue
 

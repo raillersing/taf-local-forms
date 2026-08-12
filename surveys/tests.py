@@ -5339,6 +5339,13 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Diagnostic technique avancé")
         self.assertNotContains(response, '<details class="diagnostics" open>')
 
+    def test_network_dashboard_exposes_the_next_action(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        response = self.client.get(reverse("surveys:dashboard_network"))
+        self.assertContains(response, "trainer-next-action-network")
+        self.assertContains(response, "Prochaine action")
+        self.assertContains(response, "network-checklist-heading")
+
     def test_network_control_refreshes_status_automatically(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_network_control"))
@@ -5755,6 +5762,8 @@ class LearningResourceViewTests(TestCase):
         self.assertContains(response, "Brouillon")
         self.assertContains(response, "Mathématiques")
         self.assertContains(response, "Géométrie")
+        self.assertContains(response, "trainer-next-action-supports")
+        self.assertContains(response, "Finaliser les brouillons")
 
     def test_student_navigation_contains_supports_without_dashboard_links(self):
         response = self.client.get(reverse("surveys:support_list"))

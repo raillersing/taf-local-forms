@@ -27,6 +27,21 @@
         <div class="trainer-operation-signal"><strong>{{ published_count }}</strong><span>support{{ published_count|pluralize }} publié{{ published_count|pluralize }}</span><small>{{ draft_count }} brouillon{{ draft_count|pluralize }} à finaliser</small></div>
     </section>
 
+    <section class="trainer-next-action trainer-next-action-supports" aria-labelledby="supports-next-action-heading">
+        <div>
+            <span class="section-kicker">Prochaine action</span>
+            {% if draft_count %}
+            <h2 id="supports-next-action-heading">Finaliser les brouillons</h2>
+            <p>{{ draft_count }} support{{ draft_count|pluralize }} attend{{ draft_count|pluralize:"ent,ent" }} une vérification avant publication dans l’espace élèves.</p>
+            <a class="btn btn-primary" href="{% url 'admin:surveys_learningresource_changelist' %}?is_published__exact=0">Ouvrir les brouillons <span aria-hidden="true">→</span></a>
+            {% else %}
+            <h2 id="supports-next-action-heading">Enrichir la médiathèque locale</h2>
+            <p>Ajoute un document ou une vidéo vérifiée pour compléter les parcours accessibles hors ligne.</p>
+            <a class="btn btn-primary" href="{% url 'surveys:dashboard_support_upload' %}">Ajouter un support <span aria-hidden="true">→</span></a>
+            {% endif %}
+        </div>
+    </section>
+
     <section class="trainer-support-admin-links" aria-label="Gestion avancée des supports">
         <p>Upload, publication, licence et classement sont pilotés dans cet espace.</p>
         <div class="back-links">
