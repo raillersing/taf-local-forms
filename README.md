@@ -236,7 +236,19 @@ Le dashboard affiche l'IP locale réelle du laptop selon l'ordre de priorité su
 3. **IP détectée** : adresse candidate trouvée automatiquement côté serveur
 4. **Non configurée** : message invitant à configurer l'IP
 
-Si l'IP configurée (`TAF_LAN_HOST`) diffère de l'IP actuelle de la requête, une alerte « L'IP configurée diffère de l'adresse actuelle » apparaît avec un lien vers la configuration.
+Si l'IP configurée (`TAF_LAN_HOST`) diffère de l'IP actuelle de la requête, une alerte « L'IP configurée diffère de l'adresse actuelle » apparaît avec un lien vers la configuration. Le port formateur Docker (`8010`) est distinct du port élèves (`8011`) et n'est pas modifiable depuis ce dashboard.
+
+### Préparer une séance LAN
+
+Depuis `/dashboard/network-control/`, ouvrez le cockpit formateur sur
+`http://localhost:8010/`, démarrez le helper Windows en PowerShell
+administrateur, puis utilisez **Préparer la séance**. L'action détecte l'interface
+réseau et son IP privée, configure le relais `8011 → 8010`, synchronise Django
+et vérifie l'URL élèves avant d'annoncer la réussite.
+
+Le statut **Prêt pour les élèves** doit encore être confirmé avec un téléphone
+connecté au même Wi-Fi ou hotspot. Un test réalisé depuis le laptop ne prouve
+pas à lui seul l'accès depuis les téléphones.
 
 Tous les liens réseau utilisent l'IP recommandée et s'ouvrent dans un nouvel onglet (`target="_blank"`).
 

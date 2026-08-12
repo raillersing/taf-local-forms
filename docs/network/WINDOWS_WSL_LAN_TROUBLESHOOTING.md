@@ -47,6 +47,12 @@ Ce script vérifie (lecture seule) :
 
 Ce script détecte automatiquement l'IPv4 du Wi-Fi, configure le portproxy `8011→8010`, crée la règle pare-feu pour `8011`, et synchronise l'application Django.
 
+Depuis le contrôle réseau du cockpit, l'action **Préparer la séance** réalise le
+même parcours et effectue ensuite une vérification de l'URL élèves. Elle
+indique séparément l'application locale, l'interface/IP, le portproxy, le
+pare-feu, Django et l'URL `:8011`. La réussite technique doit être complétée
+par un test avec un téléphone réel sur le même réseau.
+
 Installation en tâche planifiée (logon automatique) :
 
 ```powershell

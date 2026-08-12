@@ -2108,7 +2108,7 @@ class F019NetworkIPTests(TestCase):
         os.environ.pop("TAF_HOST_PORT", None)
         try:
             response = self.client.get(reverse("surveys:dashboard_projection"))
-            self.assertContains(response, "http://192.168.0.100:8000/")
+            self.assertContains(response, "http://192.168.0.100:8011/")
         finally:
             if old_lan:
                 os.environ["TAF_LAN_HOST"] = old_lan
@@ -6034,7 +6034,7 @@ class NavigationShellTests(TestCase):
         response = self.client.get(reverse('surveys:dashboard_network_control'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'tool-card')
-        self.assertContains(response, 'Configurer et rendre accessible')
+        self.assertContains(response, 'Préparer la séance')
         self.assertContains(response, 'Redémarrer l\'application')
         self.assertContains(response, 'local_app_ok')
         self.assertContains(response, 'student_url_ok')
