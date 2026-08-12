@@ -4350,6 +4350,12 @@ class F030NetworkControlTests(TestCase):
         self.assertIn("Conflit detecte sur le port LAN", content)
         self.assertIn("portproxy_conflict", content)
 
+    def test_helper_opens_project_root_not_its_script_folder(self):
+        helper_path = Path(__file__).resolve().parent.parent / "scripts" / "windows" / "taf-lan-helper.ps1"
+        content = helper_path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn('ArgumentList @($projectRoot)', content)
+        self.assertIn("Le depot du projet a ete ouvert", content)
+
     def test_network_control_displays_readiness_and_conflicts(self):
         self.client.login(username="ctrlstaff", password="secret")
         response = self.client.get(self.url)
@@ -4371,7 +4377,7 @@ class F030NetworkControlTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, r"C:\TAfHSSiM\scripts\windows")
         self.assertContains(response, "file:///C:/TAfHSSiM/scripts/windows/")
-        self.assertContains(response, "Ouvrir le dossier des commandes")
+        self.assertContains(response, "Ouvrir le dépôt du projet")
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_phone_check_is_recorded_without_device_identity(self):

@@ -400,10 +400,10 @@ function Invoke-RestartApp {
 
 function Invoke-OpenHelperFolder {
     try {
-        Start-Process -FilePath "explorer.exe" -ArgumentList @($scriptDir) -ErrorAction Stop
-        return @{ success = $true; message = "Le dossier des commandes Windows a ete ouvert."; folder = $scriptDir }
+        Start-Process -FilePath "explorer.exe" -ArgumentList @($projectRoot) -ErrorAction Stop
+        return @{ success = $true; message = "Le depot du projet a ete ouvert."; folder = $projectRoot }
     } catch {
-        return @{ success = $false; message = "Impossible d'ouvrir le dossier Windows : $($_.Exception.Message)" }
+        return @{ success = $false; message = "Impossible d'ouvrir le depot du projet : $($_.Exception.Message)" }
     }
 }
 
