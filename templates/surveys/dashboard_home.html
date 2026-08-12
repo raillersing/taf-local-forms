@@ -37,8 +37,12 @@
         <div class="trainer-command-copy">
             <span class="trainer-command-kicker">Cockpit terrain</span>
             <h1 id="dashboard-heading">Pilotez la séance.<br><span>Gardez la classe en mouvement.</span></h1>
-            <p>Ouvrez le bon module, partagez l’accès local et suivez les réponses sans quitter votre poste de commande.</p>
-            <a class="trainer-command-action" href="{% url 'surveys:dashboard_modules' %}">Gérer les modules <span aria-hidden="true">→</span></a>
+            <div class="trainer-cockpit-state trainer-cockpit-state-{{ cockpit_action.kind }}" role="status">
+                <span>{{ cockpit_action.eyebrow }}</span>
+                <strong>{{ cockpit_action.title }}</strong>
+                <small>{{ cockpit_action.description }}</small>
+            </div>
+            <a class="trainer-command-action" href="{{ cockpit_action.url }}">{{ cockpit_action.label }} <span aria-hidden="true">→</span></a>
         </div>
         <aside class="trainer-live-panel" aria-label="État de la séance">
             <div class="trainer-live-heading">

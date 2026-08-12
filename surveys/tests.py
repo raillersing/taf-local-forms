@@ -5364,6 +5364,7 @@ class RedesignUITests(TestCase):
         self.client.login(username="formateur", password="motdepasse-solide-123")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Pilotez la séance")
+        self.assertContains(response, "trainer-cockpit-state")
         self.assertContains(response, "Passer en mode projection")
         self.assertContains(response, "Module actif")
         self.assertContains(response, reverse("surveys:dashboard_modules"))
@@ -5372,10 +5373,29 @@ class RedesignUITests(TestCase):
 
     def test_active_module_cta_opens_the_module_list(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
+        with patch("surveys.network.get_network_access_context", return_value={
+            "recommended_lan_host": "192.168.0.10",
+            "student_form_url": "http://192.168.0.10:8011/",
+        }):
+            response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Ouvrir le suivi du module")
+        self.assertContains(response, "Séance en cours")
+
+    def test_cockpit_action_points_to_network_when_student_access_is_missing(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        with patch("surveys.network.get_network_access_context", return_value={"recommended_lan_host": "", "student_form_url": ""}):
+            response = self.client.get(reverse("surveys:dashboard_home"))
+        self.assertContains(response, "Accès à vérifier")
+        self.assertContains(response, "Le réseau élèves n’est pas prêt")
+        self.assertContains(response, reverse("surveys:dashboard_network"))
+
+    def test_cockpit_action_explains_when_no_session_is_active(self):
+        self.client.login(username="formateur", password="motdepasse-solide-123")
+        TrainingSession.objects.update(is_active=False)
         response = self.client.get(reverse("surveys:dashboard_home"))
-        self.assertContains(response, "Gérer les modules")
+        self.assertContains(response, "Aucune séance active")
+        self.assertContains(response, "Ouvrir le pilotage des modules")
         self.assertContains(response, reverse("surveys:dashboard_modules"))
-        self.assertNotContains(response, 'href="/dashboard/module-2/">Voir dashboard')
 
     def test_dashboard_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")

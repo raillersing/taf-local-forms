@@ -45,7 +45,8 @@
 | F021 | Integrated PowerPoint pedagogy content into student space (Modules 2, 3, 4 actual content, new CSS classes, 10 new pedagogy tests) | done |
 | F033 | Refonte UI/UX globale (design system local, layout unifié, cockpit, assistant LAN, page sauvegarde, accessibilité) | done |
 | F034 | Skills UI v2 (cadre premium TAf et revue UI/UX indépendante) | done |
-| F035 | Navigation formateur premium et parcours de séance | pending |
+| F035 | Navigation formateur premium et parcours de séance | done |
+| F036 | Cockpit formateur contextualisé selon l’état réel de la séance | done |
 
 ## Managing the queue
 
