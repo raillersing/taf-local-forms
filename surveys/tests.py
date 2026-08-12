@@ -6202,6 +6202,15 @@ class ModuleQuestionInsightsTests(TestCase):
                 self.assertContains(response, "Résumé de toutes les réponses")
                 self.assertContains(response, "Question par question")
 
+    def test_all_module_dashboards_share_the_same_module_header(self):
+        for module_number in range(1, 9):
+            with self.subTest(module=module_number):
+                response = self.client.get(reverse(f"surveys:dashboard_module_{module_number}"))
+                self.assertContains(response, "trainer-module-header")
+                self.assertContains(response, f"Suivi du module {module_number}")
+                self.assertContains(response, "Voir le formulaire élève")
+                self.assertContains(response, "Exporter")
+
     def test_module_8_dashboard_uses_shared_kpis_and_filters(self):
         response = self.client.get(reverse("surveys:dashboard_module_8"))
         self.assertEqual(response.status_code, 200)

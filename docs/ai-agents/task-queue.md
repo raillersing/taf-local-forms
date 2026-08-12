@@ -49,6 +49,7 @@
 | F036 | Cockpit formateur contextualisé selon l’état réel de la séance | done |
 | F037 | Pilotage Modules : module prioritaire et états de séance lisibles | done |
 | F038 | Harmoniser les prochaines actions Réseau et Supports | done |
+| F039 | Harmoniser les en-têtes des dashboards détaillés des modules | done |
 
 ## Managing the queue
 

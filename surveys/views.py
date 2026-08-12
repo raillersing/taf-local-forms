@@ -1376,7 +1376,14 @@ def _select_dashboard_session(request: HttpRequest, module_code: str):
 
 def _dashboard_session_context(request: HttpRequest, module_code: str) -> dict:
     selected_session, sessions = _select_dashboard_session(request, module_code)
+    module_number = module_code.removeprefix("MODULE_")
+    module = TrainingModule.objects.filter(code=module_code).first()
     return {
+        "module_code": module_code,
+        "module_number": module_number,
+        "module_title": _prototype_module_title(module) if module else f"Module {module_number}",
+        "module_form_url": reverse(f"surveys:module_{module_number}"),
+        "module_export_url": reverse(f"surveys:export_module_{module_number}_csv"),
         "selected_session": selected_session,
         "available_sessions": sessions,
         "selected_session_id": selected_session.pk if selected_session else "",

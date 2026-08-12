@@ -1,0 +1,16 @@
+<section class="trainer-module-header" aria-labelledby="trainer-module-heading">
+    <div class="trainer-module-header-copy">
+        <span class="section-kicker">Suivi du module {{ module_number }}</span>
+        <h1 id="trainer-module-heading">{{ module_title }}</h1>
+        <p>{% if selected_session %}Session {{ selected_session.session_code }} · {% if selected_session.is_active %}séance active{% else %}historique{% endif %}{% else %}Aucune session enregistrée{% endif %}</p>
+    </div>
+    <div class="trainer-module-header-status">
+        {% if selected_session %}
+            {% if selected_session.is_active %}<span class="pill ok">{% if selected_session.accepting_responses %}Réponses ouvertes{% else %}Réponses fermées{% endif %}</span>{% else %}<span class="pill">Session historique</span>{% endif %}
+        {% else %}<span class="pill warn">À préparer</span>{% endif %}
+        <div class="trainer-module-header-actions">
+            <a class="btn btn-primary" href="{{ module_form_url }}" target="_blank" rel="noopener noreferrer">Voir le formulaire élève</a>
+            <a class="btn btn-secondary" href="{{ module_export_url }}?session_id={{ selected_session_id }}">Exporter</a>
+        </div>
+    </div>
+</section>
