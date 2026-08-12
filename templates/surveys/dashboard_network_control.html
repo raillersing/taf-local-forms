@@ -167,6 +167,11 @@
                 <span class="muted">docker compose restart web</span>
             </button>
 
+            <button id="btn-download-diagnostic" class="tool-card" type="button">
+                <strong>Télécharger le diagnostic</strong>
+                <span class="muted">Exporter uniquement l’état réseau utile</span>
+            </button>
+
             </div>
 
             <div id="helper-message" class="messages-container"></div>
@@ -232,6 +237,7 @@
     var isLocalhost = {{ is_localhost|lower }};
     var lastStudentUrl = '';
     var helperToken = '';
+    var lastStatusData = null;
     var activeController = null;
 
     var BUTTON_IDS = ['btn-check-status', 'btn-sync', 'btn-restart', 'btn-test', 'btn-copy-url', 'btn-disable'];
@@ -340,6 +346,9 @@
             .then(function(data) {
                 if (!data) return;
                 if (data.control_token) helperToken = data.control_token;
+                if (endpoint === 'status' || endpoint === 'sync' || endpoint === 'test') {
+                    lastStatusData = data.status || data;
+                }
                 if (!silent) {
                     var displayData = Object.assign({}, data);
                     delete displayData.control_token;
@@ -451,6 +460,37 @@
             return;
         }
         callHelper('restart-app', 'POST', 'Redémarrer', 'btn-restart');
+    });
+    document.getElementById('btn-download-diagnostic').addEventListener('click', function() {
+        if (!lastStatusData) {
+            showError('Actualise d’abord l’état du helper pour préparer le diagnostic.');
+            return;
+        }
+        var status = lastStatusData;
+        var lines = [
+            'TAf Local Forms — diagnostic réseau',
+            'Généré le : ' + new Date().toISOString(),
+            'Helper : ' + (status.helper_running ? 'joignable' : 'non joignable'),
+            'Version helper : ' + (status.version || 'inconnue'),
+            'IP LAN : ' + (status.lan_ip || 'non détectée'),
+            'Interface : ' + (status.lan_interface || 'non détectée'),
+            'Passerelle : ' + (status.lan_gateway || 'non détectée'),
+            'Application locale : ' + (status.local_app_ok ? 'OK' : 'échec'),
+            'Portproxy : ' + (status.portproxy_ok ? 'OK' : (status.portproxy_conflict ? 'conflit' : 'absent')),
+            'Pare-feu : ' + (status.firewall_ok ? 'OK' : (status.firewall_conflict ? 'conflit' : 'à vérifier')),
+            'Django autorise l’IP : ' + (status.django_allows_ip ? 'oui' : 'non'),
+            'URL élèves testée : ' + (status.student_url_ok ? 'accessible' : 'échec'),
+            'URL élèves : ' + (status.student_url || 'non disponible'),
+            '',
+            'Aucun jeton helper, secret, environnement ou contenu élève n’est inclus.'
+        ];
+        var blob = new Blob([lines.join('\n')], {type: 'text/plain;charset=utf-8'});
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'taf-diagnostic-reseau.txt';
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showSuccess('Diagnostic réseau téléchargé sans secrets.');
     });
     document.getElementById('btn-copy-url').addEventListener('click', function() {
         if (!lastStudentUrl) {

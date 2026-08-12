@@ -4357,6 +4357,13 @@ class F030NetworkControlTests(TestCase):
         self.assertContains(response, "Conflit détecté", html=False)
         self.assertContains(response, "Prête pour confirmation téléphone", html=False)
 
+    def test_network_control_has_secret_free_diagnostic_export(self):
+        self.client.login(username="ctrlstaff", password="secret")
+        response = self.client.get(self.url)
+        self.assertContains(response, "Télécharger le diagnostic")
+        self.assertContains(response, "taf-diagnostic-reseau.txt")
+        self.assertContains(response, "Aucun jeton helper, secret")
+
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_phone_check_is_recorded_without_device_identity(self):
         self.client.login(username="ctrlstaff", password="secret")
