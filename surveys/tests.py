@@ -2009,7 +2009,7 @@ class F019NavigationUXTests(TestCase):
     def test_dashboard_shows_full_nav(self):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
-        self.assertContains(response, "Réseau élèves")
+        self.assertContains(response, "Préparer l’accès élèves")
         self.assertNotContains(response, "Config")
         self.assertContains(response, "Administration avancée")
 
@@ -2452,7 +2452,7 @@ class F022RNavigationRewireTests(TestCase):
         self.client.login(username="f022ruser", password="secret")
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
-        self.assertContains(response, "Réseau élèves")
+        self.assertContains(response, "Préparer l’accès élèves")
         self.assertNotContains(response, "Config")
         self.assertContains(response, "Administration avancée")
 
@@ -5163,7 +5163,7 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, "Cockpit")
         self.assertContains(response, "Exports")
-        self.assertContains(response, "Réseau élèves")
+        self.assertContains(response, "Préparer l’accès élèves")
         self.assertNotContains(response, "Config")
         self.assertContains(response, "Administration avancée")
         self.assertContains(response, "Sortir")
@@ -5338,6 +5338,8 @@ class RedesignUITests(TestCase):
         self.assertContains(response, "Répertoire des adresses")
         self.assertContains(response, "Diagnostic technique avancé")
         self.assertNotContains(response, '<details class="diagnostics" open>')
+        self.assertContains(response, "Lire le guide de démarrage")
+        self.assertContains(response, reverse("surveys:dashboard_settings"))
 
     def test_network_dashboard_exposes_the_next_action(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -5571,7 +5573,7 @@ class RedesignUITests(TestCase):
         response = self.client.get(reverse("surveys:dashboard_home"))
         self.assertContains(response, reverse("surveys:dashboard_modules"))
         self.assertContains(response, "Admin")
-        self.assertContains(response, "Réseau")
+        self.assertContains(response, "Préparer l’accès élèves")
 
     def test_dashboard_home_has_breadcrumbs(self):
         self.client.login(username="formateur", password="motdepasse-solide-123")
@@ -6116,13 +6118,15 @@ class NavigationShellTests(TestCase):
         self.assertContains(response, 'Exports')
         self.assertContains(response, 'Modules')
         self.assertContains(response, 'Supports')
-        self.assertContains(response, 'Réseau élèves')
+        self.assertContains(response, 'Préparer l’accès élèves')
+        self.assertNotContains(response, 'Guide de démarrage')
+        self.assertNotContains(response, 'Paramètres réseau')
         self.assertNotContains(response, 'Config')
         self.assertContains(response, 'Sauvegarde')
         self.assertContains(response, 'Administration avancée')
         self.assertContains(response, 'Projection')
         self.assertContains(response, 'Outils')
-        self.assertContains(response, reverse('surveys:dashboard_settings'))
+        self.assertNotContains(response, reverse('surveys:dashboard_settings'))
         self.assertContains(response, reverse('surveys:dashboard_exports'))
         self.assertContains(response, reverse('surveys:dashboard_backup'))
 

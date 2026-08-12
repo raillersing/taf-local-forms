@@ -41,17 +41,11 @@
             <div class="shell-tools-panel trainer-premium-tools-panel">
                 <section class="trainer-tools-group" aria-labelledby="trainer-access-tools">
                     <h2 id="trainer-access-tools">Accès des élèves</h2>
-                    <a class="shell-tools-link{% if current_view == 'surveys:dashboard_start' %} active{% endif %}" href="{% url 'surveys:dashboard_start' %}"{% if current_view == 'surveys:dashboard_start' %} aria-current="page"{% endif %}>
-                        <b>Guide de démarrage</b><small>Préparer la séance</small>
-                    </a>
                     <a class="shell-tools-link{% if current_view == 'surveys:dashboard_network' %} active{% endif %}" href="{% url 'surveys:dashboard_network' %}"{% if current_view == 'surveys:dashboard_network' %} aria-current="page"{% endif %}>
-                        <b>Réseau élèves</b><small>Adresse et QR code</small>
+                        <b>Préparer l’accès élèves</b><small>Statut, adresse, QR code et test</small>
                     </a>
                     <a class="shell-tools-link{% if current_view == 'surveys:dashboard_network_control' %} active{% endif %}" href="{% url 'surveys:dashboard_network_control' %}"{% if current_view == 'surveys:dashboard_network_control' %} aria-current="page"{% endif %}>
                         <b>Contrôle LAN</b><small>Tester les appareils</small>
-                    </a>
-                    <a class="shell-tools-link{% if current_view == 'surveys:dashboard_settings' %} active{% endif %}" href="{% url 'surveys:dashboard_settings' %}"{% if current_view == 'surveys:dashboard_settings' %} aria-current="page"{% endif %}>
-                        <b>Paramètres réseau</b><small>Adresse et ports</small>
                     </a>
                 </section>
 

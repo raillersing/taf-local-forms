@@ -22,7 +22,7 @@ l’authentification, le fonctionnement hors ligne et les diagnostics LAN.
 
 ## Lots approuvés
 
-### F040 — Dédoublonnage et nouvelle arborescence
+### F040 — Dédoublonnage et nouvelle arborescence — done
 
 Fusionner « Guide de démarrage », « Réseau élèves » et « Paramètres réseau »
 dans un parcours « Préparer l’accès élèves ».
